@@ -10,7 +10,8 @@ return new class extends Migration
     {
         Schema::create('songs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('song_category_id')->constrained();
+            $table->foreignId('choir_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('song_category_id')->nullable()->constrained()->nullOnDelete();
             $table->string('title');
             $table->string('composer')->nullable();
             $table->string('artist')->nullable();
@@ -20,8 +21,8 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('cover_image_path')->nullable();
             $table->boolean('is_published')->default(false);
-            $table->foreignId('created_by')->constrained('users');
-            $table->foreignId('updated_by')->nullable()->constrained('users');
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             $table->softDeletes();
         });

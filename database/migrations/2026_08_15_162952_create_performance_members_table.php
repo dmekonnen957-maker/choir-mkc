@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('performance_members', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('choir_id')->constrained()->cascadeOnDelete();
             $table->foreignId('performance_id')->constrained()->cascadeOnDelete();
             $table->foreignId('member_id')->constrained()->cascadeOnDelete();
             $table->boolean('expected')->default(true);

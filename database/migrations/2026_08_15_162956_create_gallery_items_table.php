@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('gallery_items', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('choir_id')->constrained()->cascadeOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
             $table->string('media_path');
@@ -17,7 +18,7 @@ return new class extends Migration
             $table->date('event_date')->nullable();
             $table->foreignId('performance_id')->nullable()->constrained()->nullOnDelete();
             $table->boolean('is_public')->default(false);
-            $table->foreignId('uploaded_by')->constrained('users');
+            $table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });
     }

@@ -10,10 +10,13 @@ return new class extends Migration
     {
         Schema::create('song_categories', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
+            $table->foreignId('choir_id')->nullable()->constrained('choirs')->nullOnDelete();
+            $table->string('name');
             $table->string('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
+
+            $table->unique(['choir_id', 'name']);
         });
     }
 

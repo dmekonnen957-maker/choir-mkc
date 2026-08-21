@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('performances', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('choir_id')->constrained()->cascadeOnDelete();
             $table->string('title');
             $table->date('date');
             $table->time('start_time');
@@ -22,9 +23,10 @@ return new class extends Migration
             $table->text('special_instructions')->nullable();
             $table->enum('status', ['scheduled', 'confirmed', 'completed', 'cancelled', 'postponed'])->default('scheduled');
             $table->boolean('is_public')->default(false);
-            $table->foreignId('created_by')->constrained('users');
-            $table->foreignId('updated_by')->nullable()->constrained('users');
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

@@ -10,12 +10,13 @@ return new class extends Migration
     {
         Schema::create('announcements', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('choir_id')->nullable()->constrained('choirs')->nullOnDelete();
             $table->string('title');
             $table->longText('content');
             $table->string('image_path')->nullable();
             $table->timestamp('published_at')->nullable();
             $table->boolean('is_published')->default(false);
-            $table->foreignId('created_by')->constrained('users');
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });
     }

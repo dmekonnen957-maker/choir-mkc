@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('rehearsals', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('choir_id')->constrained()->cascadeOnDelete();
             $table->string('title');
             $table->date('date');
             $table->time('start_time');
@@ -17,7 +18,7 @@ return new class extends Migration
             $table->string('location')->nullable();
             $table->text('description')->nullable();
             $table->enum('status', ['scheduled', 'completed', 'cancelled'])->default('scheduled');
-            $table->foreignId('created_by')->constrained('users');
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });
     }

@@ -10,10 +10,11 @@ return new class extends Migration
     {
         Schema::create('attendance_sessions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('rehearsal_id')->unique()->constrained()->cascadeOnDelete();
+            $table->foreignId('choir_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('rehearsal_id')->constrained()->cascadeOnDelete();
             $table->date('session_date');
             $table->text('notes')->nullable();
-            $table->foreignId('created_by')->constrained('users');
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });
     }

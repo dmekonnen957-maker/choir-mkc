@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('rehearsal_songs', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('choir_id')->constrained()->cascadeOnDelete();
             $table->foreignId('rehearsal_id')->constrained()->cascadeOnDelete();
             $table->foreignId('song_id')->constrained()->cascadeOnDelete();
             $table->text('notes')->nullable();

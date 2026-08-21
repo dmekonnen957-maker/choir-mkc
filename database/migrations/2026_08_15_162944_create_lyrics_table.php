@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('lyrics', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('choir_id')->constrained()->cascadeOnDelete();
             $table->foreignId('song_id')->constrained()->cascadeOnDelete();
             $table->string('language')->nullable();
             $table->longText('content');

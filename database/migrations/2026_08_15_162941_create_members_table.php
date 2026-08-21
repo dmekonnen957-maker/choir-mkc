@@ -10,9 +10,10 @@ return new class extends Migration
     {
         Schema::create('members', function (Blueprint $table) {
             $table->id();
-            $table->string('member_code')->unique();
+            $table->foreignId('choir_id')->constrained()->cascadeOnDelete();
+            $table->string('member_code');
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('voice_section_id')->constrained();
+            $table->foreignId('voice_section_id')->nullable()->constrained()->nullOnDelete();
             $table->string('first_name');
             $table->string('last_name');
             $table->string('photo_path')->nullable();
@@ -25,6 +26,9 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->boolean('is_public')->default(false);
             $table->timestamps();
+
+            $table->unique(['choir_id', 'member_code']);
+
             $table->softDeletes();
         });
     }
