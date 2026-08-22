@@ -1,7 +1,7 @@
 import { forwardRef, useId } from 'react';
 
 const Input = forwardRef(function Input(
-    { label, error, hint, id, className = '', required = false, trailing = null, ...props },
+    { label, error, hint, id, className = '', required = false, trailing = null, glass = false, ...props },
     ref,
 ) {
     const autoId = useId();
@@ -9,22 +9,25 @@ const Input = forwardRef(function Input(
     const errorId = `${inputId}-error`;
     const hintId = `${inputId}-hint`;
 
-    const base =
-        'w-full rounded-lg border bg-canvas px-3.5 py-2.5 text-ink-800 placeholder:text-ink-400 transition-colors focus:outline-none focus:ring-2';
+    const base = glass
+        ? 'w-full rounded-lg border bg-white/10 px-3.5 py-2.5 text-white placeholder:text-white/70 transition-colors focus:outline-none focus:ring-2'
+        : 'w-full rounded-lg border bg-canvas px-3.5 py-2.5 text-ink-800 placeholder:text-ink-400 transition-colors focus:outline-none focus:ring-2';
     const state = error
         ? 'border-red-400 focus:ring-red-300'
-        : 'border-ink-200 focus:border-navy-400 focus:ring-navy-200';
+        : glass
+            ? 'border-white/30 focus:border-blue-300 focus:ring-blue-300/50'
+            : 'border-ink-200 focus:border-blue-400 focus:ring-blue-200';
 
     return (
         <div className={className}>
             {label && (
                 <label
                     htmlFor={inputId}
-                    className="mb-1.5 block text-sm font-medium text-ink-700"
+                    className={`mb-1.5 block text-sm font-medium ${glass ? 'text-white/90' : 'text-ink-700'}`}
                 >
                     {label}
                     {required && (
-                        <span className="ml-0.5 text-gold-600" aria-hidden="true">
+                        <span className={`ml-0.5 ${glass ? 'text-blue-300' : 'text-blue-600'}`} aria-hidden="true">
                             *
                         </span>
                     )}
@@ -46,11 +49,11 @@ const Input = forwardRef(function Input(
                 )}
             </div>
             {error ? (
-                <p id={errorId} role="alert" className="mt-1.5 text-sm text-red-600">
+                <p id={errorId} role="alert" className={`mt-1.5 text-sm ${glass ? 'text-red-300' : 'text-red-600'}`}>
                     {error}
                 </p>
             ) : hint ? (
-                <p id={hintId} className="mt-1.5 text-sm text-ink-400">
+                <p id={hintId} className={`mt-1.5 text-sm ${glass ? 'text-white/60' : 'text-ink-400'}`}>
                     {hint}
                 </p>
             ) : null}

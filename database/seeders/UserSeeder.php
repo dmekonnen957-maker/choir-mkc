@@ -25,7 +25,7 @@ class UserSeeder extends Seeder
             'name' => 'Choir Leader',
             'email' => 'leader@choirmkc.com',
             'password' => Hash::make('password'),
-            'role' => 'leader',
+            'role' => 'team_leader',
             'email_verified_at' => now(),
         ]);
 

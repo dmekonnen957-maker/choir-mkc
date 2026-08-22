@@ -1,23 +1,23 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Music, Menu, X, LogIn, UserPlus, LayoutDashboard } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link, useLocation, NavLink } from 'react-router-dom';
+import { Music, Menu, X, LogIn, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const NAV_ITEMS = [
-    { label: 'Home', target: 'home' },
-    { label: 'About', target: 'about' },
-    { label: 'Choirs', target: 'choirs' },
-    { label: 'Songs', target: 'songs' },
-    { label: 'Performances', target: 'performances' },
-    { label: 'Contact', target: 'contact' },
+    { label: 'Home', to: '/' },
+    { label: 'Choirs', to: '/choirs' },
+    { label: 'Songs', to: '/songs' },
+    { label: 'Performances', to: '/performances' },
+    { label: 'History', to: '/history' },
 ];
 
-function scrollToSection(target) {
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const el = document.getElementById(target);
-    if (el) {
-        el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
-    }
+function navClass({ isActive }) {
+    return [
+        'text-sm font-medium transition-colors',
+        isActive
+            ? 'text-blue-700 relative after:absolute after:-bottom-1.5 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-blue-600'
+            : 'text-ink-600 hover:text-blue-700',
+    ].join(' ');
 }
 
 export default function Navbar() {
@@ -25,7 +25,6 @@ export default function Navbar() {
     const [open, setOpen] = useState(false);
     const { isAuthenticated } = useAuth();
     const location = useLocation();
-    const navigate = useNavigate();
 
     useEffect(() => {
         const onScroll = () => setScrolled(window.scrollY > 8);
@@ -38,54 +37,40 @@ export default function Navbar() {
         setOpen(false);
     }, [location.pathname]);
 
-    const handleNav = useCallback(
-        (target) => {
-            setOpen(false);
-            if (location.pathname !== '/') {
-                navigate('/');
-                setTimeout(() => scrollToSection(target), 80);
-            } else {
-                scrollToSection(target);
-            }
-        },
-        [location.pathname, navigate],
-    );
-
     return (
         <header
-            className={`sticky top-0 z-50 transition-colors duration-300 ${
+            className={`sticky top-0 z-50 transition-all duration-300 ${
                 scrolled
-                    ? 'border-b border-ink-100 bg-canvas/90 backdrop-blur'
-                    : 'bg-transparent'
+                    ? 'border-b border-blue-100 bg-white/90 shadow-sm backdrop-blur'
+                    : 'border-b border-transparent bg-white/0'
             }`}
         >
             <nav
                 className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8"
                 aria-label="Primary"
             >
-                <button
-                    type="button"
-                    onClick={() => handleNav('home')}
-                    className="flex items-center gap-2.5 focus-visible:outline-gold-500"
+                <Link
+                    to="/"
+                    className="flex items-center gap-2.5 rounded-lg focus-visible:outline-blue-600"
                 >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-navy-900 text-gold-400">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700 text-white">
                         <Music size={20} />
                     </span>
-                    <span className="text-lg font-semibold tracking-tight text-navy-900">
-                        CHOIR <span className="text-gold-600">MKC</span>
+                    <span className="text-lg font-semibold tracking-tight text-blue-900">
+                        CHOIR <span className="text-blue-600">MKC</span>
                     </span>
-                </button>
+                </Link>
 
                 <div className="hidden items-center gap-8 lg:flex">
                     {NAV_ITEMS.map((item) => (
-                        <button
-                            key={item.target}
-                            type="button"
-                            onClick={() => handleNav(item.target)}
-                            className="text-sm font-medium text-ink-600 transition-colors hover:text-navy-900"
+                        <NavLink
+                            key={item.to}
+                            to={item.to}
+                            end={item.to === '/'}
+                            className={navClass}
                         >
                             {item.label}
-                        </button>
+                        </NavLink>
                     ))}
                 </div>
 
@@ -93,28 +78,19 @@ export default function Navbar() {
                     {isAuthenticated ? (
                         <Link
                             to="/app"
-                            className="inline-flex items-center gap-2 rounded-lg bg-navy-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-navy-800"
+                            className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-800"
                         >
                             <LayoutDashboard size={16} />
                             Workspace
                         </Link>
                     ) : (
-                        <>
-                            <Link
-                                to="/login"
-                                className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-navy-800 transition-colors hover:bg-navy-50"
-                            >
-                                <LogIn size={16} />
-                                Login
-                            </Link>
-                            <Link
-                                to="/register"
-                                className="inline-flex items-center gap-2 rounded-lg bg-gold-500 px-4 py-2.5 text-sm font-medium text-navy-950 transition-colors hover:bg-gold-400"
-                            >
-                                <UserPlus size={16} />
-                                Register
-                            </Link>
-                        </>
+                        <Link
+                            to="/login"
+                            className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-800 focus-visible:outline-blue-600"
+                        >
+                            <LogIn size={16} />
+                            Sign In
+                        </Link>
                     )}
                 </div>
 
@@ -130,44 +106,40 @@ export default function Navbar() {
             </nav>
 
             {open && (
-                <div className="border-t border-ink-100 bg-canvas lg:hidden">
+                <div className="border-t border-blue-100 bg-white lg:hidden">
                     <div className="space-y-1 px-4 py-4">
                         {NAV_ITEMS.map((item) => (
-                            <button
-                                key={item.target}
-                                type="button"
-                                onClick={() => handleNav(item.target)}
-                                className="block w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-ink-700 hover:bg-navy-50"
+                            <NavLink
+                                key={item.to}
+                                to={item.to}
+                                end={item.to === '/'}
+                                className={({ isActive }) =>
+                                    [
+                                        'block rounded-lg px-3 py-2.5 text-sm font-medium',
+                                        isActive ? 'bg-blue-50 text-blue-700' : 'text-ink-700 hover:bg-blue-50',
+                                    ].join(' ')
+                                }
                             >
                                 {item.label}
-                            </button>
+                            </NavLink>
                         ))}
-                        <div className="mt-3 flex flex-col gap-2 border-t border-ink-100 pt-4">
+                        <div className="mt-3 border-t border-blue-100 pt-4">
                             {isAuthenticated ? (
                                 <Link
                                     to="/app"
-                                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-navy-900 px-4 py-2.5 text-sm font-medium text-white"
+                                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-medium text-white"
                                 >
                                     <LayoutDashboard size={16} />
                                     Workspace
                                 </Link>
                             ) : (
-                                <>
-                                    <Link
-                                        to="/login"
-                                        className="inline-flex items-center justify-center gap-2 rounded-lg border border-navy-200 px-4 py-2.5 text-sm font-medium text-navy-800 hover:bg-navy-50"
-                                    >
-                                        <LogIn size={16} />
-                                        Login
-                                    </Link>
-                                    <Link
-                                        to="/register"
-                                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-gold-500 px-4 py-2.5 text-sm font-medium text-navy-950 hover:bg-gold-400"
-                                    >
-                                        <UserPlus size={16} />
-                                        Register
-                                    </Link>
-                                </>
+                                <Link
+                                    to="/login"
+                                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-medium text-white"
+                                >
+                                    <LogIn size={16} />
+                                    Sign In
+                                </Link>
                             )}
                         </div>
                     </div>

@@ -22,7 +22,7 @@ class AuthController extends ApiController
 
         return $this->ok([
             'token' => $token,
-            'user' => new UserResource($user->load('roles', 'permissions')),
+            'user' => new UserResource($user->load('roles', 'permissions', 'choirs')),
         ], 'Login successful');
     }
 
@@ -32,6 +32,7 @@ class AuthController extends ApiController
             'name' => trim($request->first_name.' '.$request->last_name),
             'email' => $request->email,
             'password' => $request->password,
+            'role' => 'member',
         ]);
 
         try {
@@ -58,6 +59,6 @@ class AuthController extends ApiController
 
     public function me(Request $request): \Illuminate\Http\JsonResponse
     {
-        return $this->ok(new UserResource($request->user()->load('roles', 'permissions')));
+        return $this->ok(new UserResource($request->user()->load('roles', 'permissions', 'choirs')));
     }
 }

@@ -105,4 +105,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/reports', [ReportController::class, 'index']);
         Route::get('/reports/{report}', [ReportController::class, 'show']);
     });
+
+    // Member-only area. Choir context is derived from the authenticated user,
+    // never from request input, so a member cannot reach another choir.
+    Route::middleware(['auth:sanctum', 'member'])->prefix('member')->group(function () {
+        Route::get('/dashboard', [MemberController::class, 'dashboard']);
+        Route::get('/choir', [MemberController::class, 'choir']);
+        Route::get('/profile', [MemberController::class, 'profile']);
+        Route::match(['PUT', 'PATCH'], '/profile', [MemberController::class, 'updateProfile']);
+        Route::get('/notifications', [MemberController::class, 'notifications']);
+    });
 });

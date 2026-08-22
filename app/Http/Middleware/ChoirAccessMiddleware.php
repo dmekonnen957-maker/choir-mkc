@@ -46,6 +46,19 @@ class ChoirAccessMiddleware
             }
         }
 
+        // Write protection: only leaders/admins may mutate choir data, even when assigned.
+        $isWrite = in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'], true);
+        $canModify = $user->hasAnyRole(['super-admin', 'admin', 'team_leader'])
+            || $user->can('choirs.manage');
+
+        if ($isWrite && ! $canModify) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to modify this choir.',
+                'errors' => null,
+            ], 403);
+        }
+
         return $next($request);
     }
 }

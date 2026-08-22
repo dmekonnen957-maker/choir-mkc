@@ -67,14 +67,29 @@ export function AuthProvider({ children }) {
         }
     }, []);
 
+    const roles = user?.roles ?? [];
+    const role = roles.includes('super-admin') || roles.includes('admin')
+        ? 'admin'
+        : roles.includes('team_leader')
+            ? 'team_leader'
+            : 'member';
+
+    const choirs = user?.choirs ?? [];
+    const primaryChoir = choirs.find((c) => c.status === 'active') ?? choirs[0] ?? null;
+
     const value = {
         user,
+        roles,
+        role,
+        choirs,
+        primaryChoir,
         loading,
         isAuthenticated,
         login,
         register,
         logout,
         refreshUser,
+        hasRole: (r) => roles.includes(r),
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

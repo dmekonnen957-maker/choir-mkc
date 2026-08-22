@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'choir.access' => \App\Http\Middleware\ChoirAccessMiddleware::class,
+            'member' => \App\Http\Middleware\EnsureMemberMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

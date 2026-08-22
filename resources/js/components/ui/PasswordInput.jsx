@@ -3,7 +3,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import Input from './Input';
 
 const PasswordInput = forwardRef(function PasswordInput(
-    { label, error, hint, id, className = '', required = false, ...props },
+    { label, error, hint, id, className = '', required = false, glass = false, ...props },
     ref,
 ) {
     const [visible, setVisible] = useState(false);
@@ -18,11 +18,12 @@ const PasswordInput = forwardRef(function PasswordInput(
             required={required}
             type={visible ? 'text' : 'password'}
             className={className}
+            glass={glass}
             trailing={
                 <button
                     type="button"
                     onClick={() => setVisible((v) => !v)}
-                    className="flex items-center text-ink-400 transition-colors hover:text-ink-600"
+                    className={`flex items-center transition-colors ${glass ? 'text-white/70 hover:text-white' : 'text-ink-400 hover:text-ink-600'}`}
                     aria-label={visible ? 'Hide password' : 'Show password'}
                     aria-pressed={visible}
                     tabIndex={-1}

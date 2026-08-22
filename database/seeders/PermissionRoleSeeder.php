@@ -40,9 +40,16 @@ class PermissionRoleSeeder extends Seeder
             return $role;
         };
 
+        // Rename the legacy "choir-manager" role to the canonical "team_leader".
+        $legacyManager = Role::where('name', 'choir-manager')->where('guard_name', $guard)->first();
+        if ($legacyManager) {
+            $legacyManager->name = 'team_leader';
+            $legacyManager->save();
+        }
+
         $make('super-admin', $this->permissions);
         $make('admin', $this->permissions);
-        $make('choir-manager', [
+        $make('team_leader', [
             'choirs.view', 'choirs.view.all', 'choirs.update',
             'members.view', 'members.view.all', 'members.manage',
             'songs.view', 'songs.view.all', 'songs.manage',
@@ -59,17 +66,18 @@ class PermissionRoleSeeder extends Seeder
             'announcements.view', 'gallery.view', 'notifications.view',
         ]);
 
+        // Sync (replace) roles so re-seeding corrects any previously misassigned roles.
         $roles = [
             1 => 'super-admin',
-            2 => 'admin',
-            3 => 'choir-manager',
+            2 => 'team_leader',
+            3 => 'member',
         ];
 
         foreach ($roles as $userId => $roleName) {
             $user = User::find($userId);
             if ($user) {
                 $role = Role::findByName($roleName, $guard);
-                $user->assignRole($role);
+                $user->syncRoles([$role->name]);
             }
         }
     }

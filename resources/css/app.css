@@ -3,29 +3,20 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
-    --color-navy-50: #f2f6fc;
-    --color-navy-100: #dde6f3;
-    --color-navy-200: #b7c8e3;
-    --color-navy-300: #88a3cf;
-    --color-navy-400: #5880b8;
-    --color-navy-500: #3a629c;
-    --color-navy-600: #2c4d80;
-    --color-navy-700: #243e68;
-    --color-navy-800: #1d3253;
-    --color-navy-900: #0b1f3a;
-    --color-navy-950: #071527;
+    /* ---- BLUE + WHITE DESIGN TOKENS (landing system) ---- */
+    --color-blue-50: #eff6ff;
+    --color-blue-100: #dbeafe;
+    --color-blue-200: #bfdbfe;
+    --color-blue-300: #93c5fd;
+    --color-blue-400: #60a5fa;
+    --color-blue-500: #3b82f6;
+    --color-blue-600: #2563eb; /* royal / medium blue */
+    --color-blue-700: #1d4ed8;
+    --color-blue-800: #1e40af;
+    --color-blue-900: #1e3a8a; /* deep blue */
+    --color-blue-950: #172554; /* deepest blue */
 
-    --color-gold-50: #fbf7ec;
-    --color-gold-100: #f6ecd0;
-    --color-gold-200: #ecd79e;
-    --color-gold-300: #e0bd68;
-    --color-gold-400: #d4a83f;
-    --color-gold-500: #c79a2c;
-    --color-gold-600: #a87c20;
-    --color-gold-700: #855e1b;
-    --color-gold-800: #6f4e1c;
-    --color-gold-900: #5f421c;
-
+    /* Text / neutral (dark blue + dark neutral) */
     --color-ink-50: #f6f7f8;
     --color-ink-100: #eceef1;
     --color-ink-200: #d6dae0;
@@ -37,8 +28,11 @@
     --color-ink-800: #2b313c;
     --color-ink-900: #1c2026;
 
-    --color-surface: #fafaf8;
+    --color-surface: #f5f8fd;
     --color-canvas: #ffffff;
+
+    /* ---- timing ---- */
+    --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @layer base {
@@ -53,15 +47,64 @@
     }
 
     body {
-        @apply bg-surface text-ink-800 antialiased;
+        @apply bg-surface text-ink-800 antialiased overflow-x-hidden;
     }
 
     :focus-visible {
-        outline: 2px solid var(--color-gold-500);
+        outline: 2px solid var(--color-blue-600);
         outline-offset: 2px;
+        border-radius: 4px;
+    }
+
+    ::selection {
+        background: var(--color-blue-200);
+        color: var(--color-blue-950);
     }
 }
 
+/* =========================================================
+   SCROLL REVEAL ANIMATIONS
+   ========================================================= */
+.reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+        opacity 0.9s var(--ease-smooth),
+        transform 0.9s var(--ease-smooth);
+    will-change: opacity, transform;
+}
+
+.reveal.reveal-left {
+    transform: translateX(-40px);
+}
+
+.reveal.reveal-right {
+    transform: translateX(40px);
+}
+
+.reveal.reveal-scale {
+    transform: scale(0.94);
+}
+
+.reveal.is-visible {
+    opacity: 1;
+    transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal,
+    .reveal.reveal-left,
+    .reveal.reveal-right,
+    .reveal.reveal-scale {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+}
+
+/* =========================================================
+   KEYFRAMES
+   ========================================================= */
 @keyframes fade-up {
     from {
         opacity: 0;
@@ -82,17 +125,135 @@
     }
 }
 
+@keyframes fade-left {
+    from {
+        opacity: 0;
+        transform: translateX(-32px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes fade-right {
+    from {
+        opacity: 0;
+        transform: translateX(32px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes float-soft {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes blob-drift {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+    50% {
+        transform: translate(20px, -25px) scale(1.08);
+    }
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+}
+
+@keyframes modal-in {
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes backdrop-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
 .animate-fade-up {
     animation: fade-up 0.7s ease-out both;
 }
-
 .animate-fade-in {
     animation: fade-in 0.8s ease-out both;
+}
+.animate-float-soft {
+    animation: float-soft 6s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
     .animate-fade-up,
-    .animate-fade-in {
+    .animate-fade-in,
+    .animate-float-soft {
         animation: none !important;
     }
+}
+
+/* =========================================================
+   MODAL / DRAWER
+   ========================================================= */
+.modal-backdrop {
+    animation: backdrop-in 0.3s ease both;
+}
+.modal-panel {
+    animation: modal-in 0.4s var(--ease-smooth) both;
+}
+@media (prefers-reduced-motion: reduce) {
+    .modal-backdrop,
+    .modal-panel {
+        animation: none !important;
+    }
+}
+
+/* Thin scrollbar inside lyric panel */
+.lyric-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-blue-200) transparent;
+}
+.lyric-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+.lyric-scroll::-webkit-scrollbar-thumb {
+    background: var(--color-blue-200);
+    border-radius: 9999px;
+}
+
+/* Gradient text helper */
+.text-gradient-blue {
+    background: linear-gradient(120deg, var(--color-blue-700), var(--color-blue-400));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+/* =========================================================
+   GLASSMORPHISM PANEL (login)
+   ========================================================= */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.12);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    border-radius: 24px;
 }

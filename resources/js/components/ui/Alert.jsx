@@ -2,9 +2,9 @@ import { AlertCircle, CheckCircle2, Info, AlertTriangle } from 'lucide-react';
 
 const VARIANTS = {
     error: { icon: AlertCircle, class: 'border-red-200 bg-red-50 text-red-700' },
-    success: { icon: CheckCircle2, class: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
-    info: { icon: Info, class: 'border-navy-200 bg-navy-50 text-navy-800' },
-    warning: { icon: AlertTriangle, class: 'border-gold-200 bg-gold-50 text-gold-800' },
+    success: { icon: CheckCircle2, class: 'border-blue-200 bg-blue-50 text-blue-700' },
+    info: { icon: Info, class: 'border-blue-200 bg-blue-50 text-blue-700' },
+    warning: { icon: AlertTriangle, class: 'border-blue-200 bg-blue-50 text-blue-700' },
 };
 
 export default function Alert({ variant = 'info', title, children, className = '' }) {

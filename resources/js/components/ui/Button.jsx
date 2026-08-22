@@ -3,11 +3,11 @@ import LoadingSpinner from './LoadingSpinner';
 
 const VARIANTS = {
     primary:
-        'bg-navy-900 text-white hover:bg-navy-800 focus-visible:outline-navy-900 shadow-sm',
-    gold: 'bg-gold-500 text-navy-950 hover:bg-gold-400 focus-visible:outline-gold-500 shadow-sm',
+        'bg-blue-600 text-white hover:bg-blue-700 focus-visible:outline-blue-600 shadow-sm',
+    gold: 'bg-blue-100 text-blue-700 hover:bg-blue-200 focus-visible:outline-blue-300 shadow-sm',
     outline:
-        'border border-navy-200 bg-canvas text-navy-800 hover:bg-navy-50 focus-visible:outline-navy-300',
-    ghost: 'text-navy-700 hover:bg-navy-50 focus-visible:outline-navy-300',
+        'border border-blue-200 bg-canvas text-blue-800 hover:bg-blue-50 focus-visible:outline-blue-300',
+    ghost: 'text-blue-700 hover:bg-blue-50 focus-visible:outline-blue-300',
     danger: 'bg-red-600 text-white hover:bg-red-500 focus-visible:outline-red-600 shadow-sm',
 };
 
