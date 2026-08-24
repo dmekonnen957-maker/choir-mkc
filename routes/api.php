@@ -29,6 +29,33 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VoiceSectionController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/_debug_guard', function (\Illuminate\Http\Request $request) {
+    $out = [];
+    try {
+        $user = \Illuminate\Support\Facades\Auth::guard('sanctum')->user();
+        $out['authenticated_user'] = $user ? $user->email : null;
+        if ($user) {
+            $out['policy_for_role'] = get_class(\Illuminate\Support\Facades\Gate::getPolicyFor(\Spatie\Permission\Models\Role::class));
+            $inspect = \Illuminate\Support\Facades\Gate::inspect('viewAny', \Spatie\Permission\Models\Role::class);
+            $out['inspect_allowed'] = $inspect->allowed();
+            $out['inspect_message'] = $inspect->message();
+            $out['model_api'] = \Spatie\Permission\Guard::getModelForGuard('api');
+            $out['user_roles'] = $user->getRoleNames();
+            $out['hasAnyRole_admin'] = $user->hasAnyRole(['super-admin','admin']);
+            $out['hasAnyRole_admin_api'] = $user->hasAnyRole(['super-admin','admin'], 'api');
+            $out['can_users_view'] = $user->can('users.view');
+            $out['can_roles_view'] = $user->can('roles.view');
+            $out['can_roles_view_api'] = $user->can('roles.view', 'api');
+            $out['default_guard'] = config('auth.defaults.guard');
+            $out['user_guard'] = $user->guard_name ?? 'n/a';
+        }
+    } catch (\Throwable $e) {
+        $out['error'] = $e->getMessage();
+        $out['trace'] = array_slice(explode("\n", $e->getTraceAsString()), 0, 12);
+    }
+    return response()->json($out);
+});
+
 /*
 | Multi-choir, token-authenticated API.
 | Security: auth:sanctum required, choir.access enforces choir assignment,

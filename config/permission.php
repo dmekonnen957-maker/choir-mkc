@@ -31,10 +31,20 @@ return [
         'role' => Role::class,
 
         /*
+         * When using the "HasRoles" trait (or the package's role/user relations),
+         * we need to know which Eloquent model represents your application users.
+         * This is required so Role::users() / Permission::users() resolve the
+         * correct model class.
+         */
+
+        'user' => \App\Models\User::class,
+
+        /*
          * When using the "Teams" feature from this package, we need to know which
          * Eloquent model should be used to retrieve your teams. Of course, it
          * is often just the "Team" model but you may use whatever you like.
          */
+
         'team' => null,
 
         /*
