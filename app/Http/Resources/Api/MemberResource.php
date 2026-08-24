@@ -26,6 +26,12 @@ class MemberResource extends JsonResource
             'bio' => $this->bio,
             'is_public' => $this->is_public,
             'voice_section' => new VoiceSectionResource($this->whenLoaded('voiceSection')),
+            'choir' => $this->whenLoaded('choir', fn () => $this->choir ? [
+                'id' => $this->choir->id,
+                'name' => $this->choir->name,
+                'slug' => $this->choir->slug ?? null,
+            ] : null),
+            'user_role' => $this->whenLoaded('user', fn () => $this->user?->role),
             'created_at' => $this->created_at,
         ];
     }

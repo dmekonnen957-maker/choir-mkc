@@ -15,11 +15,15 @@ class StoreUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string',
-            'email' => ['required', 'email', Rule::unique('users', 'email')],
-            'password' => 'required|min:8',
-            'role' => 'nullable|string',
-            'roles' => 'nullable|array',
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'password' => ['required', 'string', 'min:8'],
+            'password_confirmation' => ['nullable', 'string', 'same:password'],
+            'role' => ['nullable', 'string', Rule::in(['member', 'team_leader', 'admin', 'super-admin'])],
+            'roles' => ['nullable', 'array'],
+            'status' => ['nullable', 'string', Rule::in(['pending', 'approved', 'rejected'])],
+            'choir_id' => ['nullable', 'integer', 'exists:choirs,id'],
         ];
     }
 }

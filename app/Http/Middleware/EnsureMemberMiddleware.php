@@ -26,6 +26,18 @@ class EnsureMemberMiddleware
             ], 401);
         }
 
+        if (! $user->isApproved()) {
+            $msg = $user->isPending()
+                ? 'Your account is waiting for administrator approval.'
+                : 'Your account is not approved to access the member area.';
+
+            return response()->json([
+                'success' => false,
+                'message' => $msg,
+                'errors' => null,
+            ], 403);
+        }
+
         if (! $user->hasRole('member', 'api')) {
             return response()->json([
                 'success' => false,

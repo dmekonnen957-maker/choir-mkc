@@ -17,26 +17,31 @@ class UserPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->can('users.view');
+        return $user->can('users.view') || $user->can('users.manage');
     }
 
     public function view(User $user, UserModel $model): bool
     {
-        return $user->can('users.view');
+        return $user->can('users.view') || $user->can('users.manage');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('users.manage');
+        return $user->can('users.create') || $user->can('users.manage');
     }
 
     public function update(User $user, UserModel $model): bool
     {
-        return $user->can('users.manage');
+        return $user->can('users.edit') || $user->can('users.manage');
     }
 
     public function delete(User $user, UserModel $model): bool
     {
-        return $user->can('users.manage');
+        return $user->can('users.delete') || $user->can('users.manage');
+    }
+
+    public function approve(User $user, UserModel $model): bool
+    {
+        return $user->can('users.approve') || $user->can('users.manage');
     }
 }

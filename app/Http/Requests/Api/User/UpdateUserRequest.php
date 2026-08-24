@@ -18,11 +18,15 @@ class UpdateUserRequest extends FormRequest
         $id = $this->route('user') instanceof User ? $this->route('user')->id : $this->route('user');
 
         return [
-            'name' => 'required|string',
-            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($id)],
-            'password' => 'nullable|min:8',
-            'role' => 'nullable|string',
-            'roles' => 'nullable|array',
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'email' => ['sometimes', 'required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($id)],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'password' => ['nullable', 'string', 'min:8'],
+            'role' => ['nullable', 'string', Rule::in(['member', 'team_leader', 'admin', 'super-admin'])],
+            'roles' => ['nullable', 'array'],
+            'status' => ['nullable', 'string', Rule::in(['pending', 'approved', 'rejected'])],
+            'choir_id' => ['nullable', 'integer', 'exists:choirs,id'],
+            'rejection_reason' => ['nullable', 'string', 'max:1000'],
         ];
     }
 }

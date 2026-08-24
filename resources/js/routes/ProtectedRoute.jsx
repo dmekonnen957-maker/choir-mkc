@@ -19,6 +19,15 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     }
 
     if (allowedRoles && !allowedRoles.includes(role)) {
+        if (role === 'admin') {
+            return <Navigate to="/admin/dashboard" replace />;
+        }
+        if (role === 'team_leader') {
+            return <Navigate to="/team-leader/dashboard" replace />;
+        }
+        if (role === 'member') {
+            return <Navigate to="/member/dashboard" replace />;
+        }
         return <Navigate to="/" replace />;
     }
 

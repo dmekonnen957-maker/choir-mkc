@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { User as UserIcon, Church, ShieldCheck } from 'lucide-react';
+import { User as UserIcon, Church, ShieldCheck, Phone } from 'lucide-react';
 import { api } from '../../axios';
 import { useAuth } from '../../context/AuthContext';
 import Input from '../../components/ui/Input';
@@ -7,6 +7,18 @@ import PasswordInput from '../../components/ui/PasswordInput';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+
+const ROLE_LABELS = {
+    member: 'Member',
+    team_leader: 'Team Leader',
+    admin: 'Admin',
+    'super-admin': 'Super Admin',
+};
+
+function asset(path) {
+    if (!path) return null;
+    return path.startsWith('http') || path.startsWith('/') ? path : `/storage/${path}`;
+}
 
 function initials(name) {
     return (name || '?')
@@ -18,8 +30,9 @@ function initials(name) {
 }
 
 export default function MemberProfile() {
-    const { user, primaryChoir, refreshUser } = useAuth();
+    const { user, primaryChoir, role, refreshUser } = useAuth();
     const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', password_confirmation: '' });
+    const [member, setMember] = useState(null);
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -31,6 +44,7 @@ export default function MemberProfile() {
             .get('/member/profile')
             .then((res) => {
                 const d = res.data.data;
+                setMember(d.member);
                 setForm((prev) => ({
                     ...prev,
                     name: d.user.name,
@@ -84,14 +98,21 @@ export default function MemberProfile() {
         );
     }
 
+    const photoUrl = asset(member?.photo_path);
+    const roleLabel = ROLE_LABELS[role] ?? 'Member';
+
     return (
         <div className="space-y-6">
             <h1 className="text-2xl font-bold text-ink-900">My Profile</h1>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 <div className="rounded-2xl border border-blue-100 bg-canvas p-6 text-center shadow-sm">
-                    <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-blue-100 text-3xl font-bold text-blue-700">
-                        {initials(user?.name)}
+                    <div className="mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-3xl font-bold text-blue-700">
+                        {photoUrl ? (
+                            <img src={photoUrl} alt={user?.name} className="h-full w-full object-cover" />
+                        ) : (
+                            initials(user?.name)
+                        )}
                     </div>
                     <p className="mt-4 text-lg font-semibold text-ink-900">{user?.name}</p>
                     <p className="text-sm text-ink-500">{user?.email}</p>
@@ -99,12 +120,20 @@ export default function MemberProfile() {
                     <div className="mt-4 space-y-2 text-left text-sm">
                         <div className="flex items-center gap-2 rounded-xl bg-surface px-3 py-2 text-ink-600">
                             <Church size={16} className="text-blue-500" />
-                            <span>{primaryChoir ? primaryChoir.name : 'No choir assigned'}</span>
+                            <span className="truncate">
+                                {primaryChoir ? primaryChoir.name : 'No choir assigned'}
+                            </span>
                         </div>
                         <div className="flex items-center gap-2 rounded-xl bg-surface px-3 py-2 text-ink-600">
                             <ShieldCheck size={16} className="text-blue-500" />
-                            <span>Member (read-only)</span>
+                            <span>{roleLabel} (read-only)</span>
                         </div>
+                        {member?.phone && (
+                            <div className="flex items-center gap-2 rounded-xl bg-surface px-3 py-2 text-ink-600">
+                                <Phone size={16} className="text-blue-500" />
+                                <span className="truncate">{member.phone}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 

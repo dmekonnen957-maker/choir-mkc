@@ -16,24 +16,33 @@ class UserSeeder extends Seeder
         $admin = User::create([
             'name' => 'Administrator',
             'email' => 'admin@choirmkc.com',
+            'phone' => '0911000001',
             'password' => Hash::make('password'),
             'role' => 'admin',
+            'status' => 'approved',
+            'approved_at' => now(),
             'email_verified_at' => now(),
         ]);
 
         $leader = User::create([
             'name' => 'Choir Leader',
             'email' => 'leader@choirmkc.com',
+            'phone' => '0911000002',
             'password' => Hash::make('password'),
             'role' => 'team_leader',
+            'status' => 'approved',
+            'approved_at' => now(),
             'email_verified_at' => now(),
         ]);
 
         $member = User::create([
             'name' => 'Choir Member',
             'email' => 'member@choirmkc.com',
+            'phone' => '0911000003',
             'password' => Hash::make('password'),
             'role' => 'member',
+            'status' => 'approved',
+            'approved_at' => now(),
             'email_verified_at' => now(),
         ]);
 

@@ -15,10 +15,12 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'first_name' => ['required', 'string', 'max:100'],
-            'last_name' => ['required', 'string', 'max:100'],
+            'name' => ['nullable', 'string', 'max:200'],
+            'first_name' => ['nullable', 'string', 'max:100'],
+            'last_name' => ['nullable', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:30'],
+            'choir_id' => ['required', 'integer', 'exists:choirs,id'],
             'password' => ['required', 'string', Password::min(8)],
             'password_confirmation' => ['required', 'string', 'same:password'],
         ];
@@ -28,6 +30,8 @@ class RegisterRequest extends FormRequest
     {
         return [
             'email.unique' => 'This email address is already registered.',
+            'choir_id.required' => 'Please select a choir.',
+            'choir_id.exists' => 'The selected choir is invalid.',
             'password_confirmation.same' => 'Password confirmation does not match.',
         ];
     }

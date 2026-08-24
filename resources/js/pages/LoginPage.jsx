@@ -30,17 +30,24 @@ export default function LoginPage() {
         try {
             const user = await login(form, remember);
             const roles = user?.roles ?? [];
-            const destination = roles.includes('super-admin') || roles.includes('admin')
-                ? '/admin/dashboard'
-                : roles.includes('team_leader')
-                    ? '/team-leader/dashboard'
-                    : '/member/dashboard';
+            const role = user?.role;
+            const destination =
+                roles.includes('super-admin') || roles.includes('admin') || role === 'admin' || role === 'super-admin'
+                    ? '/admin/dashboard'
+                    : roles.includes('team_leader') || role === 'team_leader'
+                        ? '/team-leader/dashboard'
+                        : '/member/dashboard';
             navigate(destination, { replace: true });
         } catch (err) {
             if (err.errors) {
                 setErrors(err.errors);
             }
-            setAlert({ variant: 'error', message: err.message });
+            const isPending = err.status === 403 && (err.message?.includes('approval') || err.message?.includes('waiting'));
+            setAlert({
+                variant: isPending ? 'warning' : 'error',
+                message: err.message || 'Login failed. Please check your credentials.',
+                isPending,
+            });
             setSubmitting(false);
         }
     };

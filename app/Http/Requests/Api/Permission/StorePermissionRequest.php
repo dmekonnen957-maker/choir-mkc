@@ -1,12 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Api\Role;
+namespace App\Http\Requests\Api\Permission;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Spatie\Permission\Models\Role;
 
-class UpdateRoleRequest extends FormRequest
+class StorePermissionRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -15,18 +14,15 @@ class UpdateRoleRequest extends FormRequest
 
     public function rules(): array
     {
-        $id = $this->route('role') instanceof Role ? $this->route('role')->id : $this->route('role');
-
         return [
             'name' => [
                 'required',
                 'string',
                 'max:100',
-                Rule::unique('roles', 'name')->where('guard_name', 'api')->ignore($id),
+                Rule::unique('permissions', 'name')->where('guard_name', 'api'),
             ],
             'description' => ['nullable', 'string', 'max:255'],
-            'permissions' => ['nullable', 'array'],
-            'permissions.*' => ['string'],
+            'group' => ['nullable', 'string', 'max:50'],
         ];
     }
 }

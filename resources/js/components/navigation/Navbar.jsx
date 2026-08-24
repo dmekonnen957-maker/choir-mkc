@@ -23,8 +23,14 @@ function navClass({ isActive }) {
 export default function Navbar() {
     const [scrolled, setScrolled] = useState(false);
     const [open, setOpen] = useState(false);
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, role } = useAuth();
     const location = useLocation();
+
+    const dashboardPath = role === 'admin'
+        ? '/admin/dashboard'
+        : role === 'team_leader'
+            ? '/team-leader/dashboard'
+            : '/member/dashboard';
 
     useEffect(() => {
         const onScroll = () => setScrolled(window.scrollY > 8);
@@ -77,11 +83,11 @@ export default function Navbar() {
                 <div className="hidden items-center gap-3 lg:flex">
                     {isAuthenticated ? (
                         <Link
-                            to="/app"
+                            to={dashboardPath}
                             className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-800"
                         >
                             <LayoutDashboard size={16} />
-                            Workspace
+                            Dashboard
                         </Link>
                     ) : (
                         <Link
@@ -126,11 +132,11 @@ export default function Navbar() {
                         <div className="mt-3 border-t border-blue-100 pt-4">
                             {isAuthenticated ? (
                                 <Link
-                                    to="/app"
+                                    to={dashboardPath}
                                     className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-medium text-white"
                                 >
                                     <LayoutDashboard size={16} />
-                                    Workspace
+                                    Dashboard
                                 </Link>
                             ) : (
                                 <Link

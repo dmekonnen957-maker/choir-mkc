@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\AttendanceController;
@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\Api\LyricController;
 use App\Http\Controllers\Api\MemberController;
+use App\Http\Controllers\Api\AdminMemberController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PerformanceController;
 use App\Http\Controllers\Api\PerformanceMemberController;
@@ -93,9 +94,12 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
-    Route::middleware(['role:super-admin,admin'])->prefix('admin')->scopeBindings()->group(function () {
+    Route::middleware(['role:admin,api'])->prefix('admin')->scopeBindings()->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'overview']);
+        Route::post('/users/{user}/approve', [UserController::class, 'approve']);
+        Route::post('/users/{user}/reject', [UserController::class, 'reject']);
         Route::apiResource('users', UserController::class);
+        Route::get('/members', [AdminMemberController::class, 'index'])->middleware('permission:members.view');
         Route::apiResource('roles', RoleController::class);
         Route::apiResource('permissions', PermissionController::class);
         Route::get('/audit-logs', [AuditLogController::class, 'index']);

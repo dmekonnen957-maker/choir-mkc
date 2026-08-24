@@ -18,7 +18,8 @@ export function AuthProvider({ children }) {
 
         try {
             const response = await api.get('/auth/me');
-            setUser(response.data.data.user);
+            const userData = response.data?.data?.user || response.data?.data;
+            setUser(userData);
             setIsAuthenticated(true);
         } catch {
             setUser(null);
@@ -46,13 +47,7 @@ export function AuthProvider({ children }) {
 
     const register = useCallback(async (payload) => {
         const response = await api.post('/auth/register', payload);
-        const { token, user: userData } = response.data.data;
-
-        setToken(token, true);
-        setUser(userData);
-        setIsAuthenticated(true);
-
-        return userData;
+        return response.data;
     }, []);
 
     const logout = useCallback(async () => {
@@ -68,19 +63,25 @@ export function AuthProvider({ children }) {
     }, []);
 
     const roles = user?.roles ?? [];
-    const role = roles.includes('super-admin') || roles.includes('admin')
+    const role = roles.includes('super-admin') || roles.includes('admin') || user?.role === 'admin' || user?.role === 'super-admin'
         ? 'admin'
-        : roles.includes('team_leader')
+        : roles.includes('team_leader') || user?.role === 'team_leader'
             ? 'team_leader'
             : 'member';
 
+    const permissions = user?.permissions ?? [];
     const choirs = user?.choirs ?? [];
-    const primaryChoir = choirs.find((c) => c.status === 'active') ?? choirs[0] ?? null;
+    const primaryChoir = user?.choir ?? choirs.find((c) => c.status === 'active') ?? choirs[0] ?? null;
+
+    const can = useCallback((permission) => {
+        return permissions.includes(permission);
+    }, [permissions]);
 
     const value = {
         user,
         roles,
         role,
+        permissions,
         choirs,
         primaryChoir,
         loading,
@@ -89,7 +90,8 @@ export function AuthProvider({ children }) {
         register,
         logout,
         refreshUser,
-        hasRole: (r) => roles.includes(r),
+        hasRole: (r) => roles.includes(r) || user?.role === r,
+        can,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

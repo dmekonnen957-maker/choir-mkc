@@ -4,6 +4,11 @@ import { api } from '../../axios';
 import EmptyState from '../../components/member/EmptyState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
+function asset(path) {
+    if (!path) return null;
+    return path.startsWith('http') || path.startsWith('/') ? path : `/storage/${path}`;
+}
+
 function initials(name) {
     return (name || '?')
         .split(' ')
@@ -56,6 +61,8 @@ export default function MemberChoir() {
     }
 
     const { choir, members, leader } = data;
+    const [logoFailed, setLogoFailed] = useState(false);
+    const logoUrl = asset(choir.logo_path);
 
     return (
         <div className="space-y-6">
@@ -64,8 +71,17 @@ export default function MemberChoir() {
             <div className="overflow-hidden rounded-2xl border border-blue-100 bg-canvas shadow-sm">
                 <div className="h-28 bg-gradient-to-r from-blue-600 to-blue-400" />
                 <div className="px-6 pb-6">
-                    <div className="-mt-10 mb-4 flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-canvas bg-blue-100 text-2xl font-bold text-blue-700 shadow">
-                        {initials(choir.name)}
+                    <div className="-mt-10 mb-4 flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border-4 border-canvas bg-blue-100 text-2xl font-bold text-blue-700 shadow">
+                        {logoUrl && !logoFailed ? (
+                            <img
+                                src={logoUrl}
+                                alt={choir.name}
+                                className="h-full w-full object-cover"
+                                onError={() => setLogoFailed(true)}
+                            />
+                        ) : (
+                            initials(choir.name)
+                        )}
                     </div>
                     <h2 className="text-xl font-bold text-ink-900">{choir.name}</h2>
                     {choir.church_name && (
