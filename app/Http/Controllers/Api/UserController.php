@@ -219,7 +219,17 @@ class UserController extends ApiController
             return $this->error('Cannot delete yourself', null, 422);
         }
 
-        $user->delete();
+        try {
+            $user->tokens()->delete();
+            $user->delete();
+        } catch (\Illuminate\Database\QueryException $e) {
+            return $this->error(
+                'This user cannot be deleted because they have related records (choirs, members, or activity logs). '
+                    . 'Deactivate the user instead, or remove those records first.',
+                null,
+                422
+            );
+        }
 
         return $this->ok(null, 'User deleted successfully');
     }

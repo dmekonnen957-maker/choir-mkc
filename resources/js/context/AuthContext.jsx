@@ -74,8 +74,9 @@ export function AuthProvider({ children }) {
     const primaryChoir = user?.choir ?? choirs.find((c) => c.status === 'active') ?? choirs[0] ?? null;
 
     const can = useCallback((permission) => {
+        if (role === 'admin') return true;
         return permissions.includes(permission);
-    }, [permissions]);
+    }, [permissions, role]);
 
     const value = {
         user,

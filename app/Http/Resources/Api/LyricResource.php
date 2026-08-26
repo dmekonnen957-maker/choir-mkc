@@ -11,12 +11,28 @@ class LyricResource extends JsonResource
         return [
             'id' => $this->id,
             'choir_id' => $this->choir_id,
+            'choir' => $this->whenLoaded('choir', function () {
+                return [
+                    'id' => $this->choir?->id,
+                    'name' => $this->choir?->name,
+                ];
+            }),
             'song_id' => $this->song_id,
+            'song' => $this->whenLoaded('song', function () {
+                return [
+                    'id' => $this->song?->id,
+                    'title' => $this->song?->title,
+                ];
+            }),
             'language' => $this->language,
             'content' => $this->content,
             'version_label' => $this->version_label,
-            'is_published' => $this->is_published,
+            'created_by' => $this->created_by,
+            'creator' => $this->whenLoaded('creator', function () {
+                return $this->creator ? ['id' => $this->creator->id, 'name' => $this->creator->name] : null;
+            }),
             'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

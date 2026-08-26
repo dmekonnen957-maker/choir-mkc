@@ -55,6 +55,14 @@ export default function RegisterPage() {
         setErrors((prev) => ({ ...prev, [field]: undefined }));
     };
 
+    const handlePhone = (e) => {
+        let v = e.target.value.replace(/\D/g, '');
+        if (v.startsWith('0')) v = v.slice(1);
+        v = v.slice(0, 9);
+        setForm((prev) => ({ ...prev, phone: v }));
+        setErrors((prev) => ({ ...prev, phone: undefined }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setAlert(null);
@@ -179,11 +187,13 @@ export default function RegisterPage() {
                             <Input
                                 label="Phone"
                                 type="tel"
+                                prefix="+251"
                                 autoComplete="tel"
-                                placeholder="0911000000"
+                                placeholder="912345678"
                                 value={form.phone}
-                                onChange={update('phone')}
+                                onChange={handlePhone}
                                 error={errors.phone?.[0]}
+                                hint="9 digits, starting with 9 (e.g. 912345678)"
                                 glass
                                 trailing={
                                     <span className="text-white/70">

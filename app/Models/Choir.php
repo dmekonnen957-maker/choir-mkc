@@ -24,6 +24,7 @@ class Choir extends Model
         'status',
         'is_public',
         'created_by',
+        'team_leader_id',
     ];
 
     protected function casts(): array
@@ -70,6 +71,16 @@ class Choir extends Model
         return $this->hasMany(Performance::class);
     }
 
+    public function upcoming(): HasMany
+    {
+        return $this->performances()->where('date', '>=', now())->orderBy('date');
+    }
+
+    public function history(): HasMany
+    {
+        return $this->performances()->where('date', '<', now())->orderByDesc('date');
+    }
+
     public function announcements(): HasMany
     {
         return $this->hasMany(Announcement::class);
@@ -93,6 +104,33 @@ class Choir extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function teamLeader(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'team_leader_id');
+    }
+
+    /**
+     * Assign (or clear) the choir's team leader. Keeps the choir_user pivot in
+     * sync so the leader retains access to the choir.
+     */
+    public function setTeamLeader(?int $userId): void
+    {
+        $previous = $this->team_leader_id;
+
+        if ($previous && $previous !== $userId) {
+            $this->users()->updateExistingPivot($previous, ['is_primary_leader' => false]);
+        }
+
+        $this->team_leader_id = $userId;
+        $this->save();
+
+        if ($userId) {
+            $this->users()->syncWithoutDetaching([
+                $userId => ['is_primary_leader' => true, 'status' => 'active'],
+            ]);
+        }
     }
 
     public function scopeActive($query)

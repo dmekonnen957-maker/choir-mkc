@@ -1,83 +1,104 @@
-import { Link } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
-import PageHeader from '../components/landing/PageHeader';
-import PerformanceCard from '../components/landing/PerformanceCard';
-import ChoirArtwork from '../components/landing/ChoirArtwork';
-import DemoBadge from '../components/ui/DemoBadge';
-import { performances, getTodaysPerformance, isSameDay } from '../data/landingData';
-
-function isPast(iso) {
-    const d = new Date(iso + 'T00:00:00');
-    const t = new Date();
-    t.setHours(0, 0, 0, 0);
-    return d < t;
-}
+import { useEffect, useState, useMemo } from 'react';
+import { CalendarDays, MapPin, Clock } from 'lucide-react';
+import PerformanceCard from '../components/public/PerformanceCard';
+import SectionHeading from '../components/public/SectionHeading';
+import Reveal from '../components/ui/Reveal';
+import EmptyState from '../components/public/EmptyState';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { fetchAllPerformances, isUpcoming } from '../lib/publicApi';
 
 export default function PerformancesPage() {
-    const todays = getTodaysPerformance();
-    const upcoming = performances
-        .filter((p) => !isPast(p.date) && !isSameDay(p.date))
-        .sort((a, b) => a.date.localeCompare(b.date));
-    const past = performances
-        .filter((p) => isPast(p.date))
-        .sort((a, b) => b.date.localeCompare(a.date));
+    const [performances, setPerformances] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const Block = ({ title, items }) =>
-        items.length ? (
-            <div className="mt-10">
-                <h2 className="text-xl font-semibold text-blue-900">{title}</h2>
-                <div className="mt-6 grid gap-8 lg:grid-cols-2">
-                    {items.map((p, i) => (
-                        <PerformanceCard key={p.id} performance={p} index={i} />
-                    ))}
-                </div>
-            </div>
-        ) : null;
+    useEffect(() => {
+        fetchAllPerformances()
+            .then(setPerformances)
+            .catch(() => {})
+            .finally(() => setLoading(false));
+    }, []);
+
+    const { upcoming, past } = useMemo(() => {
+        const up = [];
+        const pa = [];
+        performances.forEach((p) => (isUpcoming(p.date) ? up : pa).push(p));
+        pa.sort((a, b) => new Date(b.date) - new Date(a.date));
+        return { upcoming: up, past: pa };
+    }, [performances]);
 
     return (
-        <>
-            <PageHeader
-                eyebrow="Schedule"
-                title="Performances"
-                subtitle="Follow upcoming services and concerts where our choirs lead the congregation in song."
-            />
-            <section className="bg-surface py-12 sm:py-16">
+        <div className="bg-white">
+            <section className="relative overflow-hidden bg-blue-50/60 pb-12 pt-16 sm:pb-16 sm:pt-20">
+                <div className="pointer-events-none absolute -top-24 -right-16 h-80 w-80 rounded-full bg-blue-200/40 blur-3xl" />
+                <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700 ring-1 ring-inset ring-blue-100">
+                        <CalendarDays size={14} /> Events
+                    </span>
+                    <h1 className="mt-5 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+                        Performances
+                    </h1>
+                    <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-500">
+                        Join us for worship, concerts, and gatherings. Browse what is coming next and revisit
+                        our past performances.
+                    </p>
+                </div>
+            </section>
+
+            <section className="bg-white py-12 sm:py-16">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <DemoBadge />
-                    {todays && (
-                        <div className="mt-8 overflow-hidden rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-700 to-blue-900 p-6 text-white shadow-xl sm:p-8">
-                            <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-blue-200">
-                                <Sparkles size={16} className="text-blue-300" /> Today’s Performance
+                    {loading ? (
+                        <div className="flex justify-center">
+                            <LoadingSpinner text="Loading performances..." />
+                        </div>
+                    ) : (
+                        <div className="space-y-14">
+                            <div>
+                                <SectionHeading
+                                    align="left"
+                                    eyebrow="What's Next"
+                                    title={`Upcoming (${upcoming.length})`}
+                                />
+                                <div className="mt-8 grid gap-8 lg:grid-cols-2">
+                                    {upcoming.map((p, i) => (
+                                        <Reveal key={p.id} delay={(i % 2) * 80}>
+                                            <PerformanceCard performance={p} variant="upcoming" />
+                                        </Reveal>
+                                    ))}
+                                </div>
+                                {upcoming.length === 0 && (
+                                    <div className="mt-8">
+                                        <EmptyState
+                                            icon={CalendarDays}
+                                            title="No upcoming performances."
+                                            message="We are preparing our next service. Please check back soon."
+                                        />
+                                    </div>
+                                )}
                             </div>
-                            <div className="mt-3 grid gap-6 lg:grid-cols-2 lg:items-center">
-                                <div>
-                                    <h3 className="text-2xl font-semibold">{todays.title}</h3>
-                                    <p className="mt-2 text-blue-100">{todays.description}</p>
-                                    <Link
-                                        to={`/performances/${todays.id}`}
-                                        className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-blue-900 hover:bg-blue-50"
-                                    >
-                                        View Performance <Sparkles size={16} />
-                                    </Link>
+
+                            <div>
+                                <SectionHeading align="left" eyebrow="Looking Back" title="Past Performances" />
+                                <div className="mt-8 grid gap-4">
+                                    {past.map((p, i) => (
+                                        <Reveal key={p.id} delay={(i % 2) * 60}>
+                                            <PerformanceCard performance={p} variant="past" />
+                                        </Reveal>
+                                    ))}
                                 </div>
-                                <div className="overflow-hidden rounded-2xl ring-1 ring-white/20">
-                                    <ChoirArtwork
-                                        variant="stage"
-                                        seed={todays.id * 5 + 2}
-                                        className="aspect-[16/9] w-full"
-                                        label={todays.title}
-                                    />
-                                </div>
+                                {past.length === 0 && (
+                                    <div className="mt-8">
+                                        <EmptyState
+                                            icon={CalendarDays}
+                                            title="No past performances yet."
+                                            message="Our journey is just beginning — stay tuned."
+                                        />
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
-                    <Block title="Upcoming" items={upcoming} />
-                    <Block title="Past" items={past} />
-                    {!todays && upcoming.length === 0 && past.length === 0 && (
-                        <p className="mt-10 text-center text-ink-500">No performances scheduled yet.</p>
-                    )}
                 </div>
             </section>
-        </>
+        </div>
     );
 }

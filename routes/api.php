@@ -125,7 +125,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'overview']);
         Route::post('/users/{user}/approve', [UserController::class, 'approve']);
         Route::post('/users/{user}/reject', [UserController::class, 'reject']);
-        Route::apiResource('users', UserController::class);
+        Route::apiResource('users', UserController::class)->except(['destroy']);
+        Route::delete('users/{user}', [UserController::class, 'destroy'])
+            ->middleware('permission:users.delete');
+        Route::apiResource('choirs', ChoirController::class)->names('admin.choirs')->except(['destroy']);
+        Route::delete('choirs/{choir}', [ChoirController::class, 'destroy'])
+            ->name('admin.choirs.destroy')
+            ->middleware('permission:choirs.delete');
         Route::get('/members', [AdminMemberController::class, 'index'])->middleware('permission:members.view');
         Route::apiResource('roles', RoleController::class);
         Route::apiResource('permissions', PermissionController::class);
@@ -135,6 +141,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/notifications', [NotificationController::class, 'store']);
         Route::get('/reports', [ReportController::class, 'index']);
         Route::get('/reports/{report}', [ReportController::class, 'show']);
+        Route::apiResource('songs', SongController::class);
+        Route::get('songs/{song}/audio', [SongController::class, 'audio'])->name('admin.songs.audio');
+        Route::apiResource('lyrics', LyricController::class);
     });
 
     // Member-only area. Choir context is derived from the authenticated user,

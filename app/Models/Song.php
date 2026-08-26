@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Song extends Model
 {
@@ -24,6 +26,7 @@ class Song extends Model
         'year_written',
         'description',
         'cover_image_path',
+        'audio_path',
         'is_published',
         'created_by',
         'updated_by',
@@ -94,5 +97,12 @@ class Song extends Model
     public function scopeForChoir($query, $choirId)
     {
         return $query->where('choir_id', $choirId);
+    }
+
+    public function audioUrl(): Attribute
+    {
+        return Attribute::get(function () {
+            return $this->audio_path ? Storage::disk('public')->url($this->audio_path) : null;
+        });
     }
 }

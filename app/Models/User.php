@@ -74,6 +74,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
             ->withTimestamps();
     }
 
+    public function ledChoirs(): HasMany
+    {
+        return $this->hasMany(Choir::class, 'team_leader_id');
+    }
+
     public function createdChoirs(): HasMany
     {
         return $this->hasMany(Choir::class, 'created_by');

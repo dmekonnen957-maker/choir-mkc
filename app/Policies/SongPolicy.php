@@ -38,16 +38,22 @@ class SongPolicy
 
     public function create(User $user): bool
     {
-        return $user->can('songs.manage');
+        return $user->can('songs.create');
     }
 
     public function update(User $user, Song $song): bool
     {
-        return $user->can('songs.manage');
+        if (!$user->can('songs.edit')) {
+            return false;
+        }
+        return $this->assigned($user, $song);
     }
 
     public function delete(User $user, Song $song): bool
     {
-        return $user->can('songs.manage');
+        if (!$user->can('songs.delete')) {
+            return false;
+        }
+        return $this->assigned($user, $song);
     }
 }

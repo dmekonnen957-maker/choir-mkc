@@ -16,7 +16,7 @@ class PublicController extends ApiController
 {
     public function choirs(Request $request): \Illuminate\Http\JsonResponse
     {
-        return $this->paginate(Choir::where('is_public', true), ChoirResource::class);
+        return $this->paginate(Choir::where('status', 'active'), ChoirResource::class);
     }
 
     public function choir(Request $request, Choir $choir): \Illuminate\Http\JsonResponse

@@ -27,7 +27,7 @@ class UserResource extends JsonResource
                 'slug' => $primaryChoir->slug,
             ] : null,
             'roles' => $this->whenLoaded('roles', fn () => $this->roles->pluck('name')),
-            'permissions' => $this->whenLoaded('permissions', fn () => $this->permissions->pluck('name')),
+            'permissions' => $this->whenLoaded('permissions', fn () => $this->getAllPermissions()->pluck('name')),
             'choirs' => $this->whenLoaded('choirs', function () {
                 return $this->choirs->map(function ($choir) {
                     return [

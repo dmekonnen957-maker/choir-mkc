@@ -136,15 +136,15 @@ class MemberController extends ApiController
             return $this->ok(['choir' => null, 'members' => [], 'leader' => null]);
         }
 
-        $choir->loadCount('members');
+        `$choir->loadCount('members');
 
-        // Privacy: only public members, plus the member's own record.
+        // Show the full active roster of the choir on the member-facing "My
+        // Choir" page. The previous is_public self/privacy filter hid members
+        // who weren't marked public (except the viewer's own record); that gate
+        // is removed so every user that appears on the Users page and belongs
+        // to this choir is visible here. Only `active` members are listed.
         $members = $choir->members()
             ->where('status', 'active')
-            ->where(function ($query) use ($user) {
-                $query->where('is_public', true)
-                    ->orWhere('user_id', $user->id);
-            })
             ->orderBy('first_name')
             ->get();
 

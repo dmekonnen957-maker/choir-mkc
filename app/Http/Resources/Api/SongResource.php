@@ -11,21 +11,25 @@ class SongResource extends JsonResource
         return [
             'id' => $this->id,
             'choir_id' => $this->choir_id,
-            'song_category_id' => $this->song_category_id,
+            'choir' => $this->whenLoaded('choir', function () {
+                return [
+                    'id' => $this->choir?->id,
+                    'name' => $this->choir?->name,
+                ];
+            }),
             'title' => $this->title,
             'composer' => $this->composer,
             'artist' => $this->artist,
-            'arranger' => $this->arranger,
-            'language' => $this->language,
-            'year_written' => $this->year_written,
             'description' => $this->description,
-            'cover_image_path' => $this->cover_image_path,
-            'is_published' => $this->is_published,
+            'audio_path' => $this->audio_path,
+            'audio_url' => $this->audio_url,
             'created_by' => $this->created_by,
-            'updated_by' => $this->updated_by,
-            'category' => new SongCategoryResource($this->whenLoaded('songCategory')),
+            'creator' => $this->whenLoaded('creator', function () {
+                return $this->creator ? ['id' => $this->creator->id, 'name' => $this->creator->name] : null;
+            }),
             'lyrics_count' => $this->whenCounted('lyrics'),
             'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

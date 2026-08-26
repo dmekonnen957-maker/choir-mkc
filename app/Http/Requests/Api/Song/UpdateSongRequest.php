@@ -14,16 +14,23 @@ class UpdateSongRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['required', 'string', 'max:255'],
-            'song_category_id' => ['nullable', 'exists:song_categories,id'],
-            'composer' => ['nullable', 'string'],
-            'artist' => ['nullable', 'string'],
-            'arranger' => ['nullable', 'string'],
-            'language' => ['nullable', 'string'],
-            'year_written' => ['nullable', 'integer'],
+            'choir_id' => ['nullable', 'integer', 'exists:choirs,id'],
+            'title' => ['sometimes', 'required', 'string', 'max:255'],
+            'composer' => ['nullable', 'string', 'max:255'],
+            'artist' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'cover_image_path' => ['nullable', 'string'],
-            'is_published' => ['nullable', 'boolean'],
+            'audio' => ['nullable', 'file', 'mimes:mp3', 'max:10240'],
+            'remove_audio' => ['nullable', 'boolean'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'choir_id.exists' => 'The selected choir does not exist.',
+            'title.required' => 'Song title is required.',
+            'audio.mimes' => 'Only MP3 audio files are allowed.',
+            'audio.max' => 'The audio file must not exceed 10 MB.',
         ];
     }
 }

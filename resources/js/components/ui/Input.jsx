@@ -1,7 +1,7 @@
 import { forwardRef, useId } from 'react';
 
 const Input = forwardRef(function Input(
-    { label, error, hint, id, className = '', required = false, trailing = null, glass = false, ...props },
+    { label, error, hint, id, className = '', required = false, prefix = null, trailing = null, glass = false, ...props },
     ref,
 ) {
     const autoId = useId();
@@ -34,12 +34,17 @@ const Input = forwardRef(function Input(
                 </label>
             )}
             <div className="relative">
+                {prefix && (
+                    <div className={`absolute inset-y-0 left-0 flex items-center pl-3 text-sm font-medium ${glass ? 'text-white/80' : 'text-ink-500'}`}>
+                        {prefix}
+                    </div>
+                )}
                 <input
                     ref={ref}
                     id={inputId}
                     aria-invalid={error ? 'true' : undefined}
                     aria-describedby={error ? errorId : hint ? hintId : undefined}
-                    className={`${base} ${state} ${trailing ? 'pr-11' : ''}`}
+                    className={`${base} ${state} ${prefix ? 'pl-14' : ''} ${trailing ? 'pr-11' : ''}`}
                     {...props}
                 />
                 {trailing && (

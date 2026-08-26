@@ -107,8 +107,12 @@ class Performance extends Model
         return $query->where('is_public', true);
     }
 
-    public function scopeForChoir($query, $choirId)
+                public function scopeForChoir($query, $choirId)
     {
-        return $query->where('choir_id', $choirId);
+        // Always qualify the column. This scope is also used on belongsToMany
+        // queries (e.g. Member::performances()) where the pivot table
+        // (performance_members) also exposes a choir_id column, which would
+        // otherwise raise a "Column 'choir_id' is ambiguous" SQL error.
+        return $query->where('performances.choir_id', $choirId);
     }
 }

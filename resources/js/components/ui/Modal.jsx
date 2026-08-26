@@ -16,6 +16,12 @@ export default function Modal({ open, onClose, title, children, size = 'lg', lab
     const [closing, setClosing] = useState(false);
     const panelRef = useRef(null);
     const previousFocus = useRef(null);
+    const onCloseRef = useRef(onClose);
+
+    // Keep latest onClose without making it a dependency of the effects below.
+    useEffect(() => {
+        onCloseRef.current = onClose;
+    }, [onClose]);
 
     // Manage mount + exit animation when `open` changes.
     useEffect(() => {
@@ -30,17 +36,17 @@ export default function Modal({ open, onClose, title, children, size = 'lg', lab
         const t = setTimeout(() => {
             setMounted(false);
             setClosing(false);
-            onClose?.();
+            onCloseRef.current?.();
         }, 220);
         return () => clearTimeout(t);
-    }, [open, mounted, onClose]);
+    }, [open, mounted]);
 
     // Scroll lock + focus management while mounted.
     useEffect(() => {
         if (!mounted) return undefined;
         document.body.style.overflow = 'hidden';
         const onKey = (e) => {
-            if (e.key === 'Escape') onClose?.();
+            if (e.key === 'Escape') onCloseRef.current?.();
             if (e.key === 'Tab') {
                 const f = panelRef.current?.querySelectorAll(
                     'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])',
@@ -67,7 +73,7 @@ export default function Modal({ open, onClose, title, children, size = 'lg', lab
                 previousFocus.current.focus?.();
             }
         };
-    }, [mounted, onClose]);
+    }, [mounted]);
 
     if (!mounted) return null;
 

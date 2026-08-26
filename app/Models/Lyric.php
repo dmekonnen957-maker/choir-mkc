@@ -17,6 +17,7 @@ class Lyric extends Model
         'content',
         'version_label',
         'is_published',
+        'created_by',
     ];
 
     protected function casts(): array
@@ -34,6 +35,11 @@ class Lyric extends Model
     public function song(): BelongsTo
     {
         return $this->belongsTo(Song::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function scopePublished($query)

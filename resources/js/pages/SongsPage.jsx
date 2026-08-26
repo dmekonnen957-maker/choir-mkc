@@ -1,96 +1,114 @@
-import { useMemo, useState } from 'react';
-import { Search, Music2 } from 'lucide-react';
-import PageHeader from '../components/landing/PageHeader';
-import SongCard from '../components/landing/SongCard';
-import DemoBadge from '../components/ui/DemoBadge';
-import { songs, choirs, getChoirById } from '../data/landingData';
-
-function unique(values) {
-    return [...new Set(values.filter(Boolean))].sort();
-}
+import { useEffect, useState, useMemo } from 'react';
+import { Search, Music2, Play } from 'lucide-react';
+import SongCard from '../components/public/SongCard';
+import Reveal from '../components/ui/Reveal';
+import EmptyState from '../components/public/EmptyState';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { fetchAllSongs, fetchChoirs } from '../lib/publicApi';
 
 export default function SongsPage() {
+    const [songs, setSongs] = useState([]);
+    const [choirs, setChoirs] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState('');
-    const [choir, setChoir] = useState('');
-    const [language, setLanguage] = useState('');
-    const [composer, setComposer] = useState('');
+    const [choirId, setChoirId] = useState('');
 
-    const choirOptions = useMemo(() => choirs.map((c) => ({ id: c.id, name: c.name })), []);
-    const languageOptions = useMemo(() => unique(songs.map((s) => s.language)), []);
-    const composerOptions = useMemo(() => unique(songs.map((s) => s.composer)), []);
+    useEffect(() => {
+        Promise.all([fetchAllSongs(), fetchChoirs()])
+            .then(([s, c]) => {
+                setSongs(s);
+                setChoirs(c);
+            })
+            .catch(() => {})
+            .finally(() => setLoading(false));
+    }, []);
 
     const filtered = useMemo(() => {
         const q = query.trim().toLowerCase();
         return songs.filter((s) => {
-            if (choir && s.choirId !== Number(choir)) return false;
-            if (language && s.language !== language) return false;
-            if (composer && s.composer !== composer) return false;
-            if (q && !(`${s.title} ${s.composer} ${getChoirById(s.choirId)?.name}`.toLowerCase().includes(q)))
-                return false;
-            return true;
+            const matchQ = !q || s.title.toLowerCase().includes(q);
+            const matchC = !choirId || String(s.choir?.id) === String(choirId);
+            return matchQ && matchC;
         });
-    }, [query, choir, language, composer]);
-
-    const selectCls =
-        'rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm text-ink-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100';
+    }, [songs, query, choirId]);
 
     return (
-        <>
-            <PageHeader
-                eyebrow="Archive"
-                title="Songs & Lyrics"
-                subtitle="Browse the hymns and anthems preserved in our living archive."
-            />
-            <section className="bg-surface py-12 sm:py-16">
+        <div className="bg-white">
+            <section className="relative overflow-hidden bg-blue-50/60 pb-12 pt-16 sm:pb-16 sm:pt-20">
+                <div className="pointer-events-none absolute -top-24 -left-16 h-80 w-80 rounded-full bg-blue-200/40 blur-3xl" />
+                <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700 ring-1 ring-inset ring-blue-100">
+                        <Music2 size={14} /> Music Library
+                    </span>
+                    <h1 className="mt-5 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+                        Songs
+                    </h1>
+                    <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-500">
+                        Listen to the music of our choirs. Explore recordings, lyrics, and the voices behind
+                        every song.
+                    </p>
+                </div>
+            </section>
+
+            <section className="bg-white py-12 sm:py-16">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                        <DemoBadge />
-                        <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-auto lg:grid-cols-4">
-                            <div className="relative sm:col-span-2 lg:col-span-1">
-                                <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
-                                <input
-                                    type="search"
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    placeholder="Search songs"
-                                    aria-label="Search songs"
-                                    className="w-full rounded-xl border border-blue-200 bg-white py-2.5 pl-10 pr-4 text-sm text-ink-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                                />
-                            </div>
-                            <select value={choir} onChange={(e) => setChoir(e.target.value)} aria-label="Filter by choir" className={selectCls}>
-                                <option value="">All choirs</option>
-                                {choirOptions.map((c) => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </select>
-                            <select value={language} onChange={(e) => setLanguage(e.target.value)} aria-label="Filter by language" className={selectCls}>
-                                <option value="">All languages</option>
-                                {languageOptions.map((l) => (
-                                    <option key={l} value={l}>{l}</option>
-                                ))}
-                            </select>
-                            <select value={composer} onChange={(e) => setComposer(e.target.value)} aria-label="Filter by composer" className={selectCls}>
-                                <option value="">All composers</option>
-                                {composerOptions.map((c) => (
-                                    <option key={c} value={c}>{c}</option>
-                                ))}
-                            </select>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                        <div className="relative flex-1">
+                            <Search
+                                size={18}
+                                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                            />
+                            <input
+                                type="search"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder="Search songs by title"
+                                aria-label="Search songs"
+                                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                            />
                         </div>
+                        <select
+                            value={choirId}
+                            onChange={(e) => setChoirId(e.target.value)}
+                            aria-label="Filter by choir"
+                            className="rounded-xl border border-slate-200 bg-white py-2.5 pl-3 pr-8 text-sm text-slate-700 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                        >
+                            <option value="">All Choirs</option>
+                            {choirs.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                    {c.name}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
-                    <p className="mt-6 text-sm text-ink-500">Showing {filtered.length} of {songs.length} songs</p>
-
-                    {filtered.length === 0 ? (
-                        <p className="mt-12 text-center text-ink-500">No songs match your filters.</p>
+                    {loading ? (
+                        <div className="mt-16 flex justify-center">
+                            <LoadingSpinner text="Loading songs..." />
+                        </div>
+                    ) : filtered.length === 0 ? (
+                        <div className="mt-10">
+                            <EmptyState
+                                icon={Music2}
+                                title="No songs found."
+                                message={
+                                    query || choirId
+                                        ? 'Try adjusting your search or filters.'
+                                        : 'Our song library is being built.'
+                                }
+                            />
+                        </div>
                     ) : (
-                        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                            {filtered.map((song, i) => (
-                                <SongCard key={song.id} song={song} index={i} />
+                        <div className="mt-10 grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+                            {filtered.map((s, i) => (
+                                <Reveal key={s.id} delay={(i % 4) * 60}>
+                                    <SongCard song={s} />
+                                </Reveal>
                             ))}
                         </div>
                     )}
                 </div>
             </section>
-        </>
+        </div>
     );
 }

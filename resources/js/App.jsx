@@ -25,6 +25,16 @@ import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminRolesPage from './pages/admin/AdminRolesPage';
 import AdminPermissionsPage from './pages/admin/AdminPermissionsPage';
 import AdminMembersPage from './pages/admin/AdminMembersPage';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminChoirsPage from './pages/admin/AdminChoirsPage';
+import AdminChoirFormPage from './pages/admin/AdminChoirFormPage';
+import AdminChoirDetailPage from './pages/admin/AdminChoirDetailPage';
+import AdminSongsPage from './pages/admin/AdminSongsPage';
+import AdminSongFormPage from './pages/admin/AdminSongFormPage';
+import AdminSongDetailPage from './pages/admin/AdminSongDetailPage';
+import AdminLyricsPage from './pages/admin/AdminLyricsPage';
+import AdminLyricFormPage from './pages/admin/AdminLyricFormPage';
+import AdminLyricDetailPage from './pages/admin/AdminLyricDetailPage';
 
 export default function App() {
     return (
@@ -78,8 +88,11 @@ export default function App() {
                 }
             >
                 <Route index element={<Navigate to="dashboard" replace />} />
-                <Route path="dashboard" element={<MemberPlaceholder title="Admin Dashboard" />} />
-                <Route path="choirs" element={<MemberPlaceholder title="Choirs" />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="choirs" element={<AdminChoirsPage />} />
+                <Route path="choirs/create" element={<AdminChoirFormPage mode="create" />} />
+                <Route path="choirs/:id" element={<AdminChoirDetailPage />} />
+                <Route path="choirs/:id/edit" element={<AdminChoirFormPage mode="edit" />} />
                 <Route path="members" element={<AdminMembersPage />} />
                 <Route path="users" element={<AdminUsersPage />} />
                 <Route path="users/:id" element={<AdminUsersPage />} />
@@ -90,13 +103,18 @@ export default function App() {
                 <Route path="choir" element={<MemberChoir />} />
                 <Route path="profile" element={<MemberProfile />} />
                 <Route path="notifications" element={<MemberNotifications />} />
-                <Route path="songs" element={<MemberPlaceholder title="Songs" />} />
-                <Route path="lyrics" element={<MemberPlaceholder title="Lyrics" />} />
+                <Route path="songs" element={<AdminSongsPage />} />
+                <Route path="songs/new" element={<AdminSongFormPage mode="create" />} />
+                <Route path="songs/:id/edit" element={<AdminSongFormPage mode="edit" />} />
+                <Route path="songs/:id" element={<AdminSongDetailPage />} />
+                <Route path="lyrics" element={<AdminLyricsPage />} />
+                <Route path="lyrics/new" element={<AdminLyricFormPage mode="create" />} />
+                <Route path="lyrics/:id/edit" element={<AdminLyricFormPage mode="edit" />} />
+                <Route path="lyrics/:id" element={<AdminLyricDetailPage />} />
                 <Route path="rehearsals" element={<MemberPlaceholder title="Rehearsals" />} />
                 <Route path="performances" element={<MemberPlaceholder title="Performances" />} />
                 <Route path="calendar" element={<MemberPlaceholder title="Calendar" />} />
                 <Route path="attendance" element={<MemberPlaceholder title="My Attendance" />} />
-                <Route path="performance-attendance" element={<MemberPlaceholder title="Performance Attendance" />} />
                 <Route path="my-performances" element={<MemberPlaceholder title="My Performances" />} />
                 <Route path="settings" element={<MemberPlaceholder title="Settings" />} />
                 <Route path="reports" element={<MemberPlaceholder title="Reports" />} />

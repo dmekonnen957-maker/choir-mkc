@@ -12,50 +12,101 @@ use Illuminate\Http\Request;
 
 class LyricController extends ApiController
 {
-    public function index(Request $request, Choir $choir, Song $song)
+    public function index(Request $request, ?Choir $choir = null)
     {
-        $this->authorize('view', $song);
+        $this->authorize('viewAny', Lyric::class);
 
-        $query = $song->lyrics();
+        $q = Lyric::query()->with(['choir:id,name', 'song:id,title', 'creator:id,name']);
 
-        return $this->paginate($query, LyricResource::class);
+        if ($choir) {
+            $q->where('choir_id', $choir->id);
+        } elseif ($request->filled('choir_id')) {
+            $q->where('choir_id', $request->integer('choir_id'));
+        }
+
+        if ($request->filled('song_id')) {
+            $q->where('song_id', $request->integer('song_id'));
+        }
+
+        $q->latest();
+
+        return $this->paginate($q, LyricResource::class);
     }
 
-    public function store(StoreLyricRequest $request, Choir $choir, Song $song)
+    public function store(StoreLyricRequest $request, ?Choir $choir = null, ?Song $song = null)
     {
-        $this->authorize('update', $song);
+        $this->authorize('create', Lyric::class);
 
         $data = $request->validated();
-        $data['choir_id'] = $choir->id;
-        $data['song_id'] = $song->id;
+        $choirId = $choir?->id ?? $data['choir_id'];
+        $songId = $song?->id ?? $data['song_id'];
 
-        $lyric = Lyric::create($data);
+        $choirModel = Choir::findOrFail($choirId);
+        $songModel = Song::findOrFail($songId);
 
-        return $this->ok(new LyricResource($lyric), 'Lyric created', 201);
+        // Multi-choir security: the song must belong to the chosen choir.
+        if ($songModel->choir_id !== $choirModel->id) {
+            return $this->error('The selected song does not belong to the chosen choir.', null, 422);
+        }
+
+        $lyric = Lyric::create([
+            'choir_id' => $choirModel->id,
+            'song_id' => $songModel->id,
+            'language' => $data['language'] ?? null,
+            'content' => $data['content'],
+            'version_label' => $data['version_label'] ?? null,
+            'created_by' => $request->user()->id,
+        ]);
+
+        return $this->ok(LyricResource::make($lyric->load('choir', 'song', 'creator')), 'Lyrics created successfully', 201);
     }
 
-    public function show(Request $request, Choir $choir, Song $song, Lyric $lyric)
+    public function show(Request $request, Lyric $lyric)
     {
-        $this->authorize('view', $song);
-
-        return $this->ok(new LyricResource($lyric));
+        $this->authorize('view', $lyric);
+        $lyric->load(['choir', 'song', 'creator']);
+        return $this->ok(LyricResource::make($lyric));
     }
 
-    public function update(UpdateLyricRequest $request, Choir $choir, Song $song, Lyric $lyric)
+    public function update(UpdateLyricRequest $request, Lyric $lyric)
     {
-        $this->authorize('update', $song);
+        $this->authorize('update', $lyric);
 
-        $lyric->update($request->validated());
+        $data = $request->validated();
+        $choirId = $data['choir_id'] ?? $lyric->choir_id;
+        $choirModel = Choir::findOrFail($choirId);
 
-        return $this->ok(new LyricResource($lyric), 'Lyric updated');
+        if (array_key_exists('song_id', $data) && !empty($data['song_id'])) {
+            $songModel = Song::findOrFail($data['song_id']);
+            if ($songModel->choir_id !== $choirModel->id) {
+                return $this->error('The selected song does not belong to the chosen choir.', null, 422);
+            }
+            $lyric->song_id = $songModel->id;
+        }
+
+        $lyric->choir_id = $choirModel->id;
+
+        if (array_key_exists('language', $data)) {
+            $lyric->language = $data['language'];
+        }
+        if (array_key_exists('content', $data)) {
+            $lyric->content = $data['content'];
+        }
+        if (array_key_exists('version_label', $data)) {
+            $lyric->version_label = $data['version_label'];
+        }
+
+        $lyric->save();
+
+        return $this->ok(LyricResource::make($lyric->load('choir', 'song', 'creator')), 'Lyrics updated successfully');
     }
 
-    public function destroy(Choir $choir, Song $song, Lyric $lyric)
+    public function destroy(Request $request, Lyric $lyric)
     {
-        $this->authorize('update', $song);
+        $this->authorize('delete', $lyric);
 
+        // Delete only the lyric record; never the song or its audio.
         $lyric->delete();
-
-        return $this->ok(null, 'Lyric deleted');
+        return $this->ok(null, 'Lyrics deleted successfully');
     }
 }

@@ -1,170 +1,200 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
-import HeroSection from '../components/landing/HeroSection';
-import ChoirCard from '../components/landing/ChoirCard';
-import PerformanceCard from '../components/landing/PerformanceCard';
-import SongCard from '../components/landing/SongCard';
-import Timeline from '../components/landing/Timeline';
-import FinalCTA from '../components/landing/FinalCTA';
-import DemoBadge from '../components/ui/DemoBadge';
+import { ArrowRight, Music2, CalendarDays, History as HistoryIcon, Users } from 'lucide-react';
+import HeroSection from '../components/public/HeroSection';
+import ChoirCard from '../components/public/ChoirCard';
+import SongCard from '../components/public/SongCard';
+import PerformanceCard from '../components/public/PerformanceCard';
+import SectionHeading from '../components/public/SectionHeading';
 import Reveal from '../components/ui/Reveal';
-import SectionHeading from '../components/landing/SectionHeading';
-import {
-    choirs,
-    songs,
-    getUpcomingPerformance,
-    getTodaysPerformance,
-    historyMilestones,
-} from '../data/landingData';
-
-function ViewAll({ to, label }) {
-    return (
-        <div className="mt-10 flex justify-center">
-            <Link
-                to={to}
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow transition-colors hover:bg-blue-700"
-            >
-                {label}
-                <ArrowRight size={16} />
-            </Link>
-        </div>
-    );
-}
+import EmptyState from '../components/public/EmptyState';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { fetchChoirs, fetchAllSongs, fetchAllPerformances, isUpcoming } from '../lib/publicApi';
 
 export default function HomePage() {
+    const [loading, setLoading] = useState(true);
+    const [choirs, setChoirs] = useState([]);
+    const [songs, setSongs] = useState([]);
+    const [performances, setPerformances] = useState([]);
+
+    useEffect(() => {
+        let active = true;
+        Promise.all([fetchChoirs(), fetchAllSongs(), fetchAllPerformances()])
+            .then(([c, s, p]) => {
+                if (!active) return;
+                setChoirs(c);
+                setSongs(s);
+                setPerformances(p);
+            })
+            .catch(() => {})
+            .finally(() => active && setLoading(false));
+        return () => {
+            active = false;
+        };
+    }, []);
+
     const featuredChoirs = choirs.slice(0, 3);
     const featuredSongs = songs.slice(0, 3);
-    const upcoming = getUpcomingPerformance();
-    const todays = getTodaysPerformance();
+    const upcoming = performances.filter((p) => isUpcoming(p.date)).slice(0, 3);
+
+    if (loading) {
+        return (
+            <div className="flex h-64 items-center justify-center">
+                <LoadingSpinner text="Loading..." />
+            </div>
+        );
+    }
 
     return (
-        <>
-            <HeroSection />
+        <div className="bg-white">
+            <HeroSection featuredChoir={choirs[0] ?? null} />
 
-            {/* SHORT INTRODUCTION */}
-            <section className="bg-white py-16 sm:py-20">
-                <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-                    <Reveal>
-                        <span className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
-                            <span className="h-px w-6 bg-blue-300" />
-                            Our Mission
-                        </span>
-                        <h2 className="mt-3 text-3xl font-semibold tracking-tight text-blue-900 sm:text-4xl">
-                            Many Voices. One Story.
-                        </h2>
-                        <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-ink-600">
-                            CHOIR MKC brings multiple choirs together in one digital space where
-                            music is shared, performances are remembered, and the history of each
-                            choir is preserved for the generations that follow.
-                        </p>
-                    </Reveal>
-                </div>
-            </section>
-
-            {/* FEATURED CHOIRS */}
-            <section className="bg-blue-50/50 py-16 sm:py-20">
+            {/* MEET OUR CHOIRS */}
+            <section className="bg-white py-20 sm:py-24">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+                    <Reveal>
                         <SectionHeading
-                            align="left"
-                            eyebrow="Community"
-                            title="Featured Choirs"
-                            subtitle="Meet a few of the voices that make up CHOIR MKC."
+                            eyebrow="Our Community"
+                            title="Meet Our Choirs"
+                            subtitle="Explore the voices, people, and stories behind Choir MKC."
                         />
-                        <DemoBadge />
-                    </div>
-                    <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                    </Reveal>
+                    <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
                         {featuredChoirs.map((choir, i) => (
-                            <ChoirCard key={choir.id} choir={choir} index={i} />
+                            <Reveal key={choir.id} delay={i * 80}>
+                                <ChoirCard choir={choir} />
+                            </Reveal>
                         ))}
                     </div>
-                    <ViewAll to="/choirs" label="View All Choirs" />
+                    {featuredChoirs.length === 0 && (
+                        <div className="mt-10">
+                            <EmptyState
+                                icon={Users}
+                                title="No choirs are currently available."
+                                message="Check back soon as our choirs continue to grow."
+                            />
+                        </div>
+                    )}
+                    {choirs.length > 3 && (
+                        <div className="mt-12 flex justify-center">
+                            <Link
+                                to="/choirs"
+                                className="inline-flex items-center gap-2 rounded-full bg-blue-700 px-7 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800"
+                            >
+                                Explore All Choirs
+                                <ArrowRight size={18} />
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </section>
 
-            {/* FEATURED PERFORMANCE */}
-            <section className="bg-white py-16 sm:py-20">
+            {/* UPCOMING PERFORMANCES */}
+            <section className="bg-blue-50/50 py-20 sm:py-24">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+                    <Reveal>
                         <SectionHeading
-                            align="left"
-                            eyebrow="Performances"
-                            title="Upcoming Performance"
-                            subtitle="A preview of what’s happening next across our choirs."
+                            eyebrow="Events"
+                            title="Upcoming Performances"
+                            subtitle="Be part of our next gathering of worship and song."
                         />
-                        <DemoBadge />
+                    </Reveal>
+                    <div className="mt-12 grid gap-8 lg:grid-cols-2">
+                        {upcoming.map((p, i) => (
+                            <Reveal key={p.id} delay={i * 80}>
+                                <PerformanceCard performance={p} variant="upcoming" />
+                            </Reveal>
+                        ))}
                     </div>
-                    {todays && (
-                        <Reveal className="mt-8">
-                            <div className="flex flex-col items-start justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 px-6 py-4 sm:flex-row sm:items-center">
-                                <div className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">
-                                    Today’s Performance — {todays.title}
-                                </div>
-                                <Link
-                                    to={`/performances/${todays.id}`}
-                                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-                                >
-                                    View Performance
-                                    <ArrowRight size={16} />
-                                </Link>
-                            </div>
-                        </Reveal>
-                    )}
-                    {upcoming && (
-                        <div className="mt-8 grid gap-8 lg:grid-cols-2">
-                            <PerformanceCard performance={upcoming} />
+                    {upcoming.length === 0 && (
+                        <div className="mt-10">
+                            <EmptyState
+                                icon={CalendarDays}
+                                title="No upcoming performances."
+                                message="We are preparing our next service. Please check back soon."
+                            />
                         </div>
                     )}
-                    <ViewAll to="/performances" label="View All Performances" />
+                    {performances.length > 0 && (
+                        <div className="mt-12 flex justify-center">
+                            <Link
+                                to="/performances"
+                                className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-7 py-3.5 text-sm font-semibold text-blue-700 transition-colors hover:border-blue-300"
+                            >
+                                View All Performances
+                                <ArrowRight size={18} />
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </section>
 
             {/* FEATURED SONGS */}
-            <section className="bg-blue-50/50 py-16 sm:py-20">
+            <section className="bg-white py-20 sm:py-24">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+                    <Reveal>
                         <SectionHeading
-                            align="left"
-                            eyebrow="Songs"
+                            eyebrow="Music"
                             title="Featured Songs"
-                            subtitle="A taste of the hymns and anthems preserved in our archive."
+                            subtitle="Listen, discover, and experience the songs of our choirs."
                         />
-                        <DemoBadge />
-                    </div>
-                    <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                        {featuredSongs.map((song, i) => (
-                            <SongCard key={song.id} song={song} index={i} />
+                    </Reveal>
+                    <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                        {featuredSongs.map((s, i) => (
+                            <Reveal key={s.id} delay={i * 80}>
+                                <SongCard song={s} />
+                            </Reveal>
                         ))}
                     </div>
-                    <ViewAll to="/songs" label="Explore Songs" />
+                    {featuredSongs.length === 0 && (
+                        <div className="mt-10">
+                            <EmptyState
+                                icon={Music2}
+                                title="No songs available yet."
+                                message="Our choir library is being built. Visit again soon."
+                            />
+                        </div>
+                    )}
+                    {songs.length > 3 && (
+                        <div className="mt-12 flex justify-center">
+                            <Link
+                                to="/songs"
+                                className="inline-flex items-center gap-2 rounded-full bg-blue-700 px-7 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800"
+                            >
+                                Explore Song Archive
+                                <ArrowRight size={18} />
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </section>
 
-            {/* HISTORY PREVIEW */}
-            <section className="bg-white py-16 sm:py-20">
+            {/* HISTORY TEASER */}
+            <section className="bg-blue-50/50 py-20 sm:py-24">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-                        <SectionHeading
-                            align="left"
-                            eyebrow="Heritage"
-                            title="A Story Worth Keeping"
-                            subtitle="From the first gathering of singers to a united digital archive."
-                        />
-                        <Link
-                            to="/history"
-                            className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-5 py-3 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-50"
-                        >
-                            Explore History
-                            <ArrowRight size={16} />
-                        </Link>
-                    </div>
-                    <div className="mt-10">
-                        <Timeline milestones={historyMilestones.slice(0, 4)} />
-                    </div>
+                    <Reveal>
+                        <div className="overflow-hidden rounded-[2.5rem] border border-blue-100 bg-white px-8 py-14 text-center shadow-sm sm:px-16">
+                            <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700 ring-1 ring-inset ring-blue-100">
+                                <HistoryIcon size={14} /> Our Heritage
+                            </span>
+                            <h2 className="mx-auto mt-5 max-w-2xl text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+                                Explore Our History
+                            </h2>
+                            <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-slate-500">
+                                Trace the journey of Choir MKC — the milestones, memories, and moments of
+                                faithful service that shaped who we are today.
+                            </p>
+                            <Link
+                                to="/history"
+                                className="mt-8 inline-flex items-center gap-2 rounded-full bg-blue-700 px-7 py-3.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800"
+                            >
+                                View History
+                                <ArrowRight size={18} />
+                            </Link>
+                        </div>
+                    </Reveal>
                 </div>
             </section>
-
-            <FinalCTA />
-        </>
+        </div>
     );
 }

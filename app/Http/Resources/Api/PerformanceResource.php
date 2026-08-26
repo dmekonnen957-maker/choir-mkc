@@ -26,6 +26,9 @@ class PerformanceResource extends JsonResource
             'created_by' => $this->created_by,
             'updated_by' => $this->updated_by,
             'created_at' => $this->created_at,
+            'choir' => $this->whenLoaded('choir', function () {
+                return $this->choir ? ['id' => $this->choir->id, 'name' => $this->choir->name] : null;
+            }),
         ];
     }
 }

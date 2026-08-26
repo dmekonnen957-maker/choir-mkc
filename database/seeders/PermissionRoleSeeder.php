@@ -17,7 +17,8 @@ class PermissionRoleSeeder extends Seeder
         'permissions.view', 'permissions.create', 'permissions.edit', 'permissions.delete', 'permissions.manage',
         'choirs.view', 'choirs.view.all', 'choirs.create', 'choirs.update', 'choirs.delete',
         'members.view', 'members.view.all', 'members.manage',
-        'songs.view', 'songs.view.all', 'songs.manage',
+        'songs.view', 'songs.view.all', 'songs.create', 'songs.edit', 'songs.delete', 'songs.manage',
+        'lyrics.view', 'lyrics.view.all', 'lyrics.create', 'lyrics.edit', 'lyrics.delete', 'lyrics.manage',
         'rehearsals.view', 'rehearsals.view.all', 'rehearsals.manage',
         'attendance.view', 'attendance.manage',
         'performances.view', 'performances.view.all', 'performances.manage',
@@ -55,7 +56,8 @@ class PermissionRoleSeeder extends Seeder
         $make('team_leader', [
             'choirs.view', 'choirs.view.all', 'choirs.update',
             'members.view', 'members.view.all', 'members.manage',
-            'songs.view', 'songs.view.all', 'songs.manage',
+            'songs.view', 'songs.view.all', 'songs.create', 'songs.edit', 'songs.delete',
+            'lyrics.view', 'lyrics.view.all', 'lyrics.create', 'lyrics.edit', 'lyrics.delete',
             'rehearsals.view', 'rehearsals.view.all', 'rehearsals.manage',
             'attendance.view', 'attendance.manage',
             'performances.view', 'performances.view.all', 'performances.manage',
@@ -64,7 +66,7 @@ class PermissionRoleSeeder extends Seeder
             'notifications.view',
         ]);
         $make('member', [
-            'choirs.view', 'members.view', 'songs.view',
+            'choirs.view', 'members.view', 'songs.view', 'lyrics.view',
             'rehearsals.view', 'performances.view',
             'announcements.view', 'gallery.view', 'notifications.view',
         ]);

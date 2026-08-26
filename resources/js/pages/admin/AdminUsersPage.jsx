@@ -20,8 +20,10 @@ import {
     AlertCircle,
     Plus,
     UserPlus,
+    Trash2,
 } from 'lucide-react';
 import { api } from '../../axios';
+import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import PasswordInput from '../../components/ui/PasswordInput';
@@ -84,6 +86,32 @@ export default function AdminUsersPage() {
     });
     const [createErrors, setCreateErrors] = useState({});
     const [createSaving, setCreateSaving] = useState(false);
+
+    // Delete confirmation
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+
+    const { can, user: currentUser } = useAuth();
+
+    const confirmDelete = async () => {
+        if (!deleteTarget) return;
+        setDeleting(true);
+        try {
+            await api.delete(`/admin/users/${deleteTarget.id}`);
+            setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
+            setToast({ variant: 'success', message: `User "${deleteTarget.name}" has been deleted.` });
+            setDeleteTarget(null);
+        } catch (err) {
+            const msg =
+                err.response?.data?.message ||
+                err.message ||
+                'Failed to delete user';
+            setToast({ variant: 'error', message: msg });
+            setDeleteTarget(null);
+        } finally {
+            setDeleting(false);
+        }
+    };
 
     // Edit form within modal
     const [editRole, setEditRole] = useState('member');
@@ -235,10 +263,46 @@ export default function AdminUsersPage() {
         setCreateErrors((prev) => ({ ...prev, [field]: undefined }));
     };
 
+    const handleCreatePhoneChange = (e) => {
+        let v = e.target.value.replace(/\D/g, '');
+        if (v.startsWith('0')) v = v.slice(1);
+        v = v.slice(0, 9);
+        setCreateForm((prev) => ({ ...prev, phone: v }));
+        setCreateErrors((prev) => ({ ...prev, phone: undefined }));
+    };
+
+    const validateCreate = () => {
+        const errs = {};
+        const name = createForm.name.trim();
+        if (!name) errs.name = ['Full name is required.'];
+        else if (name.length < 2) errs.name = ['Full name must contain at least 2 characters.'];
+        else if (!/^[\p{L}\s]+$/u.test(name)) errs.name = ['Full name may only contain letters and spaces.'];
+
+        if (!createForm.email) errs.email = ['Email address is required.'];
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createForm.email)) errs.email = ['Enter a valid email address.'];
+
+        const phoneDigits = createForm.phone.replace(/\D/g, '').replace(/^0/, '');
+        if (!createForm.phone) errs.phone = ['Phone number is required.'];
+        else if (!/^9\d{8}$/.test(phoneDigits)) errs.phone = ['Enter a valid Ethiopian phone number (e.g. 0912345678).'];
+
+        if (!createForm.password) errs.password = ['Password is required.'];
+        else if (createForm.password.length < 8) errs.password = ['Password must be at least 8 characters.'];
+        if (!createForm.password_confirmation) errs.password_confirmation = ['Please confirm the password.'];
+        else if (createForm.password !== createForm.password_confirmation) errs.password_confirmation = ['Password confirmation does not match.'];
+
+        return errs;
+    };
+
     const handleCreateSubmit = async (e) => {
         e.preventDefault();
         setCreateSaving(true);
         setCreateErrors({});
+        const clientErrors = validateCreate();
+        if (Object.keys(clientErrors).length > 0) {
+            setCreateErrors(clientErrors);
+            setCreateSaving(false);
+            return;
+        }
         try {
             const res = await api.post('/admin/users', createForm);
             setToast({ variant: 'success', message: `User "${res.data.data.name}" created successfully.` });
@@ -500,6 +564,19 @@ export default function AdminUsersPage() {
                                                         <Edit3 size={13} />
                                                         Review
                                                     </button>
+
+                                                    {can('users.delete') && u.id !== currentUser?.id && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setDeleteTarget(u)}
+                                                            disabled={saving}
+                                                            title="Delete User"
+                                                            className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 hover:text-red-800 disabled:opacity-50"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                            Delete
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -754,6 +831,8 @@ export default function AdminUsersPage() {
                                 value={createForm.name}
                                 onChange={handleCreateChange('name')}
                                 error={createErrors.name?.[0]}
+                                maxLength={100}
+                                placeholder="Daniel Mekonnen"
                                 required
                             />
                             <Input
@@ -766,10 +845,14 @@ export default function AdminUsersPage() {
                             />
                             <Input
                                 label="Phone"
+                                prefix="+251"
                                 value={createForm.phone}
-                                onChange={handleCreateChange('phone')}
+                                onChange={handleCreatePhoneChange}
                                 error={createErrors.phone?.[0]}
-                                placeholder="Optional"
+                                placeholder="912345678"
+                                maxLength={9}
+                                hint="9 digits, starting with 9 (e.g. 912345678)"
+                                required
                             />
                             <div>
                                 <label className="mb-1.5 block text-xs font-semibold text-ink-700">
@@ -861,6 +944,39 @@ export default function AdminUsersPage() {
                             </div>
                         </div>
                     </form>
+                </Modal>
+            )}
+
+            {/* Delete User Confirmation */}
+            {deleteTarget && (
+                <Modal
+                    open={!!deleteTarget}
+                    onClose={() => setDeleteTarget(null)}
+                    title="Delete User"
+                    size="sm"
+                >
+                    <div className="space-y-4">
+                        <p className="text-sm text-ink-700">
+                            Are you sure you want to delete this user?
+                        </p>
+                        <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                            <span className="font-semibold">{deleteTarget.name}</span>{' '}
+                            ({deleteTarget.email})
+                        </div>
+                        <p className="text-xs text-ink-400">
+                            This action cannot be undone. If the user has related records (choirs,
+                            members, or activity logs), deletion will be blocked and you should
+                            deactivate them instead.
+                        </p>
+                        <div className="flex justify-end gap-2 pt-2">
+                            <Button variant="ghost" onClick={() => setDeleteTarget(null)} disabled={deleting}>
+                                Cancel
+                            </Button>
+                            <Button variant="danger" onClick={confirmDelete} disabled={deleting}>
+                                {deleting ? 'Deleting…' : 'Delete User'}
+                            </Button>
+                        </div>
+                    </div>
                 </Modal>
             )}
         </div>
