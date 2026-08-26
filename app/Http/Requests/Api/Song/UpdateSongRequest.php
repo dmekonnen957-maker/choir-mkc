@@ -19,7 +19,7 @@ class UpdateSongRequest extends FormRequest
             'composer' => ['nullable', 'string', 'max:255'],
             'artist' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'audio' => ['nullable', 'file', 'mimes:mp3', 'max:10240'],
+            'audio' => ['nullable', 'file', 'mimes:mp3', 'max:15360'],
             'remove_audio' => ['nullable', 'boolean'],
         ];
     }
@@ -30,7 +30,7 @@ class UpdateSongRequest extends FormRequest
             'choir_id.exists' => 'The selected choir does not exist.',
             'title.required' => 'Song title is required.',
             'audio.mimes' => 'Only MP3 audio files are allowed.',
-            'audio.max' => 'The audio file must not exceed 10 MB.',
+            'audio.max' => 'The audio file must not exceed 15 MB.',
         ];
     }
 }

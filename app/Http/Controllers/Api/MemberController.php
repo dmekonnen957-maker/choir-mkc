@@ -136,7 +136,7 @@ class MemberController extends ApiController
             return $this->ok(['choir' => null, 'members' => [], 'leader' => null]);
         }
 
-        `$choir->loadCount('members');
+        $choir->loadCount('members');
 
         // Show the full active roster of the choir on the member-facing "My
         // Choir" page. The previous is_public self/privacy filter hid members
