@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, NavLink } from 'react-router-dom';
-import { Music, Menu, X, LogIn, LayoutDashboard } from 'lucide-react';
+import { Menu, X, LogIn, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import Logo from '../Logo';
 
 const NAV_ITEMS = [
     { label: 'Home', to: '/' },
@@ -59,11 +60,9 @@ export default function Navbar() {
                     to="/"
                     className="flex items-center gap-2.5 rounded-lg focus-visible:outline-blue-600"
                 >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-700 text-white">
-                        <Music size={20} />
-                    </span>
-                    <span className="text-lg font-semibold tracking-tight text-blue-900">
-                        CHOIR <span className="text-blue-600">MKC</span>
+                    <Logo size="md" className="shrink-0" />
+                    <span className="text-lg font-semibold tracking-tight text-blue-900 hidden lg:block">
+                        CHOIR MKC
                     </span>
                 </Link>
 

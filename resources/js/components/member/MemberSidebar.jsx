@@ -1,9 +1,9 @@
 import { NavLink } from 'react-router-dom';
+import Logo from '../Logo';
 import {
     LayoutDashboard,
     Users,
     Music,
-    Mic2,
     CalendarClock,
     CalendarDays,
     Calendar,
@@ -20,8 +20,7 @@ import {
     Key,
     BarChart3,
     History,
-    ScrollText,
-    Sparkles
+    ScrollText
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -53,7 +52,6 @@ function getAdminNav(can) {
         title: 'Content',
         items: [
             ...(can('songs.view') ? [{ label: 'Songs', to: '/admin/songs', icon: Music }] : []),
-            ...(can('lyrics.view') ? [{ label: 'Lyrics', to: '/admin/lyrics', icon: Mic2 }] : []),
         ],
     });
 
@@ -78,11 +76,8 @@ function getAdminNav(can) {
     if (can('users.view')) {
         userMgmt.push({ label: 'Users', to: '/admin/users', icon: UserCheck });
     }
-    if (can('roles.view')) {
-        userMgmt.push({ label: 'Roles', to: '/admin/roles', icon: Shield });
-    }
-    if (can('permissions.view')) {
-        userMgmt.push({ label: 'Permissions', to: '/admin/permissions', icon: Key });
+    if (can('roles.view') || can('permissions.view')) {
+        userMgmt.push({ label: 'Roles & Permissions', to: '/admin/roles', icon: Shield });
     }
     items.push({ title: 'User Management', items: userMgmt });
 
@@ -111,18 +106,22 @@ function getAdminNav(can) {
 }
 
 // Member / Team Leader navigation
-function getMemberNav(basePath) {
+function getMemberNav(basePath, role, can) {
+    const isLeader = role === 'team_leader';
+
     return [
         { label: 'Dashboard', to: `${basePath}/dashboard`, icon: LayoutDashboard },
         {
             title: 'My Choir',
-            items: [{ label: 'My Choir', to: `${basePath}/choir`, icon: Users }],
+            items: [
+                { label: 'My Choir', to: `${basePath}/choir`, icon: Users },
+                ...(isLeader ? [{ label: 'Attendance', to: `${basePath}/attendance`, icon: CheckCircle2 }] : []),
+            ],
         },
         {
             title: 'Music',
             items: [
                 { label: 'Songs', to: `${basePath}/songs`, icon: Music },
-                { label: 'Lyrics', to: `${basePath}/lyrics`, icon: Mic2 },
             ],
         },
         {
@@ -134,9 +133,11 @@ function getMemberNav(basePath) {
             ],
         },
         {
-            title: 'My Participation',
+            title: isLeader ? 'Ministry' : 'My Participation',
             items: [
-                { label: 'My Attendance', to: `${basePath}/attendance`, icon: CheckCircle2 },
+                ...(isLeader
+                    ? []
+                    : [{ label: 'My Attendance', to: `${basePath}/attendance`, icon: CheckCircle2 }]),
                 { label: 'My Performances', to: `${basePath}/my-performances`, icon: ListMusic },
             ],
         },
@@ -155,7 +156,7 @@ function getNav(basePath, role, can) {
     if (role === 'admin' || role === 'super-admin') {
         return getAdminNav(can);
     }
-    return getMemberNav(basePath);
+    return getMemberNav(basePath, role, can);
 }
 
 function NavItem({ item, onNavigate }) {
@@ -223,16 +224,11 @@ export default function MemberSidebar({ open, onClose }) {
                 {/* Brand Logo & Title */}
                 <div className="flex items-center justify-between gap-3 px-6 py-6 border-b border-slate-800/60">
                     <div className="flex min-w-0 items-center gap-3">
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20 ring-1 ring-white/10">
-                            <Church size={22} />
-                        </span>
-                        <div className="min-w-0 leading-tight">
-                            <div className="flex items-center gap-1.5">
-                                <p className="text-sm font-black tracking-wide text-white">Yeka MKC</p>
-                                <Sparkles className="h-3 w-3 text-blue-400" />
-                            </div>
+                        <Logo size="sm" className="shrink-0" />
+                        <div className="min-w-0 leading-tight hidden lg:block">
+                            <p className="text-sm font-black tracking-wide text-white">CHOIR MKC</p>
                             <p className="truncate text-xs font-medium text-slate-400">
-                                {subtitle}
+                                {isAdmin ? 'EKA MKC Choirs and Worship Teams' : subtitle}
                             </p>
                         </div>
                     </div>
