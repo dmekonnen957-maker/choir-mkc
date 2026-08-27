@@ -21,9 +21,9 @@ import MemberChoir from './pages/member/MemberChoir';
 import MemberProfile from './pages/member/MemberProfile';
 import MemberNotifications from './pages/member/MemberNotifications';
 import MemberPlaceholder from './pages/member/MemberPlaceholder';
+import TeamLeaderDashboard from './pages/team-leader/TeamLeaderDashboard';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminRolesPage from './pages/admin/AdminRolesPage';
-import AdminPermissionsPage from './pages/admin/AdminPermissionsPage';
 import AdminMembersPage from './pages/admin/AdminMembersPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminChoirsPage from './pages/admin/AdminChoirsPage';
@@ -32,9 +32,8 @@ import AdminChoirDetailPage from './pages/admin/AdminChoirDetailPage';
 import AdminSongsPage from './pages/admin/AdminSongsPage';
 import AdminSongFormPage from './pages/admin/AdminSongFormPage';
 import AdminSongDetailPage from './pages/admin/AdminSongDetailPage';
-import AdminLyricsPage from './pages/admin/AdminLyricsPage';
-import AdminLyricFormPage from './pages/admin/AdminLyricFormPage';
-import AdminLyricDetailPage from './pages/admin/AdminLyricDetailPage';
+import AdminAttendancePage from './pages/admin/AdminAttendancePage';
+import MemberAttendancePage from './pages/member/MemberAttendancePage';
 
 export default function App() {
     return (
@@ -55,6 +54,7 @@ export default function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/registration-pending" element={<RegistrationPendingPage />} />
 
+            {/* Member Area */}
             <Route
                 path="/member"
                 element={
@@ -69,16 +69,15 @@ export default function App() {
                 <Route path="profile" element={<MemberProfile />} />
                 <Route path="notifications" element={<MemberNotifications />} />
                 <Route path="songs" element={<MemberPlaceholder title="Songs" />} />
-                <Route path="lyrics" element={<MemberPlaceholder title="Lyrics" />} />
                 <Route path="rehearsals" element={<MemberPlaceholder title="Rehearsals" />} />
                 <Route path="performances" element={<MemberPlaceholder title="Performances" />} />
                 <Route path="calendar" element={<MemberPlaceholder title="Calendar" />} />
-                <Route path="attendance" element={<MemberPlaceholder title="My Attendance" />} />
+                <Route path="attendance" element={<MemberAttendancePage />} />
                 <Route path="my-performances" element={<MemberPlaceholder title="My Performances" />} />
                 <Route path="settings" element={<MemberPlaceholder title="Settings" />} />
             </Route>
 
-            {/* Admin area — protected, uses MemberLayout (sidebar + header) */}
+            {/* Admin Area */}
             <Route
                 path="/admin"
                 element={
@@ -98,8 +97,6 @@ export default function App() {
                 <Route path="users/:id" element={<AdminUsersPage />} />
                 <Route path="roles" element={<AdminRolesPage />} />
                 <Route path="roles/:id" element={<AdminRolesPage />} />
-                <Route path="permissions" element={<AdminPermissionsPage />} />
-                <Route path="permissions/:id" element={<AdminPermissionsPage />} />
                 <Route path="choir" element={<MemberChoir />} />
                 <Route path="profile" element={<MemberProfile />} />
                 <Route path="notifications" element={<MemberNotifications />} />
@@ -107,14 +104,11 @@ export default function App() {
                 <Route path="songs/new" element={<AdminSongFormPage mode="create" />} />
                 <Route path="songs/:id/edit" element={<AdminSongFormPage mode="edit" />} />
                 <Route path="songs/:id" element={<AdminSongDetailPage />} />
-                <Route path="lyrics" element={<AdminLyricsPage />} />
-                <Route path="lyrics/new" element={<AdminLyricFormPage mode="create" />} />
-                <Route path="lyrics/:id/edit" element={<AdminLyricFormPage mode="edit" />} />
-                <Route path="lyrics/:id" element={<AdminLyricDetailPage />} />
                 <Route path="rehearsals" element={<MemberPlaceholder title="Rehearsals" />} />
                 <Route path="performances" element={<MemberPlaceholder title="Performances" />} />
                 <Route path="calendar" element={<MemberPlaceholder title="Calendar" />} />
-                <Route path="attendance" element={<MemberPlaceholder title="My Attendance" />} />
+                <Route path="attendance" element={<AdminAttendancePage />} />
+                <Route path="performance-attendance" element={<AdminAttendancePage />} />
                 <Route path="my-performances" element={<MemberPlaceholder title="My Performances" />} />
                 <Route path="settings" element={<MemberPlaceholder title="Settings" />} />
                 <Route path="reports" element={<MemberPlaceholder title="Reports" />} />
@@ -122,7 +116,7 @@ export default function App() {
                 <Route path="activity-logs" element={<MemberPlaceholder title="Activity Logs" />} />
             </Route>
 
-            {/* Team Leader area — protected, uses MemberLayout (sidebar + header) */}
+            {/* Team Leader Area */}
             <Route
                 path="/team-leader"
                 element={
@@ -132,16 +126,15 @@ export default function App() {
                 }
             >
                 <Route index element={<Navigate to="dashboard" replace />} />
-                <Route path="dashboard" element={<MemberPlaceholder title="Team Leader Dashboard" />} />
+                <Route path="dashboard" element={<TeamLeaderDashboard />} />
                 <Route path="choir" element={<MemberChoir />} />
                 <Route path="profile" element={<MemberProfile />} />
                 <Route path="notifications" element={<MemberNotifications />} />
                 <Route path="songs" element={<MemberPlaceholder title="Songs" />} />
-                <Route path="lyrics" element={<MemberPlaceholder title="Lyrics" />} />
                 <Route path="rehearsals" element={<MemberPlaceholder title="Rehearsals" />} />
                 <Route path="performances" element={<MemberPlaceholder title="Performances" />} />
                 <Route path="calendar" element={<MemberPlaceholder title="Calendar" />} />
-                <Route path="attendance" element={<MemberPlaceholder title="My Attendance" />} />
+                <Route path="attendance" element={<AdminAttendancePage />} />
                 <Route path="my-performances" element={<MemberPlaceholder title="My Performances" />} />
                 <Route path="settings" element={<MemberPlaceholder title="Settings" />} />
             </Route>
@@ -150,5 +143,3 @@ export default function App() {
         </Routes>
     );
 }
-
-

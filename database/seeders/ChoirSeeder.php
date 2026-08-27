@@ -14,9 +14,9 @@ class ChoirSeeder extends Seeder
         }
 
         DB::table('choirs')->insert([
-            'name' => 'MKC Main Choir',
+            'name' => 'EKA MKC Choirs and Worship Teams',
             'slug' => 'mkc-main-choir',
-            'description' => 'Primary CHOIR MKC choir used as the default tenant.',
+            'description' => 'Primary EKA MKC Choirs and Worship Teams choir used as the default tenant.',
             'church_name' => null,
             'history' => null,
             'status' => 'active',

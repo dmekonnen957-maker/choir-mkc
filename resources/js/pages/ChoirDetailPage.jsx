@@ -302,7 +302,7 @@ function OverviewTab({ choir, data, upcoming }) {
             <div className="lg:col-span-2">
                 <SubHeading title="About this Choir" />
                 <p className="mt-3 max-w-2xl leading-relaxed text-slate-600">
-                    {choir.description || 'A vibrant part of the Choir MKC community.'}
+                    {choir.description || 'A vibrant part of the EKA MKC Choirs and Worship Teams community.'}
                 </p>
 
                 {upcoming.length > 0 && (

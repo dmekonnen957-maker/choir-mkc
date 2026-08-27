@@ -18,7 +18,7 @@ export default function ChoirCard({ choir }) {
                 <h3 className="text-lg font-semibold tracking-tight text-slate-900">{choir.name}</h3>
                 {leader && <p className="mt-0.5 text-sm text-slate-500">Led by {leader}</p>}
                 <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-500">
-                    {choir.description || 'A vibrant part of the Choir MKC community.'}
+                    {choir.description || 'A vibrant part of the EKA MKC Choirs and Worship Teams community.'}
                 </p>
                 <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
                     <Users size={16} className="text-blue-500" />

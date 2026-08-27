@@ -28,7 +28,7 @@ class SongController extends ApiController
             $q->where('title', 'like', '%' . $request->input('search') . '%');
         }
 
-        $q->withCount('lyrics')->latest();
+        $q->latest();
 
         return $this->paginate($q, SongResource::class);
     }
@@ -47,6 +47,11 @@ class SongController extends ApiController
         $song->composer = $data['composer'] ?? null;
         $song->artist = $data['artist'] ?? null;
         $song->description = $data['description'] ?? null;
+        $song->original_key = $data['original_key'] ?? null;
+        $song->scale = $data['scale'] ?? null;
+        $song->scale_mode = $data['scale_mode'] ?? null;
+        $song->lyrics = $data['lyrics'] ?? null;
+        $song->is_published = $request->boolean('is_published', true);
         $song->created_by = $request->user()->id;
 
         if ($request->hasFile('audio')) {
@@ -86,6 +91,21 @@ class SongController extends ApiController
         }
         if (array_key_exists('description', $data)) {
             $song->description = $data['description'];
+        }
+        if (array_key_exists('original_key', $data)) {
+            $song->original_key = $data['original_key'];
+        }
+        if (array_key_exists('scale', $data)) {
+            $song->scale = $data['scale'];
+        }
+        if (array_key_exists('scale_mode', $data)) {
+            $song->scale_mode = $data['scale_mode'];
+        }
+        if (array_key_exists('lyrics', $data)) {
+            $song->lyrics = $data['lyrics'];
+        }
+        if ($request->has('is_published')) {
+            $song->is_published = $request->boolean('is_published');
         }
 
         if ($request->hasFile('audio')) {

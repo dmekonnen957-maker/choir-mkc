@@ -55,7 +55,7 @@ export default function PerformanceCard({ performance, variant = 'upcoming' }) {
                     <h3 className="mt-1 text-lg font-semibold tracking-tight text-slate-900">
                         {performance.title}
                     </h3>
-                    <p className="mt-1 text-sm text-slate-500">{choir?.name || 'Choir MKC'}</p>
+                    <p className="mt-1 text-sm text-slate-500">{choir?.name || 'EKA MKC Choirs and Worship Teams'}</p>
                     <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
                         {performance.start_time && (
                             <span className="inline-flex items-center gap-1">

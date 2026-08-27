@@ -15,9 +15,19 @@ class AttendanceRecord extends Model
         'attendance_session_id',
         'member_id',
         'status',
+        'check_in_at',
+        'check_out_at',
         'notes',
         'marked_by',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'check_in_at' => 'datetime',
+            'check_out_at' => 'datetime',
+        ];
+    }
 
     public function choir(): BelongsTo
     {
@@ -27,6 +37,11 @@ class AttendanceRecord extends Model
     public function attendanceSession(): BelongsTo
     {
         return $this->belongsTo(AttendanceSession::class);
+    }
+
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(AttendanceSession::class, 'attendance_session_id');
     }
 
     public function member(): BelongsTo

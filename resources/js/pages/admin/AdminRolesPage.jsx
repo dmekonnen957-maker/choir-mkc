@@ -30,7 +30,6 @@ const PERMISSION_GROUPS = [
     { key: 'Choirs', permissions: ['choirs.view', 'choirs.view.all', 'choirs.create', 'choirs.update', 'choirs.delete'] },
     { key: 'Members', permissions: ['members.view', 'members.view.all', 'members.manage'] },
     { key: 'Songs', permissions: ['songs.view', 'songs.view.all', 'songs.manage'] },
-    { key: 'Lyrics', permissions: ['lyrics.view', 'lyrics.create', 'lyrics.edit', 'lyrics.delete'] },
     { key: 'Rehearsals', permissions: ['rehearsals.view', 'rehearsals.view.all', 'rehearsals.manage'] },
     { key: 'Performances', permissions: ['performances.view', 'performances.view.all', 'performances.manage'] },
     { key: 'Attendance', permissions: ['attendance.view', 'attendance.manage', 'attendance.reports'] },
@@ -357,7 +356,16 @@ export default function AdminRolesPage() {
                                     <div className="max-h-96 overflow-y-auto space-y-4">
                                         {sortedGroups.map((group) => (
                                             <div key={group}>
-                                                <p className="text-xs font-semibold uppercase tracking-wider text-ink-400 mb-1">{group}</p>
+                                                <div className="mb-1 flex items-center justify-between">
+                                                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">{group}</p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleGroup(groupedPermissions[group] || [])}
+                                                        className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                                                    >
+                                                        {(groupedPermissions[group] || []).every((p) => formPermissions.includes(p.name)) ? 'Clear' : 'Select all'}
+                                                    </button>
+                                                </div>
                                                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                                                     {(groupedPermissions[group] || []).map((p) => (
                                                         <label key={p.name} className="flex items-center gap-2 rounded-lg border border-blue-100 bg-white p-2 text-sm text-ink-700 hover:bg-blue-50 transition cursor-pointer">

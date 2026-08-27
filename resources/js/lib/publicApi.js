@@ -23,8 +23,10 @@ export async function fetchChoirSongs(id) {
     return normalize(res);
 }
 
-export async function fetchChoirSong(choirId, songId) {
-    const res = await api.get(`/public/choirs/${choirId}/songs/${songId}`);
+export async function fetchChoirSong(choirId, songId, transpose = 0) {
+    const res = await api.get(`/public/choirs/${choirId}/songs/${songId}`, {
+        params: transpose ? { transpose } : {},
+    });
     return res.data?.data ?? null;
 }
 

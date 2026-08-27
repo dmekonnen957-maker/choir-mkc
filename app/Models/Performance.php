@@ -96,6 +96,16 @@ class Performance extends Model
         return $this->hasMany(GalleryItem::class);
     }
 
+    public function attendanceSessions(): HasMany
+    {
+        return $this->hasMany(AttendanceSession::class);
+    }
+
+    public function attendanceSession(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(AttendanceSession::class);
+    }
+
     public function scopeUpcoming($query)
     {
         return $query->where('date', '>=', now()->toDateString())

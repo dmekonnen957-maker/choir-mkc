@@ -3,9 +3,9 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="description" content="CHOIR MKC — a multi-choir management and digital archive platform for choirs, songs, rehearsals, performances and musical history.">
+        <meta name="description" content="Yeka MKC choirs and worship team — a multi-choir management and digital archive platform for choirs, songs, rehearsals, performances and musical history.">
         <meta name="theme-color" content="#0b1f3a">
-        <title>CHOIR MKC — Multi-Choir Management Platform</title>
+        <title>Yeka MKC choirs and worship team — Multi-Choir Management Platform</title>
 
         @fonts
 

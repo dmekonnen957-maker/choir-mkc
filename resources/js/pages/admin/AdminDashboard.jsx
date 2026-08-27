@@ -6,6 +6,7 @@ import Card from '../../components/ui/Card';
 import StatCard from '../../components/member/StatCard';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Alert from '../../components/ui/Alert';
+import Logo from '../../components/Logo';
 
 function formatDate(iso) {
     if (!iso) return '';
@@ -45,9 +46,15 @@ export default function AdminDashboard() {
 
     return (
         <div className="space-y-8">
-            <div>
-                <h1 className="text-2xl font-bold tracking-tight text-ink-900">Choir Administration</h1>
-                <p className="mt-1 text-sm text-ink-500">
+            <div className="mb-6">
+                <div className="flex items-center gap-4 mb-4">
+                    <Logo size="lg" />
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-ink-900">CHOIR MKC</h1>
+                        <p className="text-sm text-ink-500">Administration Portal</p>
+                    </div>
+                </div>
+                <p className="text-sm text-ink-500">
                     Overview of your choir community and recent activity.
                 </p>
             </div>

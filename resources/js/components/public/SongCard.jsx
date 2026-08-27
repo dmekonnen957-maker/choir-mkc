@@ -27,7 +27,7 @@ export default function SongCard({ song, onPlay }) {
                 </Link>
                 <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
                     <Music2 size={13} className="text-blue-500" />
-                    {choirName || 'Choir MKC'}
+                    {choirName || 'EKA MKC Choirs and Worship Teams'}
                 </p>
             </div>
         </div>

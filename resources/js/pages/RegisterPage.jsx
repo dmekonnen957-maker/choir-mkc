@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Logo from '../components/Logo';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Music, ArrowRight, ArrowLeft, User, Phone, Church, CheckCircle2 } from 'lucide-react';
 import Input from '../components/ui/Input';
@@ -128,13 +129,8 @@ export default function RegisterPage() {
             {/* Content */}
             <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
                 <div className="glass-panel w-full max-w-lg p-7 sm:p-9">
-                    {/* Brand */}
-                    <div className="mb-6 flex flex-col items-center text-center">
-                        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg">
-                            <Music size={24} />
-                        </span>
-                        <p className="mt-3 text-lg font-bold tracking-wide text-white">CHOIR MKC</p>
-                    </div>
+                    <Logo size="md" className="mb-6" />
+                    <p className="text-lg font-bold tracking-wide text-white">CHOIR MKC</p>
 
                     <div className="mb-6 text-center">
                         <h1 className="text-2xl font-semibold text-white">Create an Account</h1>

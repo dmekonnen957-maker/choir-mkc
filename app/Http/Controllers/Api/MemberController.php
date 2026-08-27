@@ -240,4 +240,111 @@ class MemberController extends ApiController
             'unread_count' => $notifications->whereNull('read_at')->count(),
         ]);
     }
+
+    /**
+     * Retrieve the authenticated member's attendance history and statistics.
+     * Members cannot modify attendance.
+     */
+    public function attendance(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+        $choir = $this->effectiveChoir($user);
+
+        if (! $choir) {
+            return $this->ok([
+                'has_choir' => false,
+                'choir' => null,
+                'member' => null,
+                'stats' => [
+                    'total_events' => 0,
+                    'present' => 0,
+                    'late' => 0,
+                    'absent' => 0,
+                    'excused' => 0,
+                    'attendance_rate' => 0,
+                ],
+                'history' => [],
+            ]);
+        }
+
+        $member = $this->linkedMember($user, $choir);
+
+        if (! $member) {
+            return $this->ok([
+                'has_choir' => true,
+                'choir' => new ChoirResource($choir),
+                'member' => null,
+                'stats' => [
+                    'total_events' => 0,
+                    'present' => 0,
+                    'late' => 0,
+                    'absent' => 0,
+                    'excused' => 0,
+                    'attendance_rate' => 0,
+                ],
+                'history' => [],
+            ]);
+        }
+
+        // Retrieve all attendance records for this member in this choir
+        $records = $member->attendanceRecords()
+            ->where('choir_id', $choir->id)
+            ->with(['attendanceSession.performance', 'attendanceSession.rehearsal'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        $totalChoirSessions = \App\Models\AttendanceSession::where('choir_id', $choir->id)->count();
+
+        $presentCount = $records->where('status', 'present')->count();
+        $lateCount = $records->where('status', 'late')->count();
+        $absentCount = $records->where('status', 'absent')->count();
+        $excusedCount = $records->where('status', 'excused')->count();
+        $totalRecorded = $records->count();
+
+        $effectiveTotal = max($totalChoirSessions, $totalRecorded);
+        $attended = $presentCount + $lateCount;
+        $attendanceRate = $effectiveTotal > 0 ? round(($attended / $effectiveTotal) * 100, 1) : 0;
+
+        $history = $records->map(function ($rec) use ($choir) {
+            $session = $rec->attendanceSession;
+            $title = $session?->title
+                ?? $session?->performance?->title
+                ?? $session?->rehearsal?->title
+                ?? 'Choir Session';
+
+            $date = $session?->session_date?->format('Y-m-d')
+                ?? $rec->created_at?->format('Y-m-d');
+
+            return [
+                'id' => $rec->id,
+                'session_id' => $rec->attendance_session_id,
+                'date' => $date,
+                'event_title' => $title,
+                'event_type' => $session?->event_type ?? ($session?->performance_id ? 'performance' : 'rehearsal'),
+                'choir_name' => $choir->name,
+                'status' => $rec->status,
+                'check_in_at' => $rec->check_in_at?->toIso8601String(),
+                'check_in_time' => $rec->check_in_at ? $rec->check_in_at->format('h:i A') : null,
+                'check_in_timestamp' => $rec->check_in_at ? $rec->check_in_at->format('h:i:s A') : null,
+                'check_out_at' => $rec->check_out_at?->toIso8601String(),
+                'check_out_time' => $rec->check_out_at ? $rec->check_out_at->format('h:i A') : null,
+                'notes' => $rec->notes,
+            ];
+        });
+
+        return $this->ok([
+            'has_choir' => true,
+            'choir' => new ChoirResource($choir),
+            'member' => new MemberResource($member),
+            'stats' => [
+                'total_events' => $effectiveTotal,
+                'present' => $presentCount,
+                'late' => $lateCount,
+                'absent' => $absentCount,
+                'excused' => $excusedCount,
+                'attendance_rate' => $attendanceRate,
+            ],
+            'history' => $history,
+        ]);
+    }
 }

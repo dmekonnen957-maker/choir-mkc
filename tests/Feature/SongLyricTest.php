@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Choir;
-use App\Models\Lyric;
 use App\Models\Song;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -93,23 +92,16 @@ class SongLyricTest extends TestCase
         $this->assertEquals($user->name, $res->json('data.members.0.name'));
     }
 
-    public function test_dashboard_shows_song_and_lyric_counts(): void
+    public function test_dashboard_shows_song_count(): void
     {
         $choir = $this->choir('Dash Choir');
         $admin = $this->admin();
         Song::create(['choir_id' => $choir->id, 'title' => 'Song One', 'created_by' => $admin->id]);
-        Lyric::create([
-            'choir_id' => $choir->id,
-            'song_id' => Song::first()->id,
-            'content' => 'la la',
-            'created_by' => $admin->id,
-        ]);
 
         $res = $this->withHeaders($this->auth($admin))->getJson('/api/admin/dashboard');
 
         $res->assertStatus(200);
         $this->assertGreaterThanOrEqual(1, $res->json('data.counts.songs'));
-        $this->assertGreaterThanOrEqual(1, $res->json('data.counts.lyrics'));
     }
 
     public function test_admin_can_create_song(): void
@@ -121,6 +113,8 @@ class SongLyricTest extends TestCase
             'choir_id' => $choir->id,
             'title' => 'Great Are You Lord',
             'artist' => 'Passion',
+            'original_key' => 'G',
+            'scale' => 'major',
         ]);
 
         $res->assertStatus(201);
@@ -128,19 +122,146 @@ class SongLyricTest extends TestCase
         $this->assertEquals($admin->id, $res->json('data.created_by'));
     }
 
-    public function test_admin_can_edit_song(): void
+    public function test_song_requires_valid_key_and_scale(): void
+    {
+        $choir = $this->choir('Validate Choir');
+        $admin = $this->admin();
+
+        $bad = $this->withHeaders($this->auth($admin))->postJson('/api/admin/songs', [
+            'choir_id' => $choir->id,
+            'title' => 'Bad',
+            'original_key' => 'H',
+            'scale' => 'dorian',
+        ]);
+        $bad->assertStatus(422);
+
+        $good = $this->withHeaders($this->auth($admin))->postJson('/api/admin/songs', [
+            'choir_id' => $choir->id,
+            'title' => 'Good',
+            'original_key' => 'C',
+            'scale' => 'major',
+        ]);
+        $good->assertStatus(201);
+    }
+
+    public function test_admin_can_create_song_with_lyrics_key_scale_and_mp3_as_one_record(): void
+    {
+        Storage::fake('public');
+        $choir = $this->choir('Unified Choir');
+        $admin = $this->admin();
+
+        $res = $this->withHeaders($this->auth($admin))->postJson('/api/admin/songs', [
+            'choir_id' => $choir->id,
+            'title' => 'Amazing Grace',
+            'artist' => 'Traditional',
+            'original_key' => 'C',
+            'scale' => 'major',
+            'lyrics' => "[C]Amazing grace how [F]sweet the sound\nThat saved a wretch like me",
+            'is_published' => true,
+            'audio' => UploadedFile::fake()->create('track.mp3', 200, 'audio/mpeg'),
+        ]);
+
+        $res->assertStatus(201);
+        $id = $res->json('data.id');
+
+        // Exactly one song record, no separate legacy lyric records.
+        $this->assertDatabaseCount('songs', 1);
+        $this->assertDatabaseHas('songs', [
+            'id' => $id,
+            'title' => 'Amazing Grace',
+            'original_key' => 'C',
+            'scale' => 'major',
+            'lyrics' => "[C]Amazing grace how [F]sweet the sound\nThat saved a wretch like me",
+            'is_published' => true,
+        ]);
+        $this->assertNotNull($res->json('data.audio_path'));
+        Storage::disk('public')->assertExists($res->json('data.audio_path'));
+        $this->assertTrue($res->json('data.has_lyrics'));
+    }
+
+    public function test_song_show_returns_key_scale_lyrics_and_original(): void
+    {
+        $choir = $this->choir('Show Choir');
+        $admin = $this->admin();
+        $song = Song::create([
+            'choir_id' => $choir->id,
+            'title' => 'Show Song',
+            'original_key' => 'D',
+            'scale' => 'minor',
+            'lyrics' => '[D]Hello [G]world',
+            'created_by' => $admin->id,
+        ]);
+
+        $res = $this->withHeaders($this->auth($admin))->getJson("/api/admin/songs/{$song->id}");
+
+        $res->assertStatus(200);
+        $this->assertEquals('D', $res->json('data.original_key'));
+        $this->assertEquals('D', $res->json('data.key'));
+        $this->assertEquals('minor', $res->json('data.scale'));
+        $this->assertEquals('[D]Hello [G]world', $res->json('data.lyrics'));
+        $this->assertEquals('[D]Hello [G]world', $res->json('data.display_lyrics'));
+    }
+
+    public function test_transpose_api_returns_transposed_key_and_lyrics(): void
+    {
+        $choir = $this->choir('Transpose Choir');
+        $admin = $this->admin();
+        $song = Song::create([
+            'choir_id' => $choir->id,
+            'title' => 'Transpose Song',
+            'original_key' => 'C',
+            'scale' => 'major',
+            'lyrics' => '[C]Amazing [F]grace',
+            'created_by' => $admin->id,
+        ]);
+
+        $up = $this->withHeaders($this->auth($admin))
+            ->getJson("/api/admin/songs/{$song->id}?transpose=1");
+        $up->assertStatus(200);
+        $this->assertEquals('C#', $up->json('data.key'));
+        $this->assertEquals('[C#]Amazing [F#]grace', $up->json('data.display_lyrics'));
+
+        $down = $this->withHeaders($this->auth($admin))
+            ->getJson("/api/admin/songs/{$song->id}?transpose=-2");
+        $down->assertStatus(200);
+        $this->assertEquals('A#', $down->json('data.key'));
+        $this->assertEquals('[A#]Amazing [D#]grace', $down->json('data.display_lyrics'));
+
+        $zero = $this->withHeaders($this->auth($admin))
+            ->getJson("/api/admin/songs/{$song->id}?transpose=0");
+        $zero->assertStatus(200);
+        $this->assertEquals('C', $zero->json('data.key'));
+        $this->assertEquals('[C]Amazing [F]grace', $zero->json('data.display_lyrics'));
+    }
+
+    public function test_admin_can_edit_song_lyrics_key_and_scale(): void
     {
         $choir = $this->choir('Edit Choir');
         $admin = $this->admin();
-        $song = Song::create(['choir_id' => $choir->id, 'title' => 'Old Title', 'created_by' => $admin->id]);
+        $song = Song::create([
+            'choir_id' => $choir->id,
+            'title' => 'Old Title',
+            'original_key' => 'C',
+            'scale' => 'major',
+            'created_by' => $admin->id,
+        ]);
 
         $res = $this->withHeaders($this->auth($admin))->putJson("/api/admin/songs/{$song->id}", [
             'choir_id' => $choir->id,
             'title' => 'New Title',
+            'original_key' => 'E',
+            'scale' => 'minor',
+            'lyrics' => '[E]New lyric',
         ]);
 
         $res->assertStatus(200);
-        $this->assertDatabaseHas('songs', ['id' => $song->id, 'title' => 'New Title']);
+        $this->assertDatabaseHas('songs', [
+            'id' => $song->id,
+            'title' => 'New Title',
+            'original_key' => 'E',
+            'scale' => 'minor',
+            'lyrics' => '[E]New lyric',
+        ]);
     }
 
     public function test_admin_can_upload_mp3_and_stream_it_then_delete_removes_file(): void
@@ -152,6 +273,8 @@ class SongLyricTest extends TestCase
         $create = $this->withHeaders($this->auth($admin))->postJson('/api/admin/songs', [
             'choir_id' => $choir->id,
             'title' => 'With Audio',
+            'original_key' => 'C',
+            'scale' => 'major',
             'audio' => UploadedFile::fake()->create('track.mp3', 200, 'audio/mpeg'),
         ]);
         $create->assertStatus(201);
@@ -169,51 +292,53 @@ class SongLyricTest extends TestCase
         $this->assertSoftDeleted('songs', ['id' => $create->json('data.id')]);
     }
 
-    public function test_admin_can_create_and_edit_and_delete_lyrics_without_deleting_song(): void
+    public function test_delete_song_removes_audio_but_keeps_choir(): void
     {
-        $choir = $this->choir('Lyric Choir');
+        Storage::fake('public');
+        $choir = $this->choir('Keep Choir');
         $admin = $this->admin();
-        $song = Song::create(['choir_id' => $choir->id, 'title' => 'Lyric Song', 'created_by' => $admin->id]);
-
-        $create = $this->withHeaders($this->auth($admin))->postJson('/api/admin/lyrics', [
+        $song = Song::create([
             'choir_id' => $choir->id,
-            'song_id' => $song->id,
-            'language' => 'Amharic',
-            'version_label' => 'Verse 1',
-            'content' => 'Praise the Lord',
+            'title' => 'To Delete',
+            'original_key' => 'G',
+            'scale' => 'major',
+            'audio_path' => 'songs/to-delete.mp3',
+            'created_by' => $admin->id,
         ]);
-        $create->assertStatus(201);
+        Storage::disk('public')->put($song->audio_path, 'audio-bytes');
 
-        $lyricId = $create->json('data.id');
-        $edit = $this->withHeaders($this->auth($admin))->putJson("/api/admin/lyrics/{$lyricId}", [
-            'choir_id' => $choir->id,
-            'song_id' => $song->id,
-            'language' => 'Amharic',
-            'content' => 'Praise the Lord forever',
-        ]);
-        $edit->assertStatus(200);
-        $this->assertDatabaseHas('lyrics', ['id' => $lyricId, 'content' => 'Praise the Lord forever']);
+        $this->withHeaders($this->auth($admin))->deleteJson("/api/admin/songs/{$song->id}");
 
-        $this->withHeaders($this->auth($admin))->deleteJson("/api/admin/lyrics/{$lyricId}")->assertStatus(200);
-        $this->assertDatabaseMissing('lyrics', ['id' => $lyricId]);
-        $this->assertDatabaseHas('songs', ['id' => $song->id]);
+        Storage::disk('public')->assertMissing($song->audio_path);
+        $this->assertSoftDeleted('songs', ['id' => $song->id]);
+        $this->assertDatabaseHas('choirs', ['id' => $choir->id]);
     }
 
-    public function test_lyric_cannot_belong_to_song_from_another_choir(): void
+    public function test_public_song_view_exposes_data_without_admin_controls(): void
     {
-        $choirA = $this->choir('Choir A');
-        $choirB = $this->choir('Choir B');
-        $admin = $this->admin();
-        $song = Song::create(['choir_id' => $choirA->id, 'title' => 'A Song', 'created_by' => $admin->id]);
-
-        $res = $this->withHeaders($this->auth($admin))->postJson('/api/admin/lyrics', [
-            'choir_id' => $choirB->id,
-            'song_id' => $song->id,
-            'content' => 'cross choir',
+        $choir = $this->choir('Public Choir');
+        $song = Song::create([
+            'choir_id' => $choir->id,
+            'title' => 'Public Song',
+            'original_key' => 'A',
+            'scale' => 'minor',
+            'lyrics' => '[A]Public',
+            'is_published' => true,
         ]);
 
-        $res->assertStatus(422);
-        $this->assertDatabaseMissing('lyrics', ['content' => 'cross choir']);
+        $res = $this->getJson("/api/public/choirs/{$choir->id}/songs/{$song->id}");
+        $res->assertStatus(200);
+        $this->assertEquals('Public Song', $res->json('data.title'));
+        $this->assertEquals('A', $res->json('data.key'));
+        $this->assertEquals('[A]Public', $res->json('data.display_lyrics'));
+
+        // Unpublished songs are not publicly accessible.
+        $hidden = Song::create([
+            'choir_id' => $choir->id,
+            'title' => 'Hidden Song',
+            'is_published' => false,
+        ]);
+        $this->getJson("/api/public/choirs/{$choir->id}/songs/{$hidden->id}")->assertStatus(404);
     }
 
     public function test_non_admin_cannot_create_song(): void

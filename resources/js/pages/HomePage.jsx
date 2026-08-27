@@ -56,7 +56,7 @@ export default function HomePage() {
                         <SectionHeading
                             eyebrow="Our Community"
                             title="Meet Our Choirs"
-                            subtitle="Explore the voices, people, and stories behind Choir MKC."
+                            subtitle="Explore the voices, people, and stories behind EKA MKC Choirs and Worship Teams."
                         />
                     </Reveal>
                     <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -181,7 +181,7 @@ export default function HomePage() {
                                 Explore Our History
                             </h2>
                             <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-slate-500">
-                                Trace the journey of Choir MKC — the milestones, memories, and moments of
+                                Trace the journey of EKA MKC Choirs and Worship Teams — the milestones, memories, and moments of
                                 faithful service that shaped who we are today.
                             </p>
                             <Link

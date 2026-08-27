@@ -8,14 +8,18 @@ class UserResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $primaryChoir = $this->relationLoaded('choirs') ? ($this->choirs->first()) : null;
+        $primaryChoir = $this->relationLoaded('choirs') && $this->choirs ? $this->choirs->first() : null;
 
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'full_name' => $this->name,
+            'first_name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
             'role' => $this->role,
+            'user_role' => $this->role,
+            'member_code' => null,
             'status' => $this->status ?? 'pending',
             'approved_at' => $this->approved_at,
             'approved_by' => $this->approved_by,

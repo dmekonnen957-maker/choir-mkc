@@ -8,7 +8,6 @@ use App\Http\Controllers\Api\ChoirController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\GalleryController;
-use App\Http\Controllers\Api\LyricController;
 use App\Http\Controllers\Api\MemberController;
 use App\Http\Controllers\Api\AdminMemberController;
 use App\Http\Controllers\Api\NotificationController;
@@ -95,7 +94,6 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::apiResource('/{choir}/voice-sections', VoiceSectionController::class);
             Route::apiResource('/{choir}/song-categories', SongCategoryController::class);
             Route::apiResource('/{choir}/songs', SongController::class);
-            Route::apiResource('/{choir}/songs/{song}/lyrics', LyricController::class);
             Route::apiResource('/{choir}/songs/{song}/histories', SongHistoryController::class);
             Route::apiResource('/{choir}/songs/{song}/files', SongFileController::class);
 
@@ -143,7 +141,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/reports/{report}', [ReportController::class, 'show']);
         Route::apiResource('songs', SongController::class);
         Route::get('songs/{song}/audio', [SongController::class, 'audio'])->name('admin.songs.audio');
-        Route::apiResource('lyrics', LyricController::class);
+    });
+
+    // Attendance Management routes (accessible to admins, team leaders with choir authorization)
+    Route::prefix('attendance')->group(function () {
+        Route::get('/events', [AttendanceController::class, 'events']);
+        Route::get('/sessions', [AttendanceController::class, 'sessions']);
+        Route::post('/sessions/find-or-create', [AttendanceController::class, 'findOrCreateSession']);
+        Route::get('/sessions/{attendanceSession}', [AttendanceController::class, 'showSession']);
+        Route::patch('/sessions/{attendanceSession}/status', [AttendanceController::class, 'updateStatus']);
+        Route::post('/check-in', [AttendanceController::class, 'checkIn']);
+        Route::post('/check-out', [AttendanceController::class, 'checkOut']);
+        Route::post('/records/mark', [AttendanceController::class, 'markRecord']);
+        Route::post('/records/bulk', [AttendanceController::class, 'bulk']);
+        Route::get('/stats', [AttendanceController::class, 'stats']);
     });
 
     // Member-only area. Choir context is derived from the authenticated user,
@@ -151,6 +162,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware(['auth:sanctum', 'member'])->prefix('member')->group(function () {
         Route::get('/dashboard', [MemberController::class, 'dashboard']);
         Route::get('/choir', [MemberController::class, 'choir']);
+        Route::get('/attendance', [MemberController::class, 'attendance']);
         Route::get('/profile', [MemberController::class, 'profile']);
         Route::match(['PUT', 'PATCH'], '/profile', [MemberController::class, 'updateProfile']);
         Route::get('/notifications', [MemberController::class, 'notifications']);

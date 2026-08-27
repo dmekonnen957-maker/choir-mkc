@@ -29,6 +29,7 @@ class RoleController extends ApiController
             return [
                 'id' => $role->id,
                 'name' => $role->name,
+                'description' => $role->description,
                 'guard_name' => $role->guard_name,
                 'is_core' => in_array($role->name, self::CORE_ROLES),
                 'users_count' => $role->users_count,
@@ -50,6 +51,7 @@ class RoleController extends ApiController
         $role = Role::create([
             'name' => $data['name'],
             'guard_name' => 'api',
+            'description' => $data['description'] ?? null,
         ]);
 
         if ($request->filled('permissions')) {
@@ -70,6 +72,7 @@ class RoleController extends ApiController
         return $this->ok([
             'id' => $role->id,
             'name' => $role->name,
+            'description' => $role->description,
             'guard_name' => $role->guard_name,
             'is_core' => in_array($role->name, self::CORE_ROLES),
             'permissions' => $role->permissions()->pluck('name'),
@@ -85,6 +88,7 @@ class RoleController extends ApiController
         return $this->ok([
             'id' => $role->id,
             'name' => $role->name,
+            'description' => $role->description,
             'guard_name' => $role->guard_name,
             'is_core' => in_array($role->name, self::CORE_ROLES),
             'users_count' => $role->users->count(),
@@ -124,6 +128,7 @@ class RoleController extends ApiController
 
         $role->update([
             'name' => $data['name'],
+            'description' => $data['description'] ?? null,
         ]);
 
         if ($request->has('permissions')) {
@@ -145,6 +150,7 @@ class RoleController extends ApiController
         return $this->ok([
             'id' => $role->id,
             'name' => $role->name,
+            'description' => $role->description,
             'guard_name' => $role->guard_name,
             'is_core' => in_array($role->name, self::CORE_ROLES),
             'permissions' => $role->permissions()->pluck('name'),

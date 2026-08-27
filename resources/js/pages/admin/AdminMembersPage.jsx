@@ -7,7 +7,8 @@ import {
     Eye,
     Phone,
     Mail,
-    Calendar,
+    CheckCircle2,
+    Clock,
     ChevronLeft,
     ChevronRight,
     AlertCircle,
@@ -20,8 +21,9 @@ import Alert from '../../components/ui/Alert';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
 const STATUS_BADGES = {
-    active: { label: 'Active', bg: 'bg-emerald-100 text-emerald-800 border-emerald-300', icon: Calendar },
-    inactive: { label: 'Inactive', bg: 'bg-red-100 text-red-800 border-red-300', icon: AlertCircle },
+    approved: { label: 'Approved', bg: 'bg-emerald-100 text-emerald-800 border-emerald-300', icon: CheckCircle2 },
+    pending: { label: 'Pending', bg: 'bg-amber-100 text-amber-800 border-amber-300', icon: Clock },
+    rejected: { label: 'Rejected', bg: 'bg-red-100 text-red-800 border-red-300', icon: AlertCircle },
 };
 
 const ROLE_BADGES = {
@@ -130,18 +132,19 @@ export default function AdminMembersPage() {
                 </div>
 
                 <div>
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => {
-                            setStatusFilter(e.target.value);
-                            setPage(1);
-                        }}
-                        className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm text-ink-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                    >
-                        <option value="all">All Statuses</option>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                    </select>
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => {
+                                setStatusFilter(e.target.value);
+                                setPage(1);
+                            }}
+                            className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm text-ink-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        >
+                            <option value="all">All Statuses</option>
+                            <option value="approved">Approved</option>
+                            <option value="pending">Pending</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
                 </div>
 
                 <div>

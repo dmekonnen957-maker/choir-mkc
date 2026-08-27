@@ -1,25 +1,52 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Music2, Play, Download, Mic2, Disc3 } from 'lucide-react';
-import CoverImage from '../components/public/CoverImage';
+import { ArrowLeft, Music2, Play, Download, Disc3, Minus, Plus, RotateCcw } from 'lucide-react';
 import AudioPlayer from '../components/public/AudioPlayer';
+import LyricsViewer from '../components/public/LyricsViewer';
 import Reveal from '../components/ui/Reveal';
 import EmptyState from '../components/public/EmptyState';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { fetchAllSongs } from '../lib/publicApi';
+import { fetchAllSongs, fetchChoirSong } from '../lib/publicApi';
+
+const SCALE_LABELS = {
+    major: 'Major',
+    minor: 'Minor',
+    ethiopian: 'Ethiopian',
+};
+
+const QUICK_STEPS = [-2, -1, 0, 1, 2, 3];
 
 export default function SongDetailPage() {
     const { id } = useParams();
     const [song, setSong] = useState(null);
+    const [transpose, setTranspose] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [notFound, setNotFound] = useState(false);
 
     useEffect(() => {
+        setLoading(true);
+        setNotFound(false);
+        setTranspose(0);
         fetchAllSongs()
             .then((songs) => songs.find((s) => String(s.id) === String(id)) ?? null)
-            .then(setSong)
-            .catch(() => {})
+            .then((found) => {
+                if (!found) {
+                    setNotFound(true);
+                    return;
+                }
+                const choirId = found.choir?.id;
+                return fetchChoirSong(choirId, id, 0).then(setSong);
+            })
+            .catch(() => setNotFound(true))
             .finally(() => setLoading(false));
     }, [id]);
+
+    const changeTranspose = (steps) => {
+        const next = Math.max(-12, Math.min(12, steps));
+        setTranspose(next);
+        if (!song?.choir?.id) return;
+        fetchChoirSong(song.choir.id, id, next).then(setSong);
+    };
 
     if (loading) {
         return (
@@ -29,7 +56,7 @@ export default function SongDetailPage() {
         );
     }
 
-    if (!song) {
+    if (notFound || !song) {
         return (
             <div className="mx-auto max-w-3xl px-4 py-24">
                 <EmptyState
@@ -66,8 +93,8 @@ export default function SongDetailPage() {
                     <div className="mt-6 grid gap-10 lg:grid-cols-[340px_1fr] lg:gap-14">
                         <Reveal>
                             <div className="overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-xl">
-                                <div className="aspect-square w-full">
-                                    <CoverImage src={song.cover_image_path} label={song.title} className="h-full w-full" />
+                                <div className="flex aspect-square w-full items-center justify-center bg-gradient-to-br from-blue-100 to-indigo-100 text-indigo-300">
+                                    <Music2 size={72} />
                                 </div>
                             </div>
                         </Reveal>
@@ -88,11 +115,22 @@ export default function SongDetailPage() {
                                 </Link>
                             )}
 
-                            <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
-                                {song.composer && <Meta icon={Mic2} label="Composer" value={song.composer} />}
-                                {song.artist && <Meta icon={Disc3} label="Artist" value={song.artist} />}
-                                {song.song_category?.name && (
-                                    <Meta icon={Music2} label="Category" value={song.song_category.name} />
+                            <div className="mt-6 flex flex-wrap items-center gap-2">
+                                <span className="rounded-full bg-indigo-50 px-3 py-1 text-sm font-semibold text-indigo-700">
+                                    Key: {song.key || '—'}
+                                </span>
+                                <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
+                                    {song.scale ? SCALE_LABELS[song.scale] ?? song.scale : 'No scale'}
+                                </span>
+                                {transpose !== 0 && (
+                                    <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600">
+                                        Original: {song.original_key}
+                                    </span>
+                                )}
+                                {song.artist && (
+                                    <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600">
+                                        {song.artist}
+                                    </span>
                                 )}
                             </div>
 
@@ -124,34 +162,69 @@ export default function SongDetailPage() {
             </section>
 
             <section className="bg-white py-12 sm:py-16">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
                     <Reveal>
-                        <div className="rounded-3xl border border-slate-100 bg-blue-50/50 p-8 text-center sm:p-12">
-                            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
-                                <Play size={22} />
-                            </span>
-                            <h2 className="mt-4 text-2xl font-bold tracking-tight text-slate-900">
-                                Listen and Sing Along
-                            </h2>
-                            <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-slate-500">
-                                Press play above to enjoy “{song.title}”. Share it with your choir and bring
-                                this song into your next gathering.
-                            </p>
+                        <div className="rounded-3xl border border-slate-100 bg-blue-50/50 p-8 sm:p-12">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+                                    Lyrics & Chords
+                                </h2>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => changeTranspose(transpose - 1)}
+                                        disabled={transpose <= -12}
+                                        className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                                        title="Down a semitone"
+                                    >
+                                        <Minus size={16} />
+                                    </button>
+                                    <span className="w-24 text-center text-sm font-semibold text-slate-700">
+                                        {transpose > 0 ? `+${transpose}` : transpose} semitone
+                                        {transpose === 1 || transpose === -1 ? '' : 's'}
+                                    </span>
+                                    <button
+                                        onClick={() => changeTranspose(transpose + 1)}
+                                        disabled={transpose >= 12}
+                                        className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                                        title="Up a semitone"
+                                    >
+                                        <Plus size={16} />
+                                    </button>
+                                    {transpose !== 0 && (
+                                        <button
+                                            onClick={() => changeTranspose(0)}
+                                            className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50"
+                                            title="Reset"
+                                        >
+                                            <RotateCcw size={16} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                {QUICK_STEPS.map((s) => (
+                                    <button
+                                        key={s}
+                                        onClick={() => changeTranspose(s)}
+                                        className={`rounded-lg px-3 py-1 text-sm font-medium ${
+                                            transpose === s
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        {s > 0 ? `+${s}` : s}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="mt-6">
+                                <LyricsViewer lyrics={song.display_lyrics} />
+                            </div>
                         </div>
                     </Reveal>
                 </div>
             </section>
-        </div>
-    );
-}
-
-function Meta({ icon: Icon, label, value }) {
-    return (
-        <div className="rounded-2xl border border-slate-100 bg-white p-4">
-            <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">
-                <Icon size={13} /> {label}
-            </p>
-            <p className="mt-1.5 truncate text-sm font-semibold text-slate-800">{value}</p>
         </div>
     );
 }

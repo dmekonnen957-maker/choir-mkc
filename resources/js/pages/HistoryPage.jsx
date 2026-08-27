@@ -54,7 +54,7 @@ export default function HistoryPage() {
                     </h1>
                     <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-500">
                         A journey of worship, service, and song. Explore the milestones and memories that
-                        have shaped Choir MKC through the years.
+                        have shaped EKA MKC Choirs and Worship Teams through the years.
                     </p>
                 </div>
             </section>
