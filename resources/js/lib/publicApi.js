@@ -50,7 +50,14 @@ export async function fetchChoirPerformances(id) {
     return normalize(res);
 }
 
-export async function fetchAllSongs() {
+export async function fetchAllSongs(params = {}) {
+    try {
+        const res = await api.get('/public/songs', { params: { per_page: 200, ...params } });
+        const items = normalize(res);
+        if (items && items.length > 0) return items;
+    } catch {
+        // Fall back if endpoint fails
+    }
     const choirs = await fetchChoirs();
     const lists = await Promise.all(
         choirs.map((c) =>

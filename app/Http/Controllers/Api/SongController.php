@@ -58,6 +58,10 @@ class SongController extends ApiController
             $song->audio_path = $this->storeAudio($request->file('audio'));
         }
 
+        if ($request->hasFile('cover_image')) {
+            $song->cover_image_path = $this->storeCoverImage($request->file('cover_image'));
+        }
+
         $song->save();
 
         return $this->ok(SongResource::make($song->load('choir', 'creator')), 'Song created successfully', 201);
@@ -116,6 +120,14 @@ class SongController extends ApiController
             $song->audio_path = null;
         }
 
+        if ($request->hasFile('cover_image')) {
+            $this->deleteCoverImage($song->cover_image_path);
+            $song->cover_image_path = $this->storeCoverImage($request->file('cover_image'));
+        } elseif ($request->boolean('remove_cover_image')) {
+            $this->deleteCoverImage($song->cover_image_path);
+            $song->cover_image_path = null;
+        }
+
         $song->save();
 
         return $this->ok(SongResource::make($song->load('choir', 'creator')), 'Song updated successfully');
@@ -125,6 +137,7 @@ class SongController extends ApiController
     {
         $this->authorize('delete', $song);
         $this->deleteAudio($song->audio_path);
+        $this->deleteCoverImage($song->cover_image_path);
         $song->delete();
         return $this->ok(null, 'Song deleted successfully');
     }
@@ -152,6 +165,20 @@ class SongController extends ApiController
     }
 
     protected function deleteAudio(?string $path): void
+    {
+        if ($path && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
+    }
+
+    protected function storeCoverImage($file): string
+    {
+        $ext = $file->getClientOriginalExtension() ?: 'jpg';
+        $filename = uniqid('cover_', true) . '.' . $ext;
+        return Storage::disk('public')->putFileAs('covers', $file, $filename);
+    }
+
+    protected function deleteCoverImage(?string $path): void
     {
         if ($path && Storage::disk('public')->exists($path)) {
             Storage::disk('public')->delete($path);

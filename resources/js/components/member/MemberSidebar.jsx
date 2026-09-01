@@ -11,7 +11,6 @@ import {
     ListMusic,
     Bell,
     User,
-    Settings,
     LogOut,
     X,
     Church,
@@ -29,6 +28,7 @@ const BASE_PATHS = {
     member: '/member',
     team_leader: '/team-leader',
     admin: '/admin',
+    'super-admin': '/admin',
 };
 
 // Full admin navigation
@@ -91,7 +91,6 @@ function getAdminNav(can) {
     items.push({
         title: 'System',
         items: [
-            { label: 'Settings', to: '/admin/settings', icon: Settings },
             { label: 'Activity Logs', to: '/admin/activity-logs', icon: ScrollText },
         ],
     });
@@ -140,7 +139,6 @@ function getMemberNav(basePath, role, can) {
             title: 'Account',
             items: [
                 { label: 'My Profile', to: `${basePath}/profile`, icon: User },
-                { label: 'Settings', to: `${basePath}/settings`, icon: Settings },
             ],
         },
     ];
@@ -157,12 +155,13 @@ function NavItem({ item, onNavigate }) {
     return (
         <NavLink
             to={item.to}
-            end={item.label === 'Dashboard'}
+            end={item.to.endsWith('/dashboard')}
             onClick={onNavigate}
             className={({ isActive }) =>
-                `group flex items-center gap-3 rounded-xl border px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 ${isActive
-                    ? 'border-[var(--theme-primary)]/30 bg-gradient-to-r from-[var(--theme-primary)]/30 to-[var(--theme-primary-dark)]/20 text-white shadow-lg shadow-[var(--theme-primary)]/10 backdrop-blur-md'
-                    : 'border-transparent text-slate-300 hover:border-slate-800 hover:bg-slate-800/50 hover:text-white'
+                `group flex items-center gap-3 rounded-xl border px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 ${
+                    isActive
+                        ? 'border-blue-500/40 bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                        : 'border-transparent text-slate-300 hover:bg-slate-800/70 hover:text-white hover:translate-x-0.5'
                 }`
             }
         >
@@ -171,8 +170,11 @@ function NavItem({ item, onNavigate }) {
                     {item.icon && (
                         <item.icon
                             size={18}
-                            className={`shrink-0 transition-colors ${isActive ? 'text-[var(--theme-primary-light)]' : 'text-slate-400 group-hover:text-[var(--theme-primary-light)]'
-                                }`}
+                            className={`shrink-0 transition-all duration-200 ${
+                                isActive
+                                    ? 'text-white scale-105'
+                                    : 'text-slate-400 group-hover:text-blue-400'
+                            }`}
                         />
                     )}
                     <span className="truncate">{item.label}</span>
@@ -182,15 +184,10 @@ function NavItem({ item, onNavigate }) {
     );
 }
 
-/**
- * Choir Identity Block shown at top of sidebar for all roles.
- * Admin sees it BELOW the ChoirSelector.
- * Members/TL see it as the primary identity element.
- */
 function ChoirIdentityBlock({ choir, isAllChoirs }) {
     if (isAllChoirs) {
         return (
-            <div className="mx-4 mb-4 rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3 shadow-inner">
+            <div className="mx-4 mb-3 rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3 shadow-inner">
                 <div className="flex items-center gap-2.5">
                     <div
                         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
@@ -209,7 +206,7 @@ function ChoirIdentityBlock({ choir, isAllChoirs }) {
 
     if (!choir) {
         return (
-            <div className="mx-4 mb-4 rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3 shadow-inner">
+            <div className="mx-4 mb-3 rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3 shadow-inner">
                 <div className="flex items-center gap-2.5">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-800">
                         <Church size={16} className="text-slate-500" />
@@ -224,12 +221,10 @@ function ChoirIdentityBlock({ choir, isAllChoirs }) {
     }
 
     const primaryColor = choir.uniform_primary_color || 'var(--theme-primary)';
-    const secondaryColor = choir.uniform_secondary_color;
 
     return (
-        <div className="mx-4 mb-4 rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3 shadow-inner">
+        <div className="mx-4 mb-3 rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3 shadow-inner">
             <div className="flex items-center gap-2.5">
-                {/* Color swatch / logo */}
                 {choir.logo_path ? (
                     <img
                         src={choir.logo_path}
@@ -254,28 +249,6 @@ function ChoirIdentityBlock({ choir, isAllChoirs }) {
                     )}
                 </div>
             </div>
-            {/* Color swatches */}
-            {(primaryColor || secondaryColor) && (
-                <div className="mt-2 flex items-center gap-1.5 pl-0.5">
-                    {primaryColor && (
-                        <span
-                            className="inline-block h-3 w-3 rounded-full border border-slate-600"
-                            style={{ backgroundColor: primaryColor }}
-                            title={`Primary: ${primaryColor}`}
-                        />
-                    )}
-                    {secondaryColor && (
-                        <span
-                            className="inline-block h-3 w-3 rounded-full border border-slate-600"
-                            style={{ backgroundColor: secondaryColor }}
-                            title={`Secondary: ${secondaryColor}`}
-                        />
-                    )}
-                    {choir.uniform_pattern && (
-                        <span className="ml-1 truncate text-xs text-slate-500">{choir.uniform_pattern}</span>
-                    )}
-                </div>
-            )}
         </div>
     );
 }
@@ -288,7 +261,6 @@ export default function MemberSidebar({ open, onClose }) {
     const basePath = BASE_PATHS[role] ?? '/member';
     const NAV = getNav(basePath, role, can);
 
-    // User initials for the bottom user card
     const initials = (user?.name ?? '?')
         .split(' ')
         .map((p) => p[0])
@@ -297,103 +269,111 @@ export default function MemberSidebar({ open, onClose }) {
         .join('')
         .toUpperCase();
 
+    const renderSidebarContent = (isMobile = false) => (
+        <div className="flex h-full w-full flex-col bg-[#0b132b]">
+            {/* 1. Header: Branding & Close button */}
+            <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-slate-800/80 shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                    <Logo size="sm" className="shrink-0" />
+                    <div className="min-w-0 leading-tight">
+                        <p className="text-sm font-black tracking-wider text-white">CHOIR MKC</p>
+                        <p className="truncate text-[11px] font-medium text-slate-400">
+                            EKA MKC Choirs &amp; Worship Teams
+                        </p>
+                    </div>
+                </div>
+                {isMobile && (
+                    <button
+                        onClick={onClose}
+                        className="rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+                        aria-label="Close navigation"
+                    >
+                        <X size={20} />
+                    </button>
+                )}
+            </div>
+
+            {/* 2. Choir Selector & Identity Block */}
+            <div className="pt-3 shrink-0">
+                {isAdmin ? (
+                    <div>
+                        <ChoirSelector />
+                        <ChoirIdentityBlock choir={currentChoir} isAllChoirs={isAllChoirs} />
+                    </div>
+                ) : (
+                    <div>
+                        <ChoirIdentityBlock choir={currentChoir} isAllChoirs={false} />
+                    </div>
+                )}
+            </div>
+
+            {/* 3. Navigation Sections (Scrollable Area) */}
+            <nav className="flex-1 space-y-5 overflow-y-auto px-4 py-2 scrollbar-thin scrollbar-thumb-slate-800">
+                {NAV.map((section) =>
+                    section.title ? (
+                        <div key={section.title} className="space-y-1">
+                            <p className="px-3 pb-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                                {section.title}
+                            </p>
+                            <div className="space-y-1">
+                                {section.items.map((item) => (
+                                    <NavItem key={item.label} item={item} onNavigate={onClose} />
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <NavItem key={section.label} item={section} onNavigate={onClose} />
+                    )
+                )}
+            </nav>
+
+            {/* 4. Administrator Profile & Sign Out (Fixed at bottom) */}
+            <div className="border-t border-slate-800/80 p-4 space-y-3 bg-[#0b132b]/95 shrink-0">
+                <div className="flex items-center gap-3 px-1">
+                    <span
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold bg-blue-600/20 text-blue-400 border border-blue-500/30"
+                    >
+                        {initials}
+                    </span>
+                    <div className="min-w-0 leading-tight">
+                        <p className="truncate text-xs font-bold text-slate-100">{user?.name ?? 'Administrator'}</p>
+                        <p className="truncate text-[10px] text-slate-400">{user?.email ?? ''}</p>
+                    </div>
+                </div>
+
+                <button
+                    onClick={logout}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-2.5 text-xs font-bold text-slate-300 transition-all duration-200 hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-400 active:scale-95"
+                >
+                    <LogOut size={16} className="shrink-0" />
+                    <span>Sign Out</span>
+                </button>
+            </div>
+        </div>
+    );
+
     return (
         <>
-            {/* Mobile backdrop */}
+            {/* Desktop Fixed Sidebar (w-72 = 288px) */}
+            <aside className="hidden lg:flex lg:w-72 lg:shrink-0 lg:flex-col lg:h-screen lg:border-r lg:border-slate-800/80">
+                {renderSidebarContent(false)}
+            </aside>
+
+            {/* Mobile Slide-Over Drawer */}
             {open && (
                 <div
-                    className="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm lg:hidden"
+                    className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm lg:hidden"
                     onClick={onClose}
                     aria-hidden="true"
                 />
             )}
 
             <aside
-                className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-slate-800/80 bg-slate-950 shadow-2xl transition-transform duration-300 ease-in-out lg:static lg:h-full lg:max-w-none lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'
-                    }`}
+                className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col shadow-2xl transition-transform duration-300 ease-in-out lg:hidden ${
+                    open ? 'translate-x-0' : '-translate-x-full'
+                }`}
             >
-                {/* Brand Logo & Title */}
-                <div className="flex items-center justify-between gap-3 px-6 py-6 border-b border-slate-800/60">
-                    <div className="flex min-w-0 items-center gap-3">
-                        <Logo size="sm" className="shrink-0" />
-                        <div className="min-w-0 leading-tight hidden lg:block">
-                            <p className="text-sm font-black tracking-wide text-white">CHOIR MKC</p>
-                            <p className="truncate text-xs font-medium text-slate-400">
-                                EKA MKC Choirs &amp; Worship Teams
-                            </p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={onClose}
-                        className="rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white lg:hidden"
-                        aria-label="Close menu"
-                    >
-                        <X size={20} />
-                    </button>
-                </div>
-
-                {/* Admin: Choir Selector then identity block */}
-                {isAdmin ? (
-                    <div className="pt-4">
-                        <ChoirSelector />
-                        <ChoirIdentityBlock choir={currentChoir} isAllChoirs={isAllChoirs} />
-                    </div>
-                ) : (
-                    /* Member / Team Leader: Choir Identity block as primary */
-                    <div className="pt-4">
-                        <ChoirIdentityBlock choir={currentChoir} isAllChoirs={false} />
-                    </div>
-                )}
-
-                {/* Navigation Sections */}
-                <nav className="flex-1 space-y-6 overflow-y-auto px-4 py-2 scrollbar-thin scrollbar-thumb-slate-800">
-                    {NAV.map((section) =>
-                        section.title ? (
-                            <div key={section.title} className="space-y-1">
-                                <p className="px-3 pb-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                                    {section.title}
-                                </p>
-                                <div className="space-y-1">
-                                    {section.items.map((item) => (
-                                        <NavItem key={item.label} item={item} onNavigate={onClose} />
-                                    ))}
-                                </div>
-                            </div>
-                        ) : (
-                            <NavItem key={section.label} item={section} onNavigate={onClose} />
-                        )
-                    )}
-                </nav>
-
-                {/* Bottom: user identity + logout */}
-                <div className="border-t border-slate-800/80 p-4 space-y-3">
-                    {/* User mini-card */}
-                    <div className="flex items-center gap-2.5 px-1">
-                        <span
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold"
-                            style={{
-                                backgroundColor: 'var(--theme-primary)22',
-                                color: 'var(--theme-primary)',
-                                border: '1px solid var(--theme-primary)44',
-                            }}
-                        >
-                            {initials}
-                        </span>
-                        <div className="min-w-0 leading-tight">
-                            <p className="truncate text-xs font-semibold text-slate-200">{user?.name ?? 'Member'}</p>
-                            <p className="truncate text-[10px] text-slate-500">{user?.email ?? ''}</p>
-                        </div>
-                    </div>
-
-                    {/* Logout */}
-                    <button
-                        onClick={logout}
-                        className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-3 text-sm font-bold text-slate-300 transition-all duration-200 hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
-                    >
-                        <LogOut size={18} className="shrink-0" />
-                        <span>Sign Out</span>
-                    </button>
-                </div>
+                {renderSidebarContent(true)}
             </aside>
         </>
     );

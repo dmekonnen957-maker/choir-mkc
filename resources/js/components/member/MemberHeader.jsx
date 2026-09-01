@@ -1,7 +1,7 @@
-import { Menu, Bell } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { Menu, Bell, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useChoir } from '../../context/ChoirContext';
-import { useTheme } from '../../context/ThemeContext';
 
 const ROLE_LABELS = {
     member: 'Member',
@@ -9,10 +9,19 @@ const ROLE_LABELS = {
     admin: 'Admin',
 };
 
+const BASE_PATHS = {
+    member: '/member',
+    team_leader: '/team-leader',
+    admin: '/admin',
+    'super-admin': '/admin',
+};
+
 export default function MemberHeader({ title, onMenu }) {
     const { user, role } = useAuth();
     const { currentChoir, isAllChoirs } = useChoir();
-    const { theme } = useTheme();
+
+    const basePath = BASE_PATHS[role] ?? '/member';
+    const settingsPath = `${basePath}/settings`;
 
     const initials = (user?.name ?? '?')
         .split(' ')
@@ -20,12 +29,6 @@ export default function MemberHeader({ title, onMenu }) {
         .slice(0, 2)
         .join('')
         .toUpperCase();
-
-    const avatarStyle = {
-        backgroundColor: `${theme.primary}20`,
-        color: theme.primary,
-        borderColor: `${theme.primary}4D`,
-    };
 
     const choirDisplayName = isAllChoirs
         ? 'All Choirs'
@@ -36,39 +39,52 @@ export default function MemberHeader({ title, onMenu }) {
         : currentChoir?.choir_type ?? ROLE_LABELS[role] ?? 'Member';
 
     return (
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[var(--theme-border)] bg-canvas/90 px-4 py-3 backdrop-blur lg:px-8">
+        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200/80 bg-white/90 px-4 py-3.5 backdrop-blur-md lg:px-8 shadow-xs">
             <div className="flex items-center gap-3">
                 <button
                     onClick={onMenu}
-                    className="rounded-lg p-1.5 text-ink-600 hover:bg-[var(--theme-primary)]/10 lg:hidden"
-                    aria-label="Open menu"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition-colors lg:hidden active:scale-95"
+                    aria-label="Open navigation"
                 >
-                    <Menu size={22} />
+                    <Menu size={20} />
                 </button>
                 {title && (
-                    <h1 className="text-lg font-semibold text-ink-900">{title}</h1>
+                    <h1 className="text-lg font-bold text-slate-900 tracking-tight">{title}</h1>
                 )}
             </div>
 
             <div className="flex items-center gap-3">
                 <button
-                    className="relative rounded-full p-2 text-ink-500 hover:bg-[var(--theme-primary)]/10 hover:text-[var(--theme-primary)]"
+                    className="relative rounded-xl border border-slate-200 bg-white p-2 text-slate-600 shadow-xs hover:bg-slate-50 hover:text-blue-600 transition-colors"
                     aria-label="Notifications"
+                    title="Notifications"
                 >
-                    <Bell size={20} />
+                    <Bell size={18} />
                 </button>
 
-                {/* Choir identity in header */}
-                <div className="flex items-center gap-3 rounded-xl border border-[var(--theme-border)] bg-surface px-3 py-1.5">
-                    <span
-                        className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold"
-                        style={avatarStyle}
-                    >
+                <NavLink
+                    to={settingsPath}
+                    className={({ isActive }) =>
+                        `relative rounded-xl border p-2 text-slate-600 shadow-xs transition-colors ${
+                            isActive
+                                ? 'border-blue-200 bg-blue-50 text-blue-700 font-bold'
+                                : 'border-slate-200 bg-white hover:bg-slate-50 hover:text-blue-600'
+                        }`
+                    }
+                    aria-label="Settings"
+                    title="Settings"
+                >
+                    <Settings size={18} />
+                </NavLink>
+
+                {/* Choir identity pill badge in header */}
+                <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 shadow-xs">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black bg-blue-50 text-blue-700 border border-blue-100">
                         {initials}
                     </span>
-                    <div className="hidden leading-tight sm:block">
-                        <p className="text-sm font-semibold text-ink-900">{choirDisplayName}</p>
-                        <p className="text-xs text-ink-500">{choirSubtitle}</p>
+                    <div className="hidden leading-tight sm:block min-w-0">
+                        <p className="text-xs font-bold text-slate-900 truncate">{choirDisplayName}</p>
+                        <p className="text-[10px] text-slate-500 truncate">{choirSubtitle}</p>
                     </div>
                 </div>
             </div>

@@ -88,14 +88,30 @@ class ChoirController extends ApiController
         return $this->ok(new ChoirResource($choir), 'Choir updated successfully');
     }
 
-    public function destroy(Choir $choir): \Illuminate\Http\JsonResponse
+    public function destroy(Request $request, Choir $choir): \Illuminate\Http\JsonResponse
     {
         $this->authorize('delete', $choir);
 
-        // Soft-delete is safe: it hides the choir without removing related
-        // members, songs or performances (their rows remain intact), so the
-        // operation never fails on foreign-key constraints.
+        $request->validate([
+            'deletion_reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $reason = $request->input('deletion_reason') ?: $request->input('reason');
+
         try {
+            if ($reason) {
+                $choir->deletion_reason = $reason;
+                $choir->save();
+            }
+
+            // Log deletion in AuditLog
+            \App\Models\AuditLog::create([
+                'user_id' => $request->user()?->id,
+                'choir_id' => $choir->id,
+                'action' => 'deleted_choir',
+                'description' => "Deleted choir '{$choir->name}'." . ($reason ? " Reason: {$reason}" : ''),
+            ]);
+
             $choir->delete();
         } catch (\Illuminate\Database\QueryException $e) {
             return $this->error(
@@ -106,7 +122,7 @@ class ChoirController extends ApiController
             );
         }
 
-        return $this->ok(null, 'Choir deleted');
+        return $this->ok(null, 'Choir deleted successfully');
     }
 
     protected function uniqueSlug(?string $name, ?string $slug, ?int $ignoreId = null): string

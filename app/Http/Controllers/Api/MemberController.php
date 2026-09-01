@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Resources\Api\ChoirResource;
 use App\Http\Resources\Api\MemberResource;
 use App\Http\Resources\Api\PerformanceResource;
+use App\Http\Resources\Api\SongResource;
 use App\Http\Resources\Api\UserResource;
 use App\Models\Choir;
 use App\Models\Member;
 use App\Models\Notification;
+use App\Models\Performance;
+use App\Models\Rehearsal;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -381,5 +384,256 @@ class MemberController extends ApiController
             ],
             'history' => $history,
         ]);
+    }
+
+    /**
+     * Retrieve the authenticated member's choir performances (upcoming and
+     * past), scoped strictly to the member's effective choir, along with the
+     * performance's assigned songs and the member's participation status.
+     * The page is effectively read-only for members.
+     */
+    public function performances(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+        $choir = $this->effectiveChoir($user);
+
+        if (! $choir) {
+            return $this->ok([
+                'has_choir' => false,
+                'choir' => null,
+                'upcoming' => [],
+                'past' => [],
+                'stats' => [
+                    'upcoming' => 0,
+                    'this_month' => 0,
+                    'completed' => 0,
+                ],
+                'participation' => [],
+            ]);
+        }
+
+        $member = $this->linkedMember($user, $choir);
+
+        // Participation status lookup for the member across performance_members.
+        $participation = [];
+        if ($member) {
+            $participation = $member->performances()
+                ->forChoir($choir->id)
+                ->get()
+                ->mapWithKeys(function (Performance $p) {
+                    return [
+                        $p->id => [
+                            'expected' => (bool) $p->pivot->expected,
+                            'participation_status' => $p->pivot->participation_status,
+                        ],
+                    ];
+                })
+                ->all();
+        }
+
+        $today = now()->toDateString();
+
+        $upcoming = $choir->performances()
+            ->with([
+                'choir:id,name',
+                'songs.choir' => fn ($q) => $q->withTrashed(),
+                'songs' => fn ($q) => $q->orderBy('performance_songs.sequence_number'),
+            ])
+            ->where('date', '>=', $today)
+            ->orderBy('date')
+            ->orderBy('start_time')
+            ->get();
+
+        $past = $choir->performances()
+            ->with([
+                'choir:id,name',
+                'songs.choir' => fn ($q) => $q->withTrashed(),
+                'songs' => fn ($q) => $q->orderBy('performance_songs.sequence_number'),
+            ])
+            ->where('date', '<', $today)
+            ->orderByDesc('date')
+            ->get();
+
+        $stats = [
+            'upcoming' => $upcoming->count(),
+            'this_month' => $choir->performances()
+                ->whereBetween('date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])
+                ->count(),
+            'completed' => $choir->performances()
+                ->where('date', '<', $today)
+                ->where('status', 'completed')
+                ->count(),
+        ];
+
+        $mapPerformance = function (Performance $performance) use ($choir, $participation) {
+            $data = (new PerformanceResource($performance))->resolve();
+            $data['song_count'] = $performance->songs->count();
+            $data['songs'] = SongResource::collection($performance->songs)->resolve();
+            $data['participation'] = $participation[$performance->id] ?? [
+                'expected' => null,
+                'participation_status' => null,
+            ];
+            return $data;
+        };
+
+        return $this->ok([
+            'has_choir' => true,
+            'choir' => new ChoirResource($choir),
+            'upcoming' => $upcoming->map($mapPerformance)->values(),
+            'past' => $past->map($mapPerformance)->values(),
+            'stats' => $stats,
+            'participation' => $participation,
+        ]);
+    }
+
+    /**
+     * Return the songs belonging to the member's choir.
+     * The choir is derived from the authenticated user — never from request input.
+     */
+    public function songs(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user  = $request->user();
+        $choir = $this->effectiveChoir($user);
+
+        if (! $choir) {
+            return $this->ok([
+                'has_choir' => false,
+                'choir'     => null,
+                'songs'     => [],
+            ]);
+        }
+
+        $songs = $choir->songs()
+            ->with('choir')
+            ->orderBy('title')
+            ->get()
+            ->map(fn ($s) => [
+                'id'               => $s->id,
+                'title'            => $s->title,
+                'artist'           => $s->artist,
+                'composer'         => $s->composer,
+                'description'      => $s->description,
+                'original_key'     => $s->original_key,
+                'has_lyrics'       => (bool) $s->lyrics,
+                'lyrics'           => $s->lyrics,
+                'has_audio'        => (bool) $s->audio_path || (bool) $s->audio_url,
+                'audio_url'        => $s->audio_url ?? ($s->audio_path ? '/storage/' . ltrim($s->audio_path, '/') : null),
+                'cover_url'        => $s->cover_image_path ? (str_starts_with($s->cover_image_path, 'http') ? $s->cover_image_path : '/storage/' . ltrim($s->cover_image_path, '/')) : null,
+                'is_published'     => $s->is_published,
+                'choir'            => ['id' => $choir->id, 'name' => $choir->name],
+                'created_at'       => $s->created_at,
+            ]);
+
+        return $this->ok([
+            'has_choir' => true,
+            'choir'     => new ChoirResource($choir),
+            'songs'     => $songs,
+        ]);
+    }
+
+    /**
+     * Return a merged, chronological list of performances + rehearsals
+     * for the member's choir. Optionally filtered by month (YYYY-MM).
+     */
+    public function calendar(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user  = $request->user();
+        $choir = $this->effectiveChoir($user);
+
+        if (! $choir) {
+            return $this->ok([
+                'has_choir' => false,
+                'choir'     => null,
+                'events'    => [],
+            ]);
+        }
+
+        $month     = $request->query('month');  // YYYY-MM
+        $type      = $request->query('type');   // performance | rehearsal
+
+        [$startDate, $endDate] = $this->calendarMonthBounds($month);
+
+        $events = collect();
+
+        // Performances for this choir
+        if (! $type || $type === 'performance') {
+            $pQuery = $choir->performances()
+                ->with(['choir:id,name', 'songs' => function ($q) {
+                    $q->withTrashed()->orderBy('performance_songs.sequence_number');
+                }]);
+            if ($startDate) {
+                $pQuery->whereBetween('date', [$startDate, $endDate]);
+            }
+            $pQuery->orderBy('date')->orderBy('start_time');
+
+            $events = $events->merge($pQuery->get()->map(fn ($p) => [
+                'id'          => $p->id,
+                'type'        => 'performance',
+                'title'       => $p->title,
+                'date'        => $p->date ? $p->date->format('Y-m-d') : null,
+                'start_time'  => $p->start_time,
+                'end_time'    => $p->end_time,
+                'location'    => $p->location ?? $p->venue,
+                'venue'       => $p->venue,
+                'description' => $p->description,
+                'status'      => $p->status,
+                'choir'       => ['id' => $choir->id, 'name' => $choir->name],
+                'songs'       => $p->songs->map(fn ($s) => [
+                    'id'         => $s->id,
+                    'title'      => $s->title,
+                    'artist'     => $s->artist,
+                    'has_lyrics' => (bool) $s->lyrics,
+                    'lyrics'     => $s->lyrics,
+                ])->values(),
+            ]));
+        }
+
+        // Rehearsals for this choir
+        if (! $type || $type === 'rehearsal') {
+            $rQuery = $choir->rehearsals()->with(['choir:id,name', 'songs']);
+            if ($startDate) {
+                $rQuery->whereBetween('date', [$startDate, $endDate]);
+            }
+            $rQuery->orderBy('date')->orderBy('start_time');
+
+            $events = $events->merge($rQuery->get()->map(fn ($r) => [
+                'id'          => $r->id,
+                'type'        => 'rehearsal',
+                'title'       => $r->title,
+                'date'        => $r->date ? $r->date->format('Y-m-d') : null,
+                'start_time'  => $r->start_time,
+                'end_time'    => $r->end_time,
+                'location'    => $r->location,
+                'venue'       => null,
+                'description' => $r->description,
+                'status'      => $r->status,
+                'choir'       => ['id' => $choir->id, 'name' => $choir->name],
+                'songs'       => $r->songs->map(fn ($s) => [
+                    'id'         => $s->id,
+                    'title'      => $s->title,
+                    'artist'     => $s->artist,
+                    'has_lyrics' => (bool) $s->lyrics,
+                    'lyrics'     => $s->lyrics,
+                ])->values(),
+            ]));
+        }
+
+        $sorted = $events->sortBy(['date', 'start_time'])->values();
+
+        return $this->ok([
+            'has_choir' => true,
+            'choir'     => new ChoirResource($choir),
+            'events'    => $sorted,
+        ]);
+    }
+
+    private function calendarMonthBounds(?string $month): array
+    {
+        if (! $month || ! preg_match('/^\d{4}-\d{2}$/', $month)) {
+            return [null, null];
+        }
+        $start = \Carbon\Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
+        $end   = \Carbon\Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
+        return [$start, $end];
     }
 }

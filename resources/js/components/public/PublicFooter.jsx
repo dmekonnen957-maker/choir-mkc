@@ -19,7 +19,7 @@ export default function PublicFooter() {
                     <div>
                         <Link to="/" className="flex flex-col items-start gap-2.5">
                             <Logo size="sm" />
-                            <span className="text-lg font-semibold text-white">CHOIR MKC</span>
+                            <span className="text-lg font-semibold text-white">   YEKA MKC CHOIR </span>
                         </Link>
                         <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-400">
                             Connecting choirs, preserving music, and celebrating every voice in faithful
@@ -70,7 +70,7 @@ export default function PublicFooter() {
 
                     <div>
                         <h3 className="text-sm font-semibold uppercase tracking-wide text-blue-400">
-                            About CHOIR MKC
+                            About YEKA MKC CHOIR
                         </h3>
                         <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">
                             A warm community of church choirs dedicated to uplifting worship through song,

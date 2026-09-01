@@ -33,6 +33,8 @@ class SongResource extends JsonResource
             'composer' => $this->composer,
             'artist' => $this->artist,
             'description' => $this->description,
+            'cover_image_path' => $this->cover_image_path,
+            'cover_url' => $this->cover_image_path ? (str_starts_with($this->cover_image_path, 'http') ? $this->cover_image_path : '/storage/' . ltrim($this->cover_image_path, '/')) : null,
             'audio_path' => $this->audio_path,
             'audio_url' => $this->audio_url,
             'original_key' => $this->original_key,

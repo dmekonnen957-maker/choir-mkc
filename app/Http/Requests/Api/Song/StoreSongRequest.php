@@ -32,6 +32,7 @@ class StoreSongRequest extends FormRequest
             'lyrics' => ['nullable', 'string'],
             'is_published' => ['nullable', 'boolean'],
             'audio' => ['nullable', 'file', 'mimes:mp3', 'max:15360'],
+            'cover_image' => ['nullable', 'image', 'max:5120'],
         ];
     }
 

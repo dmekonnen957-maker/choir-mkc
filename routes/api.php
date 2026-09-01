@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CalendarController;
 use App\Http\Controllers\Api\ChoirController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DashboardController;
@@ -77,6 +78,8 @@ Route::prefix('public')->group(function () {
     Route::get('/choirs/{choir}/announcements', [PublicController::class, 'announcements']);
     Route::get('/choirs/{choir}/songs', [PublicController::class, 'songs']);
     Route::get('/choirs/{choir}/songs/{song}', [PublicController::class, 'song']);
+    Route::get('/songs', [PublicController::class, 'allSongs']);
+    Route::get('/songs/{song}', [PublicController::class, 'publicSongDetail']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -142,6 +145,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/reports/{report}', [ReportController::class, 'show']);
         Route::apiResource('songs', SongController::class);
         Route::get('songs/{song}/audio', [SongController::class, 'audio'])->name('admin.songs.audio');
+        Route::get('/calendar', [CalendarController::class, 'adminCalendar']);
     });
 
     // Attendance Management routes (accessible to admins, team leaders with choir authorization)
@@ -167,10 +171,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [MemberController::class, 'profile']);
         Route::match(['PUT', 'PATCH'], '/profile', [MemberController::class, 'updateProfile']);
         Route::get('/notifications', [MemberController::class, 'notifications']);
+        Route::get('/performances', [MemberController::class, 'performances']);
+        Route::get('/songs', [MemberController::class, 'songs']);
+        Route::get('/calendar', [MemberController::class, 'calendar']);
     });
 
     // Team Leader area
     Route::middleware(['auth:sanctum'])->prefix('team-leader')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'teamLeaderDashboard']);
+        Route::get('/calendar', [CalendarController::class, 'teamLeaderCalendar']);
+        Route::get('/songs', [MemberController::class, 'songs']);
     });
 });

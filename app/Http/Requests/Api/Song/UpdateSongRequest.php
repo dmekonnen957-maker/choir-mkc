@@ -26,6 +26,8 @@ class UpdateSongRequest extends FormRequest
             'is_published' => ['nullable', 'boolean'],
             'audio' => ['nullable', 'file', 'mimes:mp3', 'max:15360'],
             'remove_audio' => ['nullable', 'boolean'],
+            'cover_image' => ['nullable', 'image', 'max:5120'],
+            'remove_cover_image' => ['nullable', 'boolean'],
         ];
     }
 

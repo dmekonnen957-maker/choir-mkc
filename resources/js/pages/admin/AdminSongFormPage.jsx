@@ -52,8 +52,11 @@ export default function AdminSongFormPage({ mode = 'create' }) {
     const [choirs, setChoirs] = useState([]);
     const [errors, setErrors] = useState({});
     const [file, setFile] = useState(null);
+    const [coverFile, setCoverFile] = useState(null);
     const [removeAudio, setRemoveAudio] = useState(false);
+    const [removeCover, setRemoveCover] = useState(false);
     const [hasAudio, setHasAudio] = useState(false);
+    const [hasCover, setHasCover] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [loading, setLoading] = useState(mode === 'edit');
     const [error, setError] = useState('');
@@ -84,6 +87,7 @@ export default function AdminSongFormPage({ mode = 'create' }) {
                         is_published: !!s.is_published,
                     });
                     setHasAudio(!!s.audio_path);
+                    setHasCover(!!s.cover_image_path);
                 })
                 .catch(() => setError('Failed to load song.'))
                 .finally(() => setLoading(false));
@@ -108,7 +112,9 @@ export default function AdminSongFormPage({ mode = 'create' }) {
         fd.append('lyrics', form.lyrics || '');
         fd.append('is_published', form.is_published ? '1' : '0');
         if (file) fd.append('audio', file);
+        if (coverFile) fd.append('cover_image', coverFile);
         if (mode === 'edit' && removeAudio) fd.append('remove_audio', '1');
+        if (mode === 'edit' && removeCover) fd.append('remove_cover_image', '1');
 
         const req =
             mode === 'edit'
@@ -287,6 +293,44 @@ export default function AdminSongFormPage({ mode = 'create' }) {
                             />
                             {errors.audio?.[0] && (
                                 <p className="mt-1 text-xs text-red-500">{errors.audio[0]}</p>
+                            )}
+                        </div>
+                    </Section>
+                </Card>
+
+                <Card className="space-y-6">
+                    <Section title="Cover Image" hint="Upload a song cover image (JPEG/PNG/WebP, max 5 MB). Optional.">
+                        <div>
+                            {mode === 'edit' && hasCover && !coverFile && !removeCover && (
+                                <div className="mb-2 flex items-center justify-between rounded-xl border border-blue-50 bg-canvas p-3">
+                                    <span className="text-xs font-medium text-ink-500">
+                                        Current cover image uploaded
+                                    </span>
+                                    <button
+                                        type="button"
+                                        className="inline-flex items-center gap-1 text-xs text-red-500 hover:underline"
+                                        onClick={() => setRemoveCover(true)}
+                                    >
+                                        <X size={13} /> Remove Cover
+                                    </button>
+                                </div>
+                            )}
+                            {removeCover && (
+                                <p className="mb-2 text-xs text-ink-400">
+                                    Cover image will be removed on save.
+                                </p>
+                            )}
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                    setCoverFile(e.target.files?.[0] || null);
+                                    setRemoveCover(false);
+                                }}
+                                className="w-full text-sm text-ink-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-600 hover:file:bg-blue-100"
+                            />
+                            {errors.cover_image?.[0] && (
+                                <p className="mt-1 text-xs text-red-500">{errors.cover_image[0]}</p>
                             )}
                         </div>
                     </Section>

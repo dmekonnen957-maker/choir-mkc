@@ -30,6 +30,7 @@ class Choir extends Model
         'uniform_secondary_color',
         'uniform_pattern',
         'uniform_description',
+        'deletion_reason',
     ];
 
     protected function casts(): array

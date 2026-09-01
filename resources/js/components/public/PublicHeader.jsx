@@ -59,7 +59,9 @@ export default function PublicHeader() {
                 <Link to="/" className="flex items-center gap-2.5 rounded-lg focus-visible:outline-blue-600">
                     <Logo size="md" className="shrink-0" />
                     <span className="text-lg font-semibold tracking-tight text-slate-900 hidden lg:block">
-                        CHOIR MKC
+                        <span>YEKA</span>
+                        <span>M.K.C</span>
+                        <span> CHOIR</span>
                     </span>
                 </Link>
 

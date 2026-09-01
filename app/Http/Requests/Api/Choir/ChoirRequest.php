@@ -12,6 +12,14 @@ class ChoirRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'uniform_primary_color' => $this->input('uniform_primary_color') ?: null,
+            'uniform_secondary_color' => $this->input('uniform_secondary_color') ?: null,
+        ]);
+    }
+
     public function rules(): array
     {
         $choirId = $this->route('choir')?->id;
@@ -29,8 +37,8 @@ class ChoirRequest extends FormRequest
             'logo_path' => ['nullable', 'string'],
             'status' => ['nullable', 'in:active,inactive'],
             'is_public' => ['nullable', 'boolean'],
-            'uniform_primary_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'uniform_secondary_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'uniform_primary_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/i'],
+            'uniform_secondary_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/i'],
             'choir_type' => ['nullable', 'string', 'max:100'],
             'uniform_pattern' => ['nullable', 'string', 'max:200'],
             'uniform_description' => ['nullable', 'string'],
