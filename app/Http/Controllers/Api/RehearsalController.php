@@ -20,36 +20,61 @@ class RehearsalController extends ApiController
     {
         $this->authorize('viewAny', Rehearsal::class);
 
-        return $this->paginate($choir->rehearsals(), RehearsalResource::class);
+        $query = $choir->rehearsals()
+            ->with(['choir.teamLeader', 'creator'])
+            ->orderByDesc('date')
+            ->orderByDesc('start_time');
+
+        return $this->paginate($query, RehearsalResource::class);
     }
 
     public function store(StoreRehearsalRequest $request, Choir $choir)
     {
         $this->authorize('create', Rehearsal::class);
 
+        $data = $request->validated();
+        if (isset($data['notes']) && !isset($data['description'])) {
+            $data['description'] = $data['notes'];
+        }
+        unset($data['notes']);
+
+        if (isset($data['status']) && in_array($data['status'], ['upcoming', 'ongoing'], true)) {
+            $data['status'] = 'scheduled';
+        }
+
         $rehearsal = $choir->rehearsals()->create([
             'choir_id' => $choir->id,
             'created_by' => $request->user()->id,
-            ...$request->validated(),
+            ...$data,
         ]);
 
-        return $this->ok(new RehearsalResource($rehearsal), 'Created', 201);
+        return $this->ok(new RehearsalResource($rehearsal->load(['choir.teamLeader', 'creator'])), 'Created', 201);
     }
 
     public function show(Request $request, Choir $choir, Rehearsal $rehearsal)
     {
         $this->authorize('view', $rehearsal);
 
-        return $this->ok(new RehearsalResource($rehearsal->load('songs')));
+        return $this->ok(new RehearsalResource($rehearsal->load(['songs', 'choir.teamLeader', 'creator'])));
     }
 
     public function update(UpdateRehearsalRequest $request, Choir $choir, Rehearsal $rehearsal)
     {
         $this->authorize('update', $rehearsal);
 
-        $rehearsal->update($request->validated());
+        $data = $request->validated();
+        if (isset($data['notes']) && !isset($data['description'])) {
+            $data['description'] = $data['notes'];
+        }
+        unset($data['notes']);
 
-        return $this->ok(new RehearsalResource($rehearsal));
+        if (isset($data['status']) && in_array($data['status'], ['upcoming', 'ongoing'], true)) {
+            $data['status'] = 'scheduled';
+        }
+
+        $rehearsal->update($data);
+
+        return $this->ok(new RehearsalResource($rehearsal->load(['choir.teamLeader', 'creator'])));
     }
 
     public function destroy(Choir $choir, Rehearsal $rehearsal)

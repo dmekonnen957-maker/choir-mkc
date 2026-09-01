@@ -1,34 +1,72 @@
 import { Link } from 'react-router-dom';
-import { Play, Music2 } from 'lucide-react';
+import { Play, Pause, Music2, Volume2 } from 'lucide-react';
+import { useState, useRef } from 'react';
 import CoverImage from './CoverImage';
 
-export default function SongCard({ song, onPlay }) {
+export default function SongCard({ song, onPlay, isPlaying = false }) {
     const choirName = song.choir?.name;
+    const [playError, setPlayError] = useState(false);
+
+    const handlePlayClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (onPlay) {
+            onPlay(song);
+        }
+    };
+
     return (
-        <div className="group flex flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl">
-            <div className="relative aspect-square w-full overflow-hidden">
-                <div className="h-full w-full transition-transform duration-700 group-hover:scale-105">
-                    <CoverImage src={song.cover_image_path} label={song.title} className="h-full w-full" />
+        <div className="group w-full overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:border-blue-200 hover:shadow-lg">
+            <div className="flex items-center gap-4 p-4">
+                {/* Artwork */}
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl">
+                    <div className="h-full w-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+                        <Music2 className="h-8 w-8 text-blue-400" />
+                    </div>
                 </div>
-                <button
-                    type="button"
-                    onClick={() => (onPlay ? onPlay(song) : null)}
-                    aria-label={`Play ${song.title}`}
-                    className="absolute inset-0 flex items-center justify-center bg-slate-900/0 opacity-0 transition-all duration-300 group-hover:bg-slate-900/30 group-hover:opacity-100"
-                >
-                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-blue-700 shadow-lg transition-transform duration-300 group-hover:scale-105">
-                        <Play size={22} className="ml-0.5" />
-                    </span>
-                </button>
-            </div>
-            <div className="flex flex-1 flex-col p-4">
-                <Link to={`/songs/${song.id}`} className="text-sm font-semibold leading-snug tracking-tight text-slate-900 hover:text-blue-700">
-                    {song.title}
-                </Link>
-                <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
-                    <Music2 size={13} className="text-blue-500" />
-                    {choirName || 'EKA MKC Choirs and Worship Teams'}
-                </p>
+
+                {/* Song Info */}
+                <div className="flex-1 min-w-0">
+                    <Link to={`/songs/${song.id}`} className="block">
+                        <h3 className="font-semibold text-slate-900 hover:text-blue-600 transition-colors truncate">
+                            {song.title}
+                        </h3>
+                    </Link>
+                    <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                        <Music2 size={12} className="text-blue-500" />
+                        {choirName || 'Yeka MKC Choirs and Worship Teams'}
+                    </p>
+                    {song.artist && (
+                        <p className="text-xs text-slate-400 truncate">{song.artist}</p>
+                    )}
+                </div>
+
+                {/* Play Button */}
+                {song.audio_url ? (
+                    <button
+                        onClick={handlePlayClick}
+                        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-all hover:scale-105 active:scale-95"
+                    >
+                        {isPlaying ? (
+                            <Pause className="h-7 w-7" />
+                        ) : (
+                            <Play className="h-7 w-7 ml-0.5" />
+                        )}
+                    </button>
+                ) : (
+                    <div className="shrink-0 text-slate-300">
+                        <Volume2 className="h-5 w-5" />
+                    </div>
+                )}
+
+                {/* Audio Indicator */}
+                {song.audio_url && (
+                    <div className="shrink-0 hidden sm:block">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-600">
+                            <Volume2 className="h-3 w-3" /> Audio
+                        </span>
+                    </div>
+                )}
             </div>
         </div>
     );

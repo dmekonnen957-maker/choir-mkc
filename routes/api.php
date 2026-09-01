@@ -121,6 +121,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware(['role:admin,api'])->prefix('admin')->scopeBindings()->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'overview']);
+        Route::get('/dashboard/{choir}', [DashboardController::class, 'choirOverview']);
         Route::post('/users/{user}/approve', [UserController::class, 'approve']);
         Route::post('/users/{user}/reject', [UserController::class, 'reject']);
         Route::apiResource('users', UserController::class)->except(['destroy']);
@@ -166,5 +167,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [MemberController::class, 'profile']);
         Route::match(['PUT', 'PATCH'], '/profile', [MemberController::class, 'updateProfile']);
         Route::get('/notifications', [MemberController::class, 'notifications']);
+    });
+
+    // Team Leader area
+    Route::middleware(['auth:sanctum'])->prefix('team-leader')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'teamLeaderDashboard']);
     });
 });

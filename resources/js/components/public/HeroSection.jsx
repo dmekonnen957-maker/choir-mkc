@@ -11,6 +11,7 @@ const DEFAULT_SLIDES = [
         ctaText: "EXPLORE OUR CHOIRS",
         ctaLink: "/choirs",
         badge: "Yeka MKC Ministry",
+        image: "/images/p1.jpg",
     },
     {
         id: 2,
@@ -19,6 +20,7 @@ const DEFAULT_SLIDES = [
         ctaText: "DISCOVER SONGS",
         ctaLink: "/songs",
         badge: "Music & Media",
+        image: "/images/p2.jpg",
     },
     {
         id: 3,
@@ -27,6 +29,7 @@ const DEFAULT_SLIDES = [
         ctaText: "VIEW PERFORMANCES",
         ctaLink: "/performances",
         badge: "Live Worship",
+        image: "/images/p3.jpg",
     },
 ];
 

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../axios';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import StatCard from '../../components/member/StatCard';
 import EmptyState from '../../components/member/EmptyState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -38,6 +39,7 @@ function formatTime(value) {
 
 export default function MemberDashboard() {
     const { user, primaryChoir } = useAuth();
+    const { theme } = useTheme();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -100,6 +102,8 @@ export default function MemberDashboard() {
     const { choir, stats, next_performance, next_rehearsal, my_performances } = data;
     const attendance = stats.attendance;
 
+    const cardStyle = { borderColor: `var(--theme-border)` };
+
     return (
         <div className="space-y-8">
             <div className="mb-6">
@@ -115,8 +119,8 @@ export default function MemberDashboard() {
                         Welcome back, {user?.name}
                     </h1>
                     <p className="mt-1 flex items-center gap-2 text-ink-500">
-                        <Church size={16} className="text-blue-600" />
-                        <span className="font-medium text-blue-700">{choir.name}</span>
+                        <Church size={16} style={{ color: 'var(--theme-primary)' }} />
+                        <span className="font-medium" style={{ color: 'var(--theme-primary)' }}>{choir.name}</span>
                     </p>
                 </div>
             </div>
@@ -155,7 +159,7 @@ export default function MemberDashboard() {
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <section className="rounded-2xl border border-blue-100 bg-canvas p-6 shadow-sm">
+                <section style={cardStyle} className="rounded-2xl bg-canvas p-6 shadow-sm">
                     <h2 className="text-lg font-semibold text-ink-900">Upcoming Performance</h2>
                     {next_performance ? (
                         <div className="mt-4 space-y-3">
@@ -164,24 +168,25 @@ export default function MemberDashboard() {
                             </p>
                             <dl className="space-y-1.5 text-sm text-ink-600">
                                 <div className="flex items-center gap-2">
-                                    <Church size={15} className="text-blue-500" /> {choir.name}
+                                    <Church size={15} style={{ color: 'var(--theme-primary)' }} /> {choir.name}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <CalendarDays size={15} className="text-blue-500" />
+                                    <CalendarDays size={15} style={{ color: 'var(--theme-primary)' }} />
                                     {formatDate(next_performance.date)}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Clock size={15} className="text-blue-500" />
+                                    <Clock size={15} style={{ color: 'var(--theme-primary)' }} />
                                     {formatTime(next_performance.start_time)}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <MapPin size={15} className="text-blue-500" />
+                                    <MapPin size={15} style={{ color: 'var(--theme-primary)' }} />
                                     {next_performance.venue || next_performance.location || 'TBD'}
                                 </div>
                             </dl>
                             <Link
                                 to={`/performances/${next_performance.id}`}
-                                className="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 hover:text-blue-900"
+                                className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
+                                style={{ color: 'var(--theme-primary)' }}
                             >
                                 View Performance <ArrowRight size={16} />
                             </Link>
@@ -191,7 +196,7 @@ export default function MemberDashboard() {
                     )}
                 </section>
 
-                <section className="rounded-2xl border border-blue-100 bg-canvas p-6 shadow-sm">
+                <section style={cardStyle} className="rounded-2xl bg-canvas p-6 shadow-sm">
                     <h2 className="text-lg font-semibold text-ink-900">Next Rehearsal</h2>
                     {next_rehearsal ? (
                         <div className="mt-4 space-y-1.5 text-sm text-ink-600">
@@ -199,15 +204,15 @@ export default function MemberDashboard() {
                                 {next_rehearsal.title}
                             </p>
                             <div className="flex items-center gap-2">
-                                <CalendarClock size={15} className="text-blue-500" />
+                                <CalendarClock size={15} style={{ color: 'var(--theme-primary)' }} />
                                 {formatDate(next_rehearsal.date)}
                             </div>
                             <div className="flex items-center gap-2">
-                                <Clock size={15} className="text-blue-500" />
+                                <Clock size={15} style={{ color: 'var(--theme-primary)' }} />
                                 {formatTime(next_rehearsal.start_time)}
                             </div>
                             <div className="flex items-center gap-2">
-                                <MapPin size={15} className="text-blue-500" />
+                                <MapPin size={15} style={{ color: 'var(--theme-primary)' }} />
                                 {next_rehearsal.location || 'TBD'}
                             </div>
                         </div>
@@ -217,10 +222,10 @@ export default function MemberDashboard() {
                 </section>
             </div>
 
-            <section className="rounded-2xl border border-blue-100 bg-canvas p-6 shadow-sm">
+            <section style={cardStyle} className="rounded-2xl bg-canvas p-6 shadow-sm">
                 <h2 className="text-lg font-semibold text-ink-900">My Performances</h2>
                 {my_performances && my_performances.length > 0 ? (
-                    <ul className="mt-4 divide-y divide-blue-50">
+                    <ul className="mt-4 divide-y" style={{ borderColor: 'var(--theme-border)' }}>
                         {my_performances.map((p) => (
                             <li key={p.id} className="flex items-center justify-between py-3">
                                 <div>
@@ -231,7 +236,8 @@ export default function MemberDashboard() {
                                 </div>
                                 <Link
                                     to={`/performances/${p.id}`}
-                                    className="text-sm font-medium text-blue-700 hover:text-blue-900"
+                                    className="text-sm font-medium hover:underline"
+                                    style={{ color: 'var(--theme-primary)' }}
                                 >
                                     View
                                 </Link>

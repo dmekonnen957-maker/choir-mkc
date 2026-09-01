@@ -22,6 +22,7 @@ export default function MemberChoir() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [logoFailed, setLogoFailed] = useState(false);
 
     useEffect(() => {
         let active = true;
@@ -60,8 +61,7 @@ export default function MemberChoir() {
         );
     }
 
-    const { choir, members, leader } = data;
-    const [logoFailed, setLogoFailed] = useState(false);
+    const { choir, members = [], leader = null } = data;
     const logoUrl = asset(choir.logo_path);
 
     return (

@@ -105,6 +105,23 @@ class MemberController extends ApiController
                 ->get();
         }
 
+        $upcomingPerformancesList = $choir->performances()
+            ->where('date', '>=', now()->toDateString())
+            ->orderBy('date')
+            ->take(5)
+            ->get();
+
+        $upcomingRehearsalsList = $choir->rehearsals()
+            ->where('date', '>=', now()->toDateString())
+            ->orderBy('date')
+            ->take(5)
+            ->get();
+
+        $recentSongs = $choir->songs()
+            ->latest()
+            ->take(5)
+            ->get();
+
         return $this->ok([
             'has_choir' => true,
             'choir' => new ChoirResource($choir->loadCount('members')),
@@ -118,12 +135,30 @@ class MemberController extends ApiController
             'next_rehearsal' => $nextRehearsal ? [
                 'id' => $nextRehearsal->id,
                 'title' => $nextRehearsal->title,
-                'date' => $nextRehearsal->date,
+                'date' => $nextRehearsal->date?->format('Y-m-d'),
                 'start_time' => $nextRehearsal->start_time,
+                'end_time' => $nextRehearsal->end_time,
                 'location' => $nextRehearsal->location,
                 'status' => $nextRehearsal->status,
             ] : null,
             'my_performances' => PerformanceResource::collection($myPerformances),
+            'upcoming_performances' => PerformanceResource::collection($upcomingPerformancesList),
+            'upcoming_rehearsals' => $upcomingRehearsalsList->map(fn ($r) => [
+                'id' => $r->id,
+                'title' => $r->title,
+                'date' => $r->date?->format('Y-m-d'),
+                'start_time' => $r->start_time,
+                'end_time' => $r->end_time,
+                'location' => $r->location,
+                'status' => $r->status,
+            ]),
+            'recent_songs' => $recentSongs->map(fn ($s) => [
+                'id' => $s->id,
+                'title' => $s->title,
+                'artist' => $s->artist,
+                'category' => $s->category?->name,
+                'key' => $s->key,
+            ]),
         ]);
     }
 

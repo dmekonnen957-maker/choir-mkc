@@ -106,7 +106,7 @@ class Song extends Model
     public function audioUrl(): Attribute
     {
         return Attribute::get(function () {
-            return $this->audio_path ? Storage::disk('public')->url($this->audio_path) : null;
+            return $this->audio_path ? '/storage/' . ltrim($this->audio_path, '/') : null;
         });
     }
 }

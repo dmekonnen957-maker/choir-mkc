@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useChoir } from '../../context/ChoirContext';
 import { api } from '../../axios';
 import {
     Plus,
@@ -8,25 +9,20 @@ import {
     Pencil,
     Trash2,
     Search,
-    FileText,
-    Volume2,
     Eye,
+    Play,
+    Pause,
+    Volume2,
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Alert from '../../components/ui/Alert';
-import AudioPlayer from '../../components/ui/AudioPlayer';
 import Modal from '../../components/ui/Modal';
-
-const SCALE_LABELS = {
-    major: 'Major',
-    minor: 'Minor',
-    ethiopian: 'Ethiopian',
-};
 
 export default function AdminSongsPage() {
     const { can } = useAuth();
+    const { currentChoir, isAllChoirs } = useChoir();
     const navigate = useNavigate();
 
     const [loading, setLoading] = useState(true);
@@ -35,16 +31,25 @@ export default function AdminSongsPage() {
     const [choirs, setChoirs] = useState([]);
     const [search, setSearch] = useState('');
     const [choirId, setChoirId] = useState('');
-    const [scale, setScale] = useState('');
     const [toDelete, setToDelete] = useState(null);
     const [toast, setToast] = useState(null);
+    const [playingId, setPlayingId] = useState(null);
+    const [audioRefs, setAudioRefs] = useState({});
+
+    // Sync choirId filter with currentChoir context
+    useEffect(() => {
+        if (!isAllChoirs && currentChoir?.id) {
+            setChoirId(String(currentChoir.id));
+        } else {
+            setChoirId('');
+        }
+    }, [currentChoir?.id, isAllChoirs]);
 
     const load = () => {
         setLoading(true);
         setError('');
         Promise.all([api.get('/admin/songs'), api.get('/admin/choirs')])
             .then(([songsRes, choirsRes]) => {
-                // Both endpoints use the paginated envelope: { data: { items: [...], pagination: {...} } }
                 setSongs(songsRes.data?.data?.items ?? []);
                 setChoirs(choirsRes.data?.data?.items ?? []);
             })
@@ -54,10 +59,10 @@ export default function AdminSongsPage() {
 
     useEffect(load, []);
 
+
     const filtered = songs.filter((s) => {
         if (search && !s.title.toLowerCase().includes(search.toLowerCase())) return false;
         if (choirId && String(s.choir_id) !== String(choirId)) return false;
-        if (scale && s.scale !== scale) return false;
         return true;
     });
 
@@ -73,6 +78,46 @@ export default function AdminSongsPage() {
         }
     };
 
+    const togglePlay = (songId, audioPath) => {
+        const audioUrl = `/storage/${String(audioPath).replace(/^\/+/, '')}`;
+        if (playingId === songId) {
+            // Pause current
+            if (audioRefs[songId]) {
+                audioRefs[songId].pause();
+            }
+            setPlayingId(null);
+        } else {
+            // Pause any playing audio
+            if (playingId && audioRefs[playingId]) {
+                audioRefs[playingId].pause();
+            }
+            // Play new
+            if (audioRefs[songId]) {
+                audioRefs[songId].play();
+                setPlayingId(songId);
+            } else {
+                // Create new audio element
+                const audio = new Audio(audioUrl);
+                audio.onended = () => setPlayingId(null);
+                audio.play();
+                setAudioRefs(prev => ({ ...prev, [songId]: audio }));
+                setPlayingId(songId);
+            }
+        }
+    };
+
+    useEffect(() => {
+        // Cleanup audio on unmount
+        return () => {
+            Object.values(audioRefs).forEach(audio => {
+                if (audio) {
+                    audio.pause();
+                    audio.src = '';
+                }
+            });
+        };
+    }, [audioRefs]);
+
     if (loading) {
         return (
             <div className="flex h-48 items-center justify-center">
@@ -83,10 +128,11 @@ export default function AdminSongsPage() {
 
     return (
         <div className="space-y-6">
+            {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-ink-900">Music Library</h1>
-                    <p className="text-sm text-ink-500">Manage your choir's songs, audio and lyrics.</p>
+                    <p className="text-sm text-ink-500">Manage your choir's songs</p>
                 </div>
                 {can('songs.create') && (
                     <Link
@@ -98,6 +144,7 @@ export default function AdminSongsPage() {
                 )}
             </div>
 
+            {/* Toast & Error */}
             {toast && (
                 <Alert variant={toast.variant} title={toast.message} onClose={() => setToast(null)} />
             )}
@@ -110,6 +157,7 @@ export default function AdminSongsPage() {
                 </div>
             )}
 
+            {/* Filters */}
             <div className="flex flex-wrap gap-3">
                 <div className="relative flex-1 min-w-[200px]">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
@@ -132,18 +180,9 @@ export default function AdminSongsPage() {
                         </option>
                     ))}
                 </select>
-                <select
-                    value={scale}
-                    onChange={(e) => setScale(e.target.value)}
-                    className="min-w-[160px] rounded-lg border border-ink-200 bg-white py-2 pl-3 pr-3 text-sm outline-none focus:border-blue-400"
-                >
-                    <option value="">All Scales</option>
-                    <option value="major">Major</option>
-                    <option value="minor">Minor</option>
-                    <option value="ethiopian">Ethiopian</option>
-                </select>
             </div>
 
+            {/* Songs Grid - Full Width */}
             {filtered.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-ink-200 bg-white p-12 text-center">
                     <Music className="mx-auto h-8 w-8 text-ink-300" />
@@ -159,110 +198,87 @@ export default function AdminSongsPage() {
                     )}
                 </div>
             ) : (
-                <div className="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-sm">
-                    <table className="w-full text-left text-sm">
-                        <thead className="border-b border-ink-200 bg-ink-50 text-xs uppercase tracking-wide text-ink-500">
-                            <tr>
-                                <th className="px-4 py-3">Artwork</th>
-                                <th className="px-4 py-3">Title</th>
-                                <th className="px-4 py-3">Choir</th>
-                                <th className="px-4 py-3">Key</th>
-                                <th className="px-4 py-3">Scale</th>
-                                <th className="px-4 py-3">Lyrics</th>
-                                <th className="px-4 py-3">Audio</th>
-                                <th className="px-4 py-3">Created</th>
-                                <th className="px-4 py-3 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-ink-100">
-                            {filtered.map((s) => (
-                                <tr key={s.id} className="hover:bg-ink-50/60">
-                                    <td className="px-4 py-3">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-500">
-                                            <Music className="h-5 w-5" />
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3">
+                <div className="grid grid-cols-1 gap-4">
+                    {filtered.map((s) => (
+                        <div
+                            key={s.id}
+                            className="group rounded-xl border border-ink-200 bg-white shadow-sm transition-all hover:shadow-md"
+                        >
+                            <div className="flex items-center p-4 gap-4">
+                                {/* Artwork */}
+                                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-100 to-indigo-100">
+                                    <Music className="h-8 w-8 text-blue-400" />
+                                </div>
+
+                                {/* Song Info */}
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-ink-900 group-hover:text-blue-600 transition-colors truncate">
+                                        {s.title}
+                                    </h3>
+                                    {s.artist && (
+                                        <p className="text-xs text-ink-400 truncate">{s.artist}</p>
+                                    )}
+                                    <p className="text-xs text-ink-400">{s.choir?.name || '—'}</p>
+                                </div>
+
+                                {/* Play Button */}
+                                {s.audio_path && (
+                                    <button
+                                        onClick={() => togglePlay(s.id, s.audio_path)}
+                                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 transition-all hover:scale-105"
+                                    >
+                                        {playingId === s.id ? (
+                                            <Pause className="h-6 w-6" />
+                                        ) : (
+                                            <Play className="h-6 w-6 ml-0.5" />
+                                        )}
+                                    </button>
+                                )}
+
+                                {/* Audio Indicator */}
+                                {s.audio_path && (
+                                    <div className="shrink-0">
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-600">
+                                            <Volume2 className="h-3 w-3" /> Audio
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Actions */}
+                                <div className="flex shrink-0 items-center gap-2">
+                                    <button
+                                        onClick={() => navigate(`/admin/songs/${s.id}`)}
+                                        className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                                    >
+                                        <Eye className="h-4 w-4" /> View
+                                    </button>
+                                    {can('songs.edit') && (
                                         <button
-                                            onClick={() => navigate(`/admin/songs/${s.id}`)}
-                                            className="font-semibold text-ink-800 hover:text-blue-600"
+                                            onClick={() => navigate(`/admin/songs/${s.id}/edit`)}
+                                            className="inline-flex items-center justify-center rounded-lg bg-ink-50 px-3 py-2 text-sm font-medium text-ink-600 hover:bg-ink-100 transition-colors"
                                         >
-                                            {s.title}
+                                            <Pencil className="h-4 w-4" />
                                         </button>
-                                        {s.artist && (
-                                            <p className="text-xs text-ink-400">{s.artist}</p>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3 text-ink-600">{s.choir?.name ?? '—'}</td>
-                                    <td className="px-4 py-3 font-medium text-ink-700">
-                                        {s.original_key ?? '—'}
-                                    </td>
-                                    <td className="px-4 py-3 text-ink-600">
-                                        {s.scale ? SCALE_LABELS[s.scale] ?? s.scale : '—'}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        {s.has_lyrics ? (
-                                            <span className="inline-flex items-center gap-1 text-emerald-600">
-                                                <FileText className="h-4 w-4" /> Yes
-                                            </span>
-                                        ) : (
-                                            <span className="text-ink-300">—</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        {s.audio_path ? (
-                                            <span className="inline-flex items-center gap-1 text-blue-600">
-                                                <Volume2 className="h-4 w-4" /> Yes
-                                            </span>
-                                        ) : (
-                                            <span className="text-ink-300">—</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3 text-ink-500">
-                                        {s.created_at
-                                            ? new Date(s.created_at).toLocaleDateString()
-                                            : '—'}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <div className="flex items-center justify-end gap-1">
-                                            <button
-                                                onClick={() => navigate(`/admin/songs/${s.id}`)}
-                                                title="View"
-                                                className="rounded p-2 text-ink-500 hover:bg-ink-100"
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </button>
-                                            {can('songs.edit') && (
-                                                <button
-                                                    onClick={() => navigate(`/admin/songs/${s.id}/edit`)}
-                                                    title="Edit"
-                                                    className="rounded p-2 text-ink-500 hover:bg-ink-100"
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </button>
-                                            )}
-                                            {can('songs.delete') && (
-                                                <button
-                                                    onClick={() => setToDelete(s)}
-                                                    title="Delete"
-                                                    className="rounded p-2 text-red-500 hover:bg-red-50"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                    )}
+                                    {can('songs.delete') && (
+                                        <button
+                                            onClick={() => setToDelete(s)}
+                                            className="inline-flex items-center justify-center rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
 
+            {/* Delete Modal */}
             <Modal open={!!toDelete} onClose={() => setToDelete(null)} title="Delete song">
                 <p className="text-sm text-ink-600">
-                    Delete "{toDelete?.title}"? This removes the song and its audio file. This cannot be
-                    undone.
+                    Delete "{toDelete?.title}"? This removes the song and its audio file. This cannot be undone.
                 </p>
                 <div className="mt-6 flex justify-end gap-3">
                     <Button variant="ghost" onClick={() => setToDelete(null)}>

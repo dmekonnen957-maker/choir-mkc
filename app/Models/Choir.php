@@ -17,6 +17,7 @@ class Choir extends Model
     protected $fillable = [
         'name',
         'slug',
+        'choir_type',
         'logo_path',
         'description',
         'church_name',
@@ -25,6 +26,10 @@ class Choir extends Model
         'is_public',
         'created_by',
         'team_leader_id',
+        'uniform_primary_color',
+        'uniform_secondary_color',
+        'uniform_pattern',
+        'uniform_description',
     ];
 
     protected function casts(): array

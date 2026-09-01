@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import {
     CheckCircle2,
     Clock,
@@ -112,16 +113,25 @@ function formatDisplayTime(timeStr) {
 export default function AdminAttendancePage() {
     const { user, role, primaryChoir, can } = useAuth();
     const isAdmin = role === 'admin' || role === 'super-admin';
+    const [searchParams] = useSearchParams();
+    const location = useLocation();
+
+    const paramChoirId = searchParams.get('choir_id') || location.state?.choirId;
+    const paramRehearsalId = searchParams.get('rehearsal_id') || location.state?.rehearsalId;
+    const paramPerformanceId = searchParams.get('performance_id') || location.state?.performanceId;
+    const paramDate = searchParams.get('date') || location.state?.date;
 
     // Tabs
     const [activeTab, setActiveTab] = useState('live'); // 'live' | 'history' | 'stats'
 
     // Choir & Event state
     const [choirs, setChoirs] = useState([]);
-    const [selectedChoirId, setSelectedChoirId] = useState('');
+    const [selectedChoirId, setSelectedChoirId] = useState(paramChoirId ? String(paramChoirId) : '');
     const [events, setEvents] = useState([]);
-    const [selectedEventValue, setSelectedEventValue] = useState(''); // e.g. "performance-5" or "rehearsal-2" or "custom"
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedEventValue, setSelectedEventValue] = useState(
+        paramRehearsalId ? `rehearsal-${paramRehearsalId}` : paramPerformanceId ? `performance-${paramPerformanceId}` : ''
+    ); // e.g. "performance-5" or "rehearsal-2" or "custom"
+    const [selectedDate, setSelectedDate] = useState(paramDate || new Date().toISOString().split('T')[0]);
 
     // Live session state
     const [currentSession, setCurrentSession] = useState(null);
@@ -175,6 +185,13 @@ export default function AdminAttendancePage() {
                 setChoirs(items);
 
                 if (items.length > 0) {
+                    if (paramChoirId) {
+                        const matched = items.find((c) => String(c.id) === String(paramChoirId));
+                        if (matched) {
+                            setSelectedChoirId(matched.id.toString());
+                            return;
+                        }
+                    }
                     const defaultChoir = primaryChoir?.id
                         ? items.find((c) => c.id === primaryChoir.id) || items[0]
                         : items[0];
@@ -186,7 +203,7 @@ export default function AdminAttendancePage() {
         };
 
         fetchChoirs();
-    }, [primaryChoir]);
+    }, [primaryChoir, paramChoirId]);
 
     // 2. Fetch Events when selected choir changes
     const fetchEvents = useCallback(async (choirId) => {
@@ -195,6 +212,28 @@ export default function AdminAttendancePage() {
             const res = await api.get(`/attendance/events?choir_id=${choirId}`);
             const eventItems = res.data?.data?.events || [];
             setEvents(eventItems);
+
+            if (paramRehearsalId) {
+                const targetRehearsal = eventItems.find((ev) => ev.type === 'rehearsal' && String(ev.id) === String(paramRehearsalId));
+                if (targetRehearsal) {
+                    setSelectedEventValue(`rehearsal-${targetRehearsal.id}`);
+                    if (targetRehearsal.date) setSelectedDate(targetRehearsal.date);
+                    return;
+                } else {
+                    setSelectedEventValue(`rehearsal-${paramRehearsalId}`);
+                    if (paramDate) setSelectedDate(paramDate);
+                    return;
+                }
+            }
+
+            if (paramPerformanceId) {
+                const targetPerformance = eventItems.find((ev) => ev.type === 'performance' && String(ev.id) === String(paramPerformanceId));
+                if (targetPerformance) {
+                    setSelectedEventValue(`performance-${targetPerformance.id}`);
+                    if (targetPerformance.date) setSelectedDate(targetPerformance.date);
+                    return;
+                }
+            }
 
             if (eventItems.length > 0) {
                 const first = eventItems[0];
@@ -208,7 +247,7 @@ export default function AdminAttendancePage() {
         } catch (err) {
             showToast('error', 'Failed to load choir events');
         }
-    }, []);
+    }, [paramRehearsalId, paramPerformanceId, paramDate]);
 
     useEffect(() => {
         if (selectedChoirId) {

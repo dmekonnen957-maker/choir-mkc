@@ -29,6 +29,11 @@ class ChoirRequest extends FormRequest
             'logo_path' => ['nullable', 'string'],
             'status' => ['nullable', 'in:active,inactive'],
             'is_public' => ['nullable', 'boolean'],
+            'uniform_primary_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'uniform_secondary_color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'choir_type' => ['nullable', 'string', 'max:100'],
+            'uniform_pattern' => ['nullable', 'string', 'max:200'],
+            'uniform_description' => ['nullable', 'string'],
             'team_leader_id' => [
                 'nullable',
                 'exists:users,id',

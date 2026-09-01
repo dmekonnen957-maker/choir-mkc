@@ -3,7 +3,17 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
-    /* ---- BLUE + WHITE DESIGN TOKENS (landing system) ---- */
+    /* ---- THEME CSS VARIABLES (dynamic choir colors) ---- */
+    --color-theme-primary: var(--theme-primary, #2563eb);
+    --color-theme-secondary: var(--theme-secondary, #ffffff);
+    --color-theme-primary-light: var(--theme-primary-light, #3b82f6);
+    --color-theme-primary-dark: var(--theme-primary-dark, #1d4ed8);
+    --color-theme-surface: var(--theme-surface, #f5f8fd);
+    --color-theme-text: var(--theme-text, #1c2026);
+    --color-theme-text-on-primary: var(--theme-text-on-primary, #ffffff);
+    --color-theme-border: var(--theme-border, #bfdbfe);
+
+    /* ---- BLUE + WHITE DESIGN TOKENS (landing system / global fallback) ---- */
     --color-blue-50: #eff6ff;
     --color-blue-100: #dbeafe;
     --color-blue-200: #bfdbfe;
@@ -50,15 +60,26 @@
         @apply bg-surface text-ink-800 antialiased overflow-x-hidden;
     }
 
+    :root {
+        --theme-primary: #2563eb;
+        --theme-secondary: #ffffff;
+        --theme-primary-light: #3b82f6;
+        --theme-primary-dark: #1d4ed8;
+        --theme-surface: #f5f8fd;
+        --theme-text: #1c2026;
+        --theme-text-on-primary: #ffffff;
+        --theme-border: #bfdbfe;
+    }
+
     :focus-visible {
-        outline: 2px solid var(--color-blue-600);
+        outline: 2px solid var(--theme-primary);
         outline-offset: 2px;
         border-radius: 4px;
     }
 
     ::selection {
-        background: var(--color-blue-200);
-        color: var(--color-blue-950);
+        background: var(--theme-primary-light);
+        color: var(--theme-text-on-primary);
     }
 }
 
@@ -226,17 +247,25 @@
 /* Thin scrollbar inside lyric panel */
 .lyric-scroll {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-blue-200) transparent;
+    scrollbar-color: var(--theme-border) transparent;
 }
 .lyric-scroll::-webkit-scrollbar {
     width: 8px;
 }
 .lyric-scroll::-webkit-scrollbar-thumb {
-    background: var(--color-blue-200);
+    background: var(--theme-border);
     border-radius: 9999px;
 }
 
 /* Gradient text helper */
+.text-gradient-theme {
+    background: linear-gradient(120deg, var(--theme-primary-dark), var(--theme-primary-light));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+/* Gradient text helper (legacy - uses global blue) */
 .text-gradient-blue {
     background: linear-gradient(120deg, var(--color-blue-700), var(--color-blue-400));
     -webkit-background-clip: text;

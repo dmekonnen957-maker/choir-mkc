@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { api, getToken, setToken, clearToken } from '../axios';
+import { useTheme } from './ThemeContext';
 
 const AuthContext = createContext(null);
 
@@ -7,12 +8,14 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const { applyChoirTheme, applyGlobalTheme } = useTheme();
 
     const refreshUser = useCallback(async () => {
         if (!getToken()) {
             setUser(null);
             setIsAuthenticated(false);
             setLoading(false);
+            applyGlobalTheme();
             return;
         }
 
@@ -21,14 +24,26 @@ export function AuthProvider({ children }) {
             const userData = response.data?.data?.user || response.data?.data;
             setUser(userData);
             setIsAuthenticated(true);
+            
+            // Apply choir theme based on user's primary choir
+            const primaryChoir = userData?.choir ?? 
+                userData?.choirs?.find((c) => c.status === 'active') ?? 
+                userData?.choirs?.[0] ?? null;
+            
+            if (primaryChoir?.uniform_primary_color && primaryChoir?.uniform_secondary_color) {
+                applyChoirTheme(primaryChoir);
+            } else {
+                applyGlobalTheme();
+            }
         } catch {
             setUser(null);
             setIsAuthenticated(false);
             clearToken();
+            applyGlobalTheme();
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [applyChoirTheme, applyGlobalTheme]);
 
     useEffect(() => {
         refreshUser();
@@ -42,8 +57,19 @@ export function AuthProvider({ children }) {
         setUser(userData);
         setIsAuthenticated(true);
 
+        // Apply choir theme after login
+        const primaryChoir = userData?.choir ?? 
+            userData?.choirs?.find((c) => c.status === 'active') ?? 
+            userData?.choirs?.[0] ?? null;
+        
+        if (primaryChoir?.uniform_primary_color && primaryChoir?.uniform_secondary_color) {
+            applyChoirTheme(primaryChoir);
+        } else {
+            applyGlobalTheme();
+        }
+
         return userData;
-    }, []);
+    }, [applyChoirTheme, applyGlobalTheme]);
 
     const register = useCallback(async (payload) => {
         const response = await api.post('/auth/register', payload);
@@ -59,19 +85,22 @@ export function AuthProvider({ children }) {
             clearToken();
             setUser(null);
             setIsAuthenticated(false);
+            applyGlobalTheme();
         }
-    }, []);
+    }, [applyGlobalTheme]);
 
-    const roles = user?.roles ?? [];
-    const role = roles.includes('super-admin') || roles.includes('admin') || user?.role === 'admin' || user?.role === 'super-admin'
-        ? 'admin'
-        : roles.includes('team_leader') || user?.role === 'team_leader'
-            ? 'team_leader'
-            : 'member';
+    const roles = useMemo(() => user?.roles ?? [], [user]);
+    const role = useMemo(() => {
+        if (roles.includes('super-admin') || roles.includes('admin') || user?.role === 'admin' || user?.role === 'super-admin') return 'admin';
+        if (roles.includes('team_leader') || user?.role === 'team_leader') return 'team_leader';
+        return 'member';
+    }, [roles, user]);
 
-    const permissions = user?.permissions ?? [];
-    const choirs = user?.choirs ?? [];
-    const primaryChoir = user?.choir ?? choirs.find((c) => c.status === 'active') ?? choirs[0] ?? null;
+    const permissions = useMemo(() => user?.permissions ?? [], [user]);
+    const choirs = useMemo(() => user?.choirs ?? [], [user]);
+    const primaryChoir = useMemo(() => {
+        return user?.choir ?? choirs.find((c) => c.status === 'active') ?? choirs[0] ?? null;
+    }, [user, choirs]);
 
     const can = useCallback((permission) => {
         if (role === 'admin') return true;

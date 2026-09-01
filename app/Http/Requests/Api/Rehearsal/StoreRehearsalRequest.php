@@ -14,13 +14,14 @@ class StoreRehearsalRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['required', 'string'],
+            'title' => ['required', 'string', 'max:255'],
             'date' => ['required', 'date'],
-            'start_time' => ['nullable', 'date_format:H:i'],
-            'end_time' => ['nullable', 'date_format:H:i'],
-            'location' => ['nullable', 'string'],
+            'start_time' => ['nullable', 'string'],
+            'end_time' => ['nullable', 'string'],
+            'location' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'status' => ['nullable', 'in:scheduled,completed,cancelled'],
+            'notes' => ['nullable', 'string'],
+            'status' => ['nullable', 'string', 'in:scheduled,completed,cancelled,upcoming,ongoing'],
         ];
     }
 }

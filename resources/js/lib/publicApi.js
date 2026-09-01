@@ -77,6 +77,14 @@ export async function fetchAllPerformances() {
 export function imageUrl(path) {
     if (!path) return null;
     if (/^https?:\/\//.test(path)) return path;
+    if (String(path).startsWith('/')) return path;
+    return `/storage/${String(path).replace(/^\/+/, '')}`;
+}
+
+export function storageUrl(path) {
+    if (!path) return null;
+    if (/^https?:\/\//.test(path)) return path;
+    if (/^\/storage\//.test(path)) return path;
     return `/storage/${String(path).replace(/^\/+/, '')}`;
 }
 

@@ -1,5 +1,7 @@
 import { Menu, Bell } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useChoir } from '../../context/ChoirContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const ROLE_LABELS = {
     member: 'Member',
@@ -8,7 +10,10 @@ const ROLE_LABELS = {
 };
 
 export default function MemberHeader({ title, onMenu }) {
-    const { user, role, primaryChoir } = useAuth();
+    const { user, role } = useAuth();
+    const { currentChoir, isAllChoirs } = useChoir();
+    const { theme } = useTheme();
+
     const initials = (user?.name ?? '?')
         .split(' ')
         .map((p) => p[0])
@@ -16,12 +21,26 @@ export default function MemberHeader({ title, onMenu }) {
         .join('')
         .toUpperCase();
 
+    const avatarStyle = {
+        backgroundColor: `${theme.primary}20`,
+        color: theme.primary,
+        borderColor: `${theme.primary}4D`,
+    };
+
+    const choirDisplayName = isAllChoirs
+        ? 'All Choirs'
+        : currentChoir?.name ?? 'No Choir';
+
+    const choirSubtitle = isAllChoirs
+        ? 'Global Overview'
+        : currentChoir?.choir_type ?? ROLE_LABELS[role] ?? 'Member';
+
     return (
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-blue-100 bg-canvas/90 px-4 py-3 backdrop-blur lg:px-8">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[var(--theme-border)] bg-canvas/90 px-4 py-3 backdrop-blur lg:px-8">
             <div className="flex items-center gap-3">
                 <button
                     onClick={onMenu}
-                    className="rounded-lg p-1.5 text-ink-600 hover:bg-blue-50 lg:hidden"
+                    className="rounded-lg p-1.5 text-ink-600 hover:bg-[var(--theme-primary)]/10 lg:hidden"
                     aria-label="Open menu"
                 >
                     <Menu size={22} />
@@ -33,21 +52,23 @@ export default function MemberHeader({ title, onMenu }) {
 
             <div className="flex items-center gap-3">
                 <button
-                    className="relative rounded-full p-2 text-ink-500 hover:bg-blue-50 hover:text-blue-700"
+                    className="relative rounded-full p-2 text-ink-500 hover:bg-[var(--theme-primary)]/10 hover:text-[var(--theme-primary)]"
                     aria-label="Notifications"
                 >
                     <Bell size={20} />
                 </button>
-                <div className="flex items-center gap-3 rounded-xl border border-blue-100 bg-surface px-3 py-1.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
+
+                {/* Choir identity in header */}
+                <div className="flex items-center gap-3 rounded-xl border border-[var(--theme-border)] bg-surface px-3 py-1.5">
+                    <span
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold"
+                        style={avatarStyle}
+                    >
                         {initials}
                     </span>
                     <div className="hidden leading-tight sm:block">
-                        <p className="text-sm font-semibold text-ink-900">{user?.name}</p>
-                        <p className="text-xs text-ink-500">
-                            {ROLE_LABELS[role] ?? 'Member'}
-                            {primaryChoir ? ` · ${primaryChoir.name}` : ''}
-                        </p>
+                        <p className="text-sm font-semibold text-ink-900">{choirDisplayName}</p>
+                        <p className="text-xs text-ink-500">{choirSubtitle}</p>
                     </div>
                 </div>
             </div>

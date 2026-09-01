@@ -29,6 +29,8 @@ class UserResource extends JsonResource
                 'id' => $primaryChoir->id,
                 'name' => $primaryChoir->name,
                 'slug' => $primaryChoir->slug,
+                'uniform_primary_color' => $primaryChoir->uniform_primary_color,
+                'uniform_secondary_color' => $primaryChoir->uniform_secondary_color,
             ] : null,
             'roles' => $this->whenLoaded('roles', fn () => $this->roles->pluck('name')),
             'permissions' => $this->whenLoaded('permissions', fn () => $this->getAllPermissions()->pluck('name')),
@@ -38,6 +40,8 @@ class UserResource extends JsonResource
                         'id' => $choir->id,
                         'name' => $choir->name,
                         'slug' => $choir->slug,
+                        'uniform_primary_color' => $choir->uniform_primary_color,
+                        'uniform_secondary_color' => $choir->uniform_secondary_color,
                         'status' => $choir->pivot->status ?? null,
                         'is_primary_leader' => (bool) ($choir->pivot->is_primary_leader ?? false),
                     ];

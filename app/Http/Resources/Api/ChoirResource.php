@@ -21,6 +21,11 @@ class ChoirResource extends JsonResource
             'created_by' => $this->created_by,
             'created_at' => $this->created_at,
             'team_leader_id' => $this->team_leader_id,
+            'uniform_primary_color' => $this->uniform_primary_color,
+            'uniform_secondary_color' => $this->uniform_secondary_color,
+            'choir_type' => $this->choir_type,
+            'uniform_pattern' => $this->uniform_pattern,
+            'uniform_description' => $this->uniform_description,
             'team_leader' => $this->whenLoaded('teamLeader', function () {
                 return $this->teamLeader ? [
                     'id' => $this->teamLeader->id,
