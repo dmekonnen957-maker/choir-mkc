@@ -38,7 +38,7 @@ class EnsureMemberMiddleware
             ], 403);
         }
 
-        if (! $user->hasRole('member', 'api')) {
+        if (! ($user->hasRole('member', 'api') || $user->hasRole('member') || $user->role === 'member')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Access denied. This area is for choir members only.',

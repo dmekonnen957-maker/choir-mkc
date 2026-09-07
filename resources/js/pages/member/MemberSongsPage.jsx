@@ -171,8 +171,10 @@ function SongCard({ song, onPlay, onLyrics, isSubmission = false }) {
 }
 
 /* ─────────────────────── Submit Song Modal ─────────────────────── */
-function SubmitSongModal({ open, onClose, onSubmitted, apiPath }) {
+function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, userChoirs = [] }) {
+    const initialChoirId = defaultChoir?.id || userChoirs?.[0]?.id || '';
     const [form, setForm] = useState({
+        choir_id: initialChoirId,
         title: '',
         composer: '',
         artist: '',
@@ -187,9 +189,34 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath }) {
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
 
+    // Keep choir_id synchronized with available choir
+    useEffect(() => {
+        if (!form.choir_id) {
+            const cid = defaultChoir?.id || userChoirs?.[0]?.id || '';
+            if (cid) setForm((prev) => ({ ...prev, choir_id: cid }));
+        }
+    }, [defaultChoir, userChoirs]);
+
     const update = (field) => (e) => {
         setForm((prev) => ({ ...prev, [field]: e.target.value }));
-        setErrors((prev) => ({ ...prev, [field]: undefined }));
+        setErrors((prev) => ({ ...prev, [field]: undefined, general: undefined }));
+    };
+
+    const resetForm = () => {
+        setForm({
+            choir_id: defaultChoir?.id || userChoirs?.[0]?.id || '',
+            title: '',
+            composer: '',
+            artist: '',
+            original_key: 'C',
+            scale: 'major',
+            scale_mode: '',
+            description: '',
+            lyrics: '',
+        });
+        setAudioFile(null);
+        setCoverFile(null);
+        setErrors({});
     };
 
     const handleSubmit = async (e) => {
@@ -199,14 +226,15 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath }) {
 
         try {
             const payload = new FormData();
-            payload.append('title', form.title);
-            if (form.composer) payload.append('composer', form.composer);
-            if (form.artist) payload.append('artist', form.artist);
+            if (form.choir_id) payload.append('choir_id', form.choir_id);
+            payload.append('title', form.title.trim());
+            if (form.composer?.trim()) payload.append('composer', form.composer.trim());
+            if (form.artist?.trim()) payload.append('artist', form.artist.trim());
             payload.append('original_key', form.original_key);
             payload.append('scale', form.scale);
-            if (form.scale_mode) payload.append('scale_mode', form.scale_mode);
-            if (form.description) payload.append('description', form.description);
-            if (form.lyrics) payload.append('lyrics', form.lyrics);
+            if (form.scale_mode?.trim()) payload.append('scale_mode', form.scale_mode.trim());
+            if (form.description?.trim()) payload.append('description', form.description.trim());
+            if (form.lyrics?.trim()) payload.append('lyrics', form.lyrics.trim());
 
             if (audioFile) {
                 payload.append('audio', audioFile);
@@ -219,18 +247,30 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath }) {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
 
+            resetForm();
             onSubmitted('Your song was submitted successfully and is now pending administrator review.');
             onClose();
         } catch (err) {
+            console.error('Song submission error:', err);
             if (err.errors) {
-                setErrors(err.errors);
+                const firstErr = Object.values(err.errors).flat()[0];
+                setErrors({
+                    ...err.errors,
+                    general: firstErr || err.message || 'Please correct the highlighted validation errors.',
+                });
             } else {
-                setErrors({ general: err.message || 'Failed to submit song.' });
+                setErrors({ general: err.message || 'Failed to submit song. Please check your data and try again.' });
             }
         } finally {
             setSubmitting(false);
         }
     };
+
+    const choirOptions = userChoirs.length > 0
+        ? userChoirs
+        : defaultChoir
+        ? [defaultChoir]
+        : [];
 
     return (
         <Modal open={open} onClose={onClose} title="Submit Song for Review" size="lg">
@@ -240,8 +280,8 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath }) {
                     <div>
                         <p className="font-bold">Submission & Approval Process</p>
                         <p className="text-[11px] text-slate-600 mt-0.5">
-                            Submitted songs will be reviewed by the choir administration with status <strong>Pending</strong>.
-                            Once approved, it will be published to the choir and public worship music library.
+                            Submitted songs are saved with status <strong>Pending</strong>.
+                            Administrators review submissions to approve, reject, or request edits. Once approved, the song appears publicly in the worship music library.
                         </p>
                     </div>
                 </div>
@@ -251,6 +291,35 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath }) {
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Choir Selection */}
+                    {choirOptions.length > 1 ? (
+                        <div className="sm:col-span-2">
+                            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Choir <span className="text-rose-500">*</span>
+                            </label>
+                            <select
+                                value={form.choir_id}
+                                onChange={update('choir_id')}
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                                required
+                            >
+                                <option value="">Select Choir...</option>
+                                {choirOptions.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.name}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.choir_id?.[0] && (
+                                <p className="mt-1 text-xs text-rose-600">{errors.choir_id[0]}</p>
+                            )}
+                        </div>
+                    ) : choirOptions.length === 1 ? (
+                        <div className="sm:col-span-2 rounded-xl bg-slate-50 border border-slate-200 px-3.5 py-2 flex items-center justify-between text-xs text-slate-600">
+                            <span>Submitting for Choir:</span>
+                            <span className="font-bold text-blue-700">{choirOptions[0].name}</span>
+                        </div>
+                    ) : null}
                     <div className="sm:col-span-2">
                         <Input
                             label="Song Title"
@@ -630,6 +699,8 @@ export default function MemberSongsPage({ apiPath = 'member/songs' }) {
                     load();
                 }}
                 apiPath={apiPath}
+                defaultChoir={data?.choir}
+                userChoirs={data?.user_choirs || []}
             />
         </div>
     );

@@ -9,7 +9,9 @@ class SongPolicy
 {
     public function before(User $user, $ability): ?bool
     {
-        if ($user->hasRole(['super-admin', 'admin'], 'api') || $user->hasAnyRole(['super-admin', 'admin'])) {
+        if (in_array($user->role, ['admin', 'super-admin'])
+            || $user->hasAnyRole(['super-admin', 'admin'])
+            || $user->hasRole(['super-admin', 'admin'], 'api')) {
             return true;
         }
         return null;
@@ -31,12 +33,13 @@ class SongPolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPerm($user, ['songs.view', 'songs.view.all', 'songs.manage']);
+        return $this->hasPerm($user, ['songs.view', 'songs.view.all', 'songs.manage'])
+            || in_array($user->role, ['admin', 'super-admin', 'team_leader', 'member']);
     }
 
     public function view(User $user, Song $song): bool
     {
-        if ($this->hasPerm($user, ['songs.view.all', 'songs.manage'])) {
+        if (in_array($user->role, ['admin', 'super-admin']) || $this->hasPerm($user, ['songs.view.all', 'songs.manage'])) {
             return true;
         }
 
@@ -60,16 +63,24 @@ class SongPolicy
 
     public function approve(User $user, Song $song): bool
     {
-        return $user->hasRole(['super-admin', 'admin'], 'api')
-            || $user->hasAnyRole(['super-admin', 'admin'])
-            || in_array($user->role, ['admin', 'super-admin']);
+        // Only Admin and Super-Admin can approve songs.
+        // Choir Leaders and Choir Members CANNOT approve songs.
+        $isAdmin = in_array($user->role, ['admin', 'super-admin'])
+            || $user->hasRole(['super-admin', 'admin'], 'api')
+            || $user->hasAnyRole(['super-admin', 'admin']);
+
+        return $isAdmin && !in_array($user->role, ['member', 'team_leader']);
     }
 
     public function reject(User $user, Song $song): bool
     {
-        return $user->hasRole(['super-admin', 'admin'], 'api')
-            || $user->hasAnyRole(['super-admin', 'admin'])
-            || in_array($user->role, ['admin', 'super-admin']);
+        // Only Admin and Super-Admin can reject songs.
+        // Choir Leaders and Choir Members CANNOT reject songs.
+        $isAdmin = in_array($user->role, ['admin', 'super-admin'])
+            || $user->hasRole(['super-admin', 'admin'], 'api')
+            || $user->hasAnyRole(['super-admin', 'admin']);
+
+        return $isAdmin && !in_array($user->role, ['member', 'team_leader']);
     }
 
     public function update(User $user, Song $song): bool

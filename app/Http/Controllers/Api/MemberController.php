@@ -560,10 +560,16 @@ class MemberController extends ApiController
                 'created_at'       => $s->created_at,
             ]);
 
+        $userChoirs = $user->choirs()
+            ->wherePivot('status', 'active')
+            ->get()
+            ->map(fn ($c) => ['id' => $c->id, 'name' => $c->name]);
+
         return $this->ok([
-            'has_choir' => true,
-            'choir'     => new ChoirResource($choir),
-            'songs'     => $songs,
+            'has_choir'      => true,
+            'choir'          => new ChoirResource($choir),
+            'user_choirs'    => $userChoirs,
+            'songs'          => $songs,
             'my_submissions' => $mySubmissions,
         ]);
     }
@@ -574,14 +580,18 @@ class MemberController extends ApiController
     public function submitSong(StoreSongRequest $request): \Illuminate\Http\JsonResponse
     {
         $user = $request->user();
-        $choir = $this->effectiveChoir($user);
+        $choir = null;
 
-        if (!$choir && $request->filled('choir_id')) {
+        if ($request->filled('choir_id')) {
             $choir = Choir::find($request->integer('choir_id'));
         }
 
         if (!$choir) {
-            return $this->error('You must be assigned to a choir to submit a song.', null, 422);
+            $choir = $this->effectiveChoir($user);
+        }
+
+        if (!$choir) {
+            return $this->error('You must be assigned to an active choir to submit a song.', null, 422);
         }
 
         return app(SongController::class)->store($request, $choir);
