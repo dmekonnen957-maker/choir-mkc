@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\Api\MemberController;
 use App\Http\Controllers\Api\AdminMemberController;
+use App\Http\Controllers\Api\AdminSettingController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PerformanceController;
 use App\Http\Controllers\Api\PerformanceMemberController;
@@ -146,6 +147,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('songs', SongController::class);
         Route::get('songs/{song}/audio', [SongController::class, 'audio'])->name('admin.songs.audio');
         Route::get('/calendar', [CalendarController::class, 'adminCalendar']);
+        Route::get('/settings', [AdminSettingController::class, 'index']);
+        Route::put('/settings', [AdminSettingController::class, 'update']);
+        Route::post('/settings/cache-clear', [AdminSettingController::class, 'clearCache']);
     });
 
     // Attendance Management routes (accessible to admins, team leaders with choir authorization)
@@ -160,6 +164,24 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/records/mark', [AttendanceController::class, 'markRecord']);
         Route::post('/records/bulk', [AttendanceController::class, 'bulk']);
         Route::get('/stats', [AttendanceController::class, 'stats']);
+    });
+
+    // Global Notifications for authenticated users (Admin, Team Leader, Member)
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::post('/{notification}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+    });
+
+    // Account & Profile Settings (accessible to all authenticated and approved accounts: Admin, Team Leader, Member)
+    Route::prefix('member/settings')->group(function () {
+        Route::get('/', [MemberController::class, 'settings']);
+        Route::match(['PUT', 'PATCH', 'POST'], '/', [MemberController::class, 'updateSettings']);
+        Route::put('/notifications', [MemberController::class, 'updateNotificationPreferences']);
+        Route::put('/password', [MemberController::class, 'updatePassword']);
+        Route::post('/reset-password', [MemberController::class, 'requestPasswordReset']);
+        Route::post('/verify-email', [MemberController::class, 'verifyEmail']);
+        Route::post('/deactivate', [MemberController::class, 'deactivateAccount']);
     });
 
     // Member-only area. Choir context is derived from the authenticated user,

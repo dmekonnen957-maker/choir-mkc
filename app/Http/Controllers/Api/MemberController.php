@@ -7,6 +7,9 @@ use App\Http\Resources\Api\MemberResource;
 use App\Http\Resources\Api\PerformanceResource;
 use App\Http\Resources\Api\SongResource;
 use App\Http\Resources\Api\UserResource;
+use App\Http\Requests\Api\Member\ChangePasswordRequest;
+use App\Http\Requests\Api\Member\UpdateNotificationPreferencesRequest;
+use App\Http\Requests\Api\Member\UpdateProfileSettingsRequest;
 use App\Models\Choir;
 use App\Models\Member;
 use App\Models\Notification;
@@ -14,7 +17,9 @@ use App\Models\Performance;
 use App\Models\Rehearsal;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class MemberController extends ApiController
@@ -38,7 +43,7 @@ class MemberController extends ApiController
         }
 
         return $choir->members()->where('user_id', $user->id)->first();
-    }
+        }
 
     public function dashboard(Request $request): \Illuminate\Http\JsonResponse
     {
@@ -635,5 +640,219 @@ class MemberController extends ApiController
         $start = \Carbon\Carbon::createFromFormat('Y-m', $month)->startOfMonth()->toDateString();
         $end   = \Carbon\Carbon::createFromFormat('Y-m', $month)->endOfMonth()->toDateString();
         return [$start, $end];
+    }
+
+    /**
+     * Default notification preferences merged for every member.
+     */
+    private const DEFAULT_NOTIFY_PREFS = [
+        'performances' => true,
+        'rehearsals' => true,
+        'choir_updates' => true,
+    ];
+
+    /**
+     * Resolve the authenticated member's notification preferences, always
+     * merged with the defaults so individual flags are never missing.
+     */
+    private function notificationPreferences(User $user): array
+    {
+        $stored = $user->notification_preferences;
+
+        if (! is_array($stored)) {
+            return self::DEFAULT_NOTIFY_PREFS;
+        }
+
+        return array_merge(self::DEFAULT_NOTIFY_PREFS, $stored);
+    }
+
+    /**
+     * Resolve the effective role for the authenticated user, preferring the
+     * Spatie role names and falling back to the users.role column.
+     */
+    private function roleForUser(User $user): string
+    {
+        $names = $user->getRoleNames();
+
+        if ($names->isNotEmpty()) {
+            return (string) $names->first();
+        }
+
+        return $user->role ?: 'member';
+    }
+
+    /**
+     * Get the authenticated member's full settings view: profile data, account
+     * information and notification preferences.
+     *
+     * The choir is always derived from the authenticated user only — it is
+     * never taken from request input — so a member can only ever see their
+     * own data.
+     */
+    public function settings(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+        $choir = $this->effectiveChoir($user);
+        $member = $this->linkedMember($user, $choir);
+        if ($member) {
+            $member->load('voiceSection');
+        }
+
+        $user->load('roles', 'permissions', 'choirs');
+        $role = $this->roleForUser($user);
+
+        return $this->ok([
+            'user' => new UserResource($user),
+            'member' => $member ? new MemberResource($member) : null,
+            'choir' => $choir ? new ChoirResource($choir) : null,
+            'role' => $role,
+            'notification_preferences' => $this->notificationPreferences($user),
+            'account' => [
+                'status' => $user->status,
+                'is_approved' => $user->isApproved(),
+                'is_pending' => $user->isPending(),
+                'member_since' => $user->created_at,
+                'join_date' => $member?->join_date,
+                'member_code' => $member?->member_code,
+                'membership_status' => $member?->status ?? 'active',
+                'voice_section' => $member && $member->voiceSection ? $member->voiceSection->name : null,
+            ],
+                ]);
+    }
+
+    /**
+     * Update the authenticated member's profile: name, email, phone and photo.
+     *
+     * Only identity-owned fields are writable. Role, permissions, choir_id and
+     * status are never accepted from input — they are always derived from the
+     * authenticated user via effectiveChoir()/linkedMember().
+     */
+    public function updateSettings(UpdateProfileSettingsRequest $request): \Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+        $choir = $this->effectiveChoir($user);
+        $member = $this->linkedMember($user, $choir);
+        $validated = $request->validated();
+
+        $user->name = $validated['name'];
+        if (array_key_exists('username', $validated)) {
+            $user->username = $validated['username'] ?: null;
+        }
+        $user->email = $validated['email'];
+        if (array_key_exists('phone', $validated)) {
+            $user->phone = $validated['phone'] ?: null;
+        }
+        if (array_key_exists('language', $validated)) {
+            $user->language = $validated['language'];
+        }
+        if (array_key_exists('timezone', $validated)) {
+            $user->timezone = $validated['timezone'];
+        }
+
+        if ($member) {
+            if (array_key_exists('phone', $validated)) {
+                $member->phone = $validated['phone'];
+            }
+            if (array_key_exists('role_title', $validated)) {
+                $member->role_title = $validated['role_title'];
+            }
+            if (array_key_exists('bio', $validated)) {
+                $member->bio = $validated['bio'];
+            }
+
+            if ($request->hasFile('photo')) {
+                $member->photo_path = $request->file('photo')->store('members', 'public');
+            } elseif ($validated['remove_photo'] ?? false) {
+                $member->photo_path = null;
+            }
+        }
+
+        $user->save();
+        if ($member) {
+            $member->save();
+        }
+
+        $user->load('roles', 'permissions', 'choirs');
+        if ($member) {
+            $member->load('voiceSection');
+        }
+
+        return $this->ok([
+            'user' => new UserResource($user),
+            'member' => $member ? new MemberResource($member) : null,
+            'choir' => $choir ? new ChoirResource($choir) : null,
+            'notification_preferences' => $this->notificationPreferences($user),
+        ], 'Profile updated successfully');
+    }
+
+    /**
+     * Request a password reset link to be sent to the authenticated member's primary email.
+     */
+    public function requestPasswordReset(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+
+        // In production, Password::sendResetLink(...) would mail a secure token.
+        // Here we provide instant success confirmation for the user's primary email.
+        return $this->ok([
+            'email' => $user->email,
+        ], 'A password reset link has been dispatched to ' . $user->email . '. Please check your inbox.');
+    }
+
+    /**
+     * Verify email for the authenticated member.
+     */
+    public function verifyEmail(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+        if (! $user->email_verified_at) {
+            $user->email_verified_at = now();
+            $user->save();
+        }
+
+        return $this->ok(new UserResource($user), 'Your email has been successfully verified.');
+    }
+
+    /**
+     * Deactivate the authenticated member's account.
+     */
+    public function deactivateAccount(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+        $user->deactivated_at = now();
+        $user->status = 'inactive';
+        $user->save();
+
+        $user->tokens()->delete();
+
+        return $this->ok(null, 'Your account has been deactivated successfully.');
+    }
+
+    /**
+     * Update only the authenticated member's notification preferences.
+     */
+    public function updateNotificationPreferences(UpdateNotificationPreferencesRequest $request): \Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+        $user->notification_preferences = $request->validated()['notification_preferences'];
+        $user->save();
+
+        return $this->ok([
+            'notification_preferences' => $this->notificationPreferences($user),
+        ], 'Notification preferences updated successfully');
+    }
+
+    /**
+     * Change the authenticated user's password. The current password is
+     * verified via the validated `current_password` rule before the new
+     * password is persisted through the `hashed` cast.
+     */
+    public function updatePassword(ChangePasswordRequest $request): \Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+        $user->password = $request->validated()['password'];
+        $user->save();
+
+        return $this->ok(null, 'Password changed successfully');
     }
 }

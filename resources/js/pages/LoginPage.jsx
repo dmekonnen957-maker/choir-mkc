@@ -92,7 +92,7 @@ export default function LoginPage() {
                         <div className="flex flex-col items-center justify-center mb-8">
                             <Logo size="lg" className="mb-3" />
                             <h1 className="text-2xl font-light text-white/90 tracking-wide">
-                                <span size="lg">YEKA</span>  
+                                <span >YEKA</span>  
                                 <span>M.K.C </span>
                                 <span>CHOIR </span>
                             </h1>

@@ -9,10 +9,24 @@ class RehearsalPolicy
 {
     public function before(User $user, $ability): ?bool
     {
-        if ($user->hasAnyRole(['super-admin', 'admin'])) {
+        if ($user->hasRole(['super-admin', 'admin'], 'api') || $user->hasAnyRole(['super-admin', 'admin'])) {
             return true;
         }
         return null;
+    }
+
+    private function hasPerm(User $user, array $permissions): bool
+    {
+        foreach ($permissions as $perm) {
+            try {
+                if ($user->hasPermissionTo($perm, 'api') || $user->can($perm)) {
+                    return true;
+                }
+            } catch (\Throwable) {
+                //
+            }
+        }
+        return false;
     }
 
     private function assigned(User $user, Rehearsal $rehearsal): bool
@@ -25,12 +39,12 @@ class RehearsalPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->can('rehearsals.view');
+        return $this->hasPerm($user, ['rehearsals.view', 'rehearsals.view.all', 'rehearsals.manage']);
     }
 
     public function view(User $user, Rehearsal $rehearsal): bool
     {
-        if ($user->can('rehearsals.view.all')) {
+        if ($this->hasPerm($user, ['rehearsals.view.all', 'rehearsals.manage'])) {
             return true;
         }
         return $this->assigned($user, $rehearsal);
@@ -38,16 +52,16 @@ class RehearsalPolicy
 
     public function create(User $user): bool
     {
-        return $user->can('rehearsals.manage');
+        return $this->hasPerm($user, ['rehearsals.create', 'rehearsals.manage']);
     }
 
     public function update(User $user, Rehearsal $rehearsal): bool
     {
-        return $user->can('rehearsals.manage');
+        return $this->hasPerm($user, ['rehearsals.update', 'rehearsals.edit', 'rehearsals.manage']);
     }
 
     public function delete(User $user, Rehearsal $rehearsal): bool
     {
-        return $user->can('rehearsals.manage');
+        return $this->hasPerm($user, ['rehearsals.delete', 'rehearsals.manage']);
     }
 }

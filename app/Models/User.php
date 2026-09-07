@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'email', 'phone', 'password', 'role', 'status', 'approved_at', 'approved_by', 'rejection_reason'])]
+#[Fillable(['name', 'username', 'email', 'phone', 'password', 'role', 'status', 'approved_at', 'approved_by', 'rejection_reason', 'notification_preferences', 'language', 'timezone', 'deactivated_at'])]
     #[Hidden(['password', 'remember_token'])]
     class User extends Authenticatable
     {
@@ -29,6 +29,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     public const STATUS_REJECTED = 'rejected';
 
     /**
+     * Default notification preferences merged for every user so individual
+     * flags are never missing from the stored (or empty) preferences.
+     */
+    public const DEFAULT_NOTIFICATION_PREFERENCES = [
+        'performances' => true,
+        'rehearsals' => true,
+        'choir_updates' => true,
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -38,6 +48,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
         return [
             'email_verified_at' => 'datetime',
             'approved_at' => 'datetime',
+            'deactivated_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -55,6 +66,28 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     public function isRejected(): bool
     {
         return $this->status === self::STATUS_REJECTED;
+    }
+
+    public function getNotificationPreferencesAttribute($value): array
+    {
+        $defaults = self::DEFAULT_NOTIFICATION_PREFERENCES;
+
+        if (is_array($value)) {
+            return array_merge($defaults, $value);
+        }
+
+        if (is_null($value)) {
+            return $defaults;
+        }
+
+        $decoded = json_decode((string) $value, true);
+
+        return array_merge($defaults, is_array($decoded) ? $decoded : []);
+    }
+
+    public function setNotificationPreferencesAttribute($value): void
+    {
+        $this->attributes['notification_preferences'] = is_array($value) ? json_encode($value) : $value;
     }
 
     public function approvedBy(): BelongsTo

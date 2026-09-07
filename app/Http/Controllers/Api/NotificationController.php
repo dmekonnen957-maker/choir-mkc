@@ -12,20 +12,47 @@ class NotificationController extends ApiController
 {
     public function index(Request $request)
     {
-        $items = Notification::where('notifiable_type', User::class)
-            ->where('notifiable_id', $request->user()->id)
+        $userId = $request->user()->id;
+
+        $notifications = Notification::where('notifiable_type', User::class)
+            ->where('notifiable_id', $userId)
             ->latest()
-            ->paginate(20);
+            ->take(30)
+            ->get();
+
+        $unreadCount = Notification::where('notifiable_type', User::class)
+            ->where('notifiable_id', $userId)
+            ->whereNull('read_at')
+            ->count();
 
         return $this->ok([
-            'items' => $items->items(),
-            'pagination' => [
-                'current_page' => $items->currentPage(),
-                'last_page' => $items->lastPage(),
-                'per_page' => $items->perPage(),
-                'total' => $items->total(),
-            ],
+            'notifications' => $notifications,
+            'items' => $notifications,
+            'unread_count' => $unreadCount,
         ]);
+    }
+
+    public function markAsRead(Request $request, Notification $notification)
+    {
+        if ($notification->notifiable_id != $request->user()->id) {
+            return $this->forbidden('Unauthorized access to notification');
+        }
+
+        if (! $notification->read_at) {
+            $notification->update(['read_at' => now()]);
+        }
+
+        return $this->ok($notification, 'Marked as read');
+    }
+
+    public function markAllAsRead(Request $request)
+    {
+        Notification::where('notifiable_type', User::class)
+            ->where('notifiable_id', $request->user()->id)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return $this->ok(null, 'All notifications marked as read');
     }
 
     public function store(StoreNotificationRequest $request)

@@ -49,7 +49,7 @@ class StoreUserRequest extends FormRequest
             'phone' => ['required', 'string', 'regex:/^\+2519\d{8}$/', Rule::unique('users', 'phone')],
             'password' => ['required', 'string', 'min:8'],
             'password_confirmation' => ['required', 'string', 'same:password'],
-            'role' => ['nullable', 'string', Rule::in(['member', 'team_leader', 'admin', 'super-admin'])],
+            'role' => ['nullable', 'string', 'max:50'],
             'status' => ['nullable', 'string', Rule::in(['pending', 'approved', 'rejected'])],
             'choir_id' => ['nullable', 'integer', 'exists:choirs,id'],
         ];

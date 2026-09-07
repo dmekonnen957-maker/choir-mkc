@@ -9,10 +9,24 @@ class MemberPolicy
 {
     public function before(User $user, $ability): ?bool
     {
-        if ($user->hasAnyRole(['super-admin', 'admin'])) {
+        if ($user->hasRole(['super-admin', 'admin'], 'api') || $user->hasAnyRole(['super-admin', 'admin'])) {
             return true;
         }
         return null;
+    }
+
+    private function hasPerm(User $user, array $permissions): bool
+    {
+        foreach ($permissions as $perm) {
+            try {
+                if ($user->hasPermissionTo($perm, 'api') || $user->can($perm)) {
+                    return true;
+                }
+            } catch (\Throwable) {
+                //
+            }
+        }
+        return false;
     }
 
     private function assigned(User $user, Member $member): bool
@@ -25,12 +39,12 @@ class MemberPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->can('members.view');
+        return $this->hasPerm($user, ['members.view', 'members.view.all', 'members.manage']);
     }
 
     public function view(User $user, Member $member): bool
     {
-        if ($user->can('members.view.all')) {
+        if ($this->hasPerm($user, ['members.view.all', 'members.manage'])) {
             return true;
         }
         return $this->assigned($user, $member);
@@ -38,16 +52,16 @@ class MemberPolicy
 
     public function create(User $user): bool
     {
-        return $user->can('members.manage');
+        return $this->hasPerm($user, ['members.create', 'members.manage']);
     }
 
     public function update(User $user, Member $member): bool
     {
-        return $user->can('members.manage');
+        return $this->hasPerm($user, ['members.update', 'members.edit', 'members.manage']);
     }
 
     public function delete(User $user, Member $member): bool
     {
-        return $user->can('members.manage');
+        return $this->hasPerm($user, ['members.delete', 'members.manage']);
     }
 }

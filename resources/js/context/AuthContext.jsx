@@ -103,9 +103,45 @@ export function AuthProvider({ children }) {
     }, [user, choirs]);
 
     const can = useCallback((permission) => {
-        if (role === 'admin') return true;
-        return permissions.includes(permission);
-    }, [permissions, role]);
+        if (!permission) return false;
+        if (roles.includes('super-admin') || roles.includes('admin') || user?.role === 'admin' || user?.role === 'super-admin') {
+            return true;
+        }
+        if (permissions.includes(permission)) return true;
+
+        // Permission aliases mapping
+        const aliases = {
+            'songs.update': ['songs.edit', 'songs.manage'],
+            'songs.edit': ['songs.update', 'songs.manage'],
+            'songs.create': ['songs.manage'],
+            'songs.delete': ['songs.manage'],
+            'songs.view': ['songs.view.all', 'songs.manage'],
+            'lyrics.update': ['lyrics.edit', 'lyrics.manage'],
+            'lyrics.edit': ['lyrics.update', 'lyrics.manage'],
+            'lyrics.create': ['lyrics.manage'],
+            'lyrics.delete': ['lyrics.manage'],
+            'lyrics.view': ['lyrics.view.all', 'lyrics.manage'],
+            'performances.update': ['performances.edit', 'performances.manage'],
+            'performances.edit': ['performances.update', 'performances.manage'],
+            'performances.create': ['performances.manage'],
+            'performances.delete': ['performances.manage'],
+            'rehearsals.update': ['rehearsals.edit', 'rehearsals.manage'],
+            'rehearsals.edit': ['rehearsals.update', 'rehearsals.manage'],
+            'rehearsals.create': ['rehearsals.manage'],
+            'rehearsals.delete': ['rehearsals.manage'],
+            'members.update': ['members.edit', 'members.manage'],
+            'members.edit': ['members.update', 'members.manage'],
+            'members.create': ['members.manage'],
+            'members.delete': ['members.manage'],
+        };
+
+        const list = aliases[permission];
+        if (list && list.some((p) => permissions.includes(p))) {
+            return true;
+        }
+
+        return false;
+    }, [permissions, roles, user]);
 
     const value = {
         user,

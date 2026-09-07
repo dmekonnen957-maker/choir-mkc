@@ -10,19 +10,33 @@ class UserResource extends JsonResource
     {
         $primaryChoir = $this->relationLoaded('choirs') && $this->choirs ? $this->choirs->first() : null;
 
+        // Fetch effective roles and permissions from Spatie
+        $roles = $this->getRoleNames()->values()->all();
+        if (empty($roles) && $this->role) {
+            $roles = [$this->role];
+        }
+
+        $permissions = $this->getAllPermissions()->pluck('name')->values()->all();
+
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'username' => $this->username,
             'full_name' => $this->name,
             'first_name' => $this->name,
             'email' => $this->email,
+            'email_verified_at' => $this->email_verified_at,
+            'is_email_verified' => (bool) $this->email_verified_at,
             'phone' => $this->phone,
-            'role' => $this->role,
-            'user_role' => $this->role,
+            'language' => $this->language ?? 'en',
+            'timezone' => $this->timezone ?? 'Africa/Addis_Ababa',
+            'role' => $this->role ?? ($roles[0] ?? 'member'),
+            'user_role' => $this->role ?? ($roles[0] ?? 'member'),
             'member_code' => null,
             'status' => $this->status ?? 'pending',
             'approved_at' => $this->approved_at,
             'approved_by' => $this->approved_by,
+            'deactivated_at' => $this->deactivated_at,
             'approver_name' => $this->whenLoaded('approvedBy', fn () => $this->approvedBy?->name),
             'rejection_reason' => $this->rejection_reason,
             'choir' => $primaryChoir ? [
@@ -32,8 +46,8 @@ class UserResource extends JsonResource
                 'uniform_primary_color' => $primaryChoir->uniform_primary_color,
                 'uniform_secondary_color' => $primaryChoir->uniform_secondary_color,
             ] : null,
-            'roles' => $this->whenLoaded('roles', fn () => $this->roles->pluck('name')),
-            'permissions' => $this->whenLoaded('permissions', fn () => $this->getAllPermissions()->pluck('name')),
+            'roles' => $roles,
+            'permissions' => $permissions,
             'choirs' => $this->whenLoaded('choirs', function () {
                 return $this->choirs->map(function ($choir) {
                     return [

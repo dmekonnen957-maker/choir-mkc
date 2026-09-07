@@ -153,7 +153,7 @@ export default function MemberSongsPage({ apiPath = 'member/songs' }) {
             .then((res) => setData(res.data?.data ?? res.data))
             .catch((err) => setError(err.message || 'Unable to load songs.'))
             .finally(() => setLoading(false));
-    }, []);
+    }, [apiPath]);
 
     useEffect(() => {
         load();

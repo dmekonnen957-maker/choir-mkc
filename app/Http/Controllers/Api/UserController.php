@@ -70,8 +70,10 @@ class UserController extends ApiController
         // Assign Spatie role
         $roleName = $data['role'] ?? 'member';
         try {
-            $spatieRole = Role::findByName($roleName, 'api');
+            $spatieRole = Role::where('name', $roleName)->where('guard_name', 'api')->first()
+                ?? Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'api']);
             $user->syncRoles([$spatieRole]);
+            app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
         } catch (\Throwable) {
             // fallback
         }
@@ -127,15 +129,18 @@ class UserController extends ApiController
         // Handle role change
         if (isset($data['role'])) {
             try {
-                $spatieRole = Role::findByName($data['role'], 'api');
+                $spatieRole = Role::where('name', $data['role'])->where('guard_name', 'api')->first()
+                    ?? Role::firstOrCreate(['name' => $data['role'], 'guard_name' => 'api']);
                 if ($spatieRole) {
                     $user->syncRoles([$spatieRole]);
+                    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
                 }
             } catch (\Throwable) {
                 // Ignore if Spatie role not defined
             }
         } elseif ($request->filled('roles')) {
             $user->syncRoles($request->roles);
+            app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
         }
 
         // Handle choir assignment

@@ -58,6 +58,8 @@ class RoleController extends ApiController
             $role->syncPermissions($request->permissions);
         }
 
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
         AuditLog::create([
             'user_id' => $request->user()->id,
             'action' => 'role.created',
@@ -135,6 +137,8 @@ class RoleController extends ApiController
             $role->syncPermissions($request->permissions ?? []);
         }
 
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
         AuditLog::create([
             'user_id' => $request->user()->id,
             'action' => 'role.updated',
@@ -172,6 +176,8 @@ class RoleController extends ApiController
         $oldValues = ['name' => $role->name];
 
         $role->delete();
+
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 
         AuditLog::create([
             'user_id' => $request->user()->id,

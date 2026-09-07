@@ -9,25 +9,30 @@ use Illuminate\Http\Request;
 class AdminMemberController extends ApiController
 {
     /**
-     * List all choir members across every choir (admin scope).
+     * List choir members across every choir or filtered by choir_id (admin scope).
      * Authorization is handled by the route middleware (permission:members.view).
      *
      * Members are represented by the User model (role = member) attached to
-     * choirs via the choir_user pivot — not the legacy soft-deletable members table.
+     * choirs via the choir_user pivot.
      */
     public function index(Request $request)
     {
-        $query = User::with('choirs')->where('role', 'member');
+        $query = User::with(['choirs', 'roles', 'approvedBy'])
+            ->where(function ($q) {
+                $q->where('role', 'member')
+                    ->orWhereHas('roles', fn ($r) => $r->where('name', 'member'));
+            });
 
-        // Filter by choir
-        if ($request->filled('choir_id') && $request->choir_id !== 'all') {
-            $query->whereHas('choirs', function ($q) use ($request) {
-                $q->where('choirs.id', $request->choir_id);
+        // Strict Filter by choir
+        if ($request->filled('choir_id') && $request->choir_id !== 'all' && $request->choir_id !== '') {
+            $choirId = (int) $request->choir_id;
+            $query->whereHas('choirs', function ($q) use ($choirId) {
+                $q->where('choirs.id', $choirId);
             });
         }
 
         // Filter by member status
-        if ($request->filled('status') && $request->status !== 'all') {
+        if ($request->filled('status') && $request->status !== 'all' && $request->status !== '') {
             $query->where('status', $request->status);
         }
 
@@ -40,6 +45,8 @@ class AdminMemberController extends ApiController
                     ->orWhere('phone', 'like', $search);
             });
         }
+
+        $query->latest();
 
         return $this->paginate($query, UserResource::class);
     }

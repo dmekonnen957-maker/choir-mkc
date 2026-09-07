@@ -9,10 +9,24 @@ class PerformancePolicy
 {
     public function before(User $user, $ability): ?bool
     {
-        if ($user->hasAnyRole(['super-admin', 'admin'])) {
+        if ($user->hasRole(['super-admin', 'admin'], 'api') || $user->hasAnyRole(['super-admin', 'admin'])) {
             return true;
         }
         return null;
+    }
+
+    private function hasPerm(User $user, array $permissions): bool
+    {
+        foreach ($permissions as $perm) {
+            try {
+                if ($user->hasPermissionTo($perm, 'api') || $user->can($perm)) {
+                    return true;
+                }
+            } catch (\Throwable) {
+                //
+            }
+        }
+        return false;
     }
 
     private function assigned(User $user, Performance $performance): bool
@@ -25,12 +39,12 @@ class PerformancePolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->can('performances.view');
+        return $this->hasPerm($user, ['performances.view', 'performances.view.all', 'performances.manage']);
     }
 
     public function view(User $user, Performance $performance): bool
     {
-        if ($user->can('performances.view.all')) {
+        if ($this->hasPerm($user, ['performances.view.all', 'performances.manage'])) {
             return true;
         }
         return $this->assigned($user, $performance);
@@ -38,16 +52,16 @@ class PerformancePolicy
 
     public function create(User $user): bool
     {
-        return $user->can('performances.manage');
+        return $this->hasPerm($user, ['performances.create', 'performances.manage']);
     }
 
     public function update(User $user, Performance $performance): bool
     {
-        return $user->can('performances.manage');
+        return $this->hasPerm($user, ['performances.update', 'performances.edit', 'performances.manage']);
     }
 
     public function delete(User $user, Performance $performance): bool
     {
-        return $user->can('performances.manage');
+        return $this->hasPerm($user, ['performances.delete', 'performances.manage']);
     }
 }

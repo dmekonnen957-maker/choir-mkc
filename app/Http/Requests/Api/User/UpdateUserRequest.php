@@ -50,7 +50,7 @@ class UpdateUserRequest extends FormRequest
             'email' => ['sometimes', 'required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($id)],
             'phone' => ['nullable', 'string', 'regex:/^\+2519\d{8}$/', Rule::unique('users', 'phone')->ignore($id)],
             'password' => ['nullable', 'string', 'min:8'],
-            'role' => ['nullable', 'string', Rule::in(['member', 'team_leader', 'admin', 'super-admin'])],
+            'role' => ['nullable', 'string', 'max:50'],
             'status' => ['nullable', 'string', Rule::in(['pending', 'approved', 'rejected'])],
             'choir_id' => ['nullable', 'integer', 'exists:choirs,id'],
             'rejection_reason' => ['nullable', 'string', 'max:1000'],

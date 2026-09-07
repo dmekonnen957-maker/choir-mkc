@@ -9,8 +9,9 @@ import {
     Calendar,
     CheckCircle2,
     ListMusic,
-    Bell,
+        Bell,
     User,
+    Settings,
     LogOut,
     X,
     Church,
@@ -76,11 +77,6 @@ function getAdminNav(can) {
     items.push({ title: 'User Management', items: userMgmt });
 
     items.push({
-        title: 'Communication',
-        items: [{ label: 'Notifications', to: '/admin/notifications', icon: Bell }],
-    });
-
-    items.push({
         title: 'Reports',
         items: [
             { label: 'Reports', to: '/admin/reports', icon: BarChart3 },
@@ -134,11 +130,11 @@ function getMemberNav(basePath, role, can) {
                 { label: 'My Performances', to: `${basePath}/my-performances`, icon: ListMusic },
             ],
         },
-        { label: 'Notifications', to: `${basePath}/notifications`, icon: Bell },
         {
             title: 'Account',
-            items: [
+                        items: [
                 { label: 'My Profile', to: `${basePath}/profile`, icon: User },
+                { label: 'Settings', to: `${basePath}/settings`, icon: Settings },
             ],
         },
     ];

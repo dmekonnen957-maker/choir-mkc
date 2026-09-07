@@ -118,12 +118,21 @@ export default function AdminUsersPage() {
     const [editChoirId, setEditChoirId] = useState('');
     const [editStatus, setEditStatus] = useState('pending');
 
-    // Fetch Choirs for filtering and assigning
+    // Fetch Choirs and Roles for filtering and assigning
+    const [rolesList, setRolesList] = useState([]);
+
     useEffect(() => {
         api.get('/public/choirs?per_page=100')
             .then((res) => {
                 const items = res.data?.data?.items || res.data?.data || [];
                 setChoirs(items);
+            })
+            .catch(() => {});
+
+        api.get('/admin/roles')
+            .then((res) => {
+                const items = res.data?.data || [];
+                setRolesList(Array.isArray(items) ? items : []);
             })
             .catch(() => {});
     }, []);

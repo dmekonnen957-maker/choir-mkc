@@ -24,7 +24,7 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Alert from '../../components/ui/Alert';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import Input from '../../components/ui/Input';
+import { useChoir } from '../../context/ChoirContext';
 
 /* ─────────────────────── helpers ─────────────────────── */
 
@@ -190,7 +190,7 @@ function PerformanceCard({ performance, onEdit, onDelete, onView }) {
 
 /* ─────────────────────── Performance Form Modal ─────────────────────── */
 
-function PerformanceFormModal({ open, onClose, onSaved, initial, choirs }) {
+function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, defaultChoirId }) {
     const isEdit = !!initial?.id;
     const [form, setForm] = useState(EMPTY_FORM);
     const [choirId, setChoirId] = useState('');
@@ -203,21 +203,30 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs }) {
                 setForm({
                     title: initial.title || '',
                     date: initial.date || '',
-                    start_time: initial.start_time || '',
-                    location: initial.location || '',
+                    start_time: initial.start_time ? initial.start_time.substring(0, 5) : '',
+                    location: initial.location || initial.venue || '',
                     description: initial.description || '',
                     status: initial.status || 'scheduled',
                 });
-                setChoirId(initial.choir_id?.toString() || initial.choir?.id?.toString() || '');
+                setChoirId(initial.choir_id?.toString() || initial.choir?.id?.toString() || defaultChoirId || '');
             } else {
                 setForm(EMPTY_FORM);
-                setChoirId(choirs[0]?.id?.toString() || '');
+                setChoirId(defaultChoirId || choirs[0]?.id?.toString() || '');
             }
             setErrors({});
         }
-    }, [open, initial, choirs]);
+    }, [open, initial, choirs, defaultChoirId]);
 
-    const set = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+    const set = (field, value) => {
+        setForm((prev) => ({ ...prev, [field]: value }));
+        if (errors[field]) {
+            setErrors((prev) => {
+                const next = { ...prev };
+                delete next[field];
+                return next;
+            });
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -230,16 +239,16 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs }) {
         try {
             if (isEdit) {
                 await api.put(`/choirs/${choirId}/performances/${initial.id}`, form);
+                onSaved('Performance updated successfully.');
             } else {
                 await api.post(`/choirs/${choirId}/performances`, form);
+                onSaved('Performance created successfully.');
             }
-            onSaved();
         } catch (err) {
-            const data = err.response?.data;
-            if (data?.errors) {
-                setErrors(data.errors);
+            if (err?.errors) {
+                setErrors(err.errors);
             } else {
-                setErrors({ general: data?.message || 'Failed to save performance.' });
+                setErrors({ general: err?.message || 'Failed to save performance. Please check all fields.' });
             }
         } finally {
             setSaving(false);
@@ -508,6 +517,7 @@ function PerformanceDetail({ performance, onBack, onEdit, onDelete }) {
 /* ─────────────────────── Main Page ─────────────────────── */
 
 export default function AdminPerformancesPage() {
+    const { currentChoir, choirs: contextChoirs } = useChoir();
     const [choirs, setChoirs] = useState([]);
     const [selectedChoirId, setSelectedChoirId] = useState('');
     const [performances, setPerformances] = useState([]);
@@ -529,16 +539,32 @@ export default function AdminPerformancesPage() {
         setTimeout(() => setToast(null), 4000);
     };
 
-    // Fetch choirs
+    // Fetch choirs or use context choirs
     useEffect(() => {
-        api.get('/public/choirs?per_page=100')
-            .then((res) => {
-                const items = res.data?.data?.items || res.data?.data || [];
-                setChoirs(items);
-                if (items.length > 0) setSelectedChoirId(items[0].id.toString());
-            })
-            .catch(() => setError('Failed to load choirs.'));
-    }, []);
+        if (contextChoirs && contextChoirs.length > 0) {
+            setChoirs(contextChoirs);
+            if (!selectedChoirId) {
+                setSelectedChoirId(currentChoir?.id?.toString() || contextChoirs[0].id.toString());
+            }
+        } else {
+            api.get('/public/choirs?per_page=100')
+                .then((res) => {
+                    const items = res.data?.data?.items || res.data?.data || [];
+                    setChoirs(items);
+                    if (items.length > 0 && !selectedChoirId) {
+                        setSelectedChoirId(currentChoir?.id?.toString() || items[0].id.toString());
+                    }
+                })
+                .catch(() => setError('Failed to load choirs.'));
+        }
+    }, [contextChoirs, currentChoir, selectedChoirId]);
+
+    // Sync when global choir selector changes
+    useEffect(() => {
+        if (currentChoir?.id) {
+            setSelectedChoirId(currentChoir.id.toString());
+        }
+    }, [currentChoir]);
 
     // Fetch performances for selected choir
     const fetchPerformances = useCallback(async () => {
@@ -550,7 +576,7 @@ export default function AdminPerformancesPage() {
             const items = res.data?.data?.items || res.data?.data || [];
             setPerformances(Array.isArray(items) ? items : []);
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to load performances.');
+            setError(err?.message || 'Failed to load performances.');
         } finally {
             setLoading(false);
         }
@@ -829,13 +855,14 @@ export default function AdminPerformancesPage() {
             <PerformanceFormModal
                 open={formModal.open}
                 onClose={() => setFormModal({ open: false, performance: null })}
-                onSaved={() => {
+                onSaved={(msg) => {
                     setFormModal({ open: false, performance: null });
-                    showToast('success', 'Performance saved successfully.');
+                    showToast('success', msg || 'Performance saved successfully.');
                     fetchPerformances();
                 }}
                 initial={formModal.performance}
                 choirs={choirs}
+                defaultChoirId={selectedChoirId}
             />
 
             {/* Delete Confirmation Modal */}

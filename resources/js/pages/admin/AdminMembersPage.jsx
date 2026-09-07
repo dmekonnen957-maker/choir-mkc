@@ -13,8 +13,10 @@ import {
     ChevronRight,
     AlertCircle,
     X,
+    Sparkles,
 } from 'lucide-react';
 import { api } from '../../axios';
+import { useChoir } from '../../context/ChoirContext';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Alert from '../../components/ui/Alert';
@@ -43,12 +45,13 @@ function formatDate(val) {
 }
 
 export default function AdminMembersPage() {
+    const { currentChoir, setCurrentChoir, isAllChoirs, choirs: contextChoirs } = useChoir();
     const [members, setMembers] = useState([]);
     const [choirs, setChoirs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({ current_page: 1, last_page: 1, total: 0 });
     const [statusFilter, setStatusFilter] = useState('all');
-    const [choirFilter, setChoirFilter] = useState('all');
+    const [choirFilter, setChoirFilter] = useState(currentChoir?.id?.toString() || 'all');
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
 
@@ -56,15 +59,29 @@ export default function AdminMembersPage() {
     const [modalOpen, setModalOpen] = useState(false);
     const [toast, setToast] = useState(null);
 
-    // Fetch choirs for the filter dropdown
+    // Sync choirs list from context or public endpoint
     useEffect(() => {
-        api.get('/public/choirs?per_page=100')
-            .then((res) => {
-                const items = res.data?.data?.items || res.data?.data || [];
-                setChoirs(items);
-            })
-            .catch(() => {});
-    }, []);
+        if (contextChoirs && contextChoirs.length > 0) {
+            setChoirs(contextChoirs);
+        } else {
+            api.get('/public/choirs?per_page=100')
+                .then((res) => {
+                    const items = res.data?.data?.items || res.data?.data || [];
+                    setChoirs(items);
+                })
+                .catch(() => {});
+        }
+    }, [contextChoirs]);
+
+    // React immediately when the global choir selector in the sidebar/header changes
+    useEffect(() => {
+        if (currentChoir?.id) {
+            setChoirFilter(currentChoir.id.toString());
+        } else if (isAllChoirs) {
+            setChoirFilter('all');
+        }
+        setPage(1);
+    }, [currentChoir, isAllChoirs]);
 
     const fetchMembers = useCallback(async () => {
         setLoading(true);
@@ -93,19 +110,46 @@ export default function AdminMembersPage() {
         fetchMembers();
     }, [fetchMembers]);
 
+    const handleChoirFilterChange = (newChoirId) => {
+        setChoirFilter(newChoirId);
+        setPage(1);
+        if (newChoirId === 'all') {
+            setCurrentChoir(null);
+        } else {
+            const matched = choirs.find((c) => c.id.toString() === newChoirId);
+            if (matched) setCurrentChoir(matched);
+        }
+    };
+
     const openView = (member) => {
         setSelectedMember(member);
         setModalOpen(true);
     };
 
+    const activeChoirName = choirFilter !== 'all'
+        ? (choirs.find((c) => c.id.toString() === choirFilter)?.name || currentChoir?.name || 'Selected Choir')
+        : 'All Choirs';
+
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-ink-900">Members</h1>
-                <p className="text-sm text-ink-500">
-                    View choir members across all choirs. Choir, role, contact, and status at a glance.
-                </p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900">
+                        {choirFilter !== 'all' ? `${activeChoirName} Members` : 'Members — All Choirs'}
+                    </h1>
+                    <p className="text-sm text-slate-500">
+                        {choirFilter !== 'all'
+                            ? `Showing active members belonging to ${activeChoirName}.`
+                            : 'View and manage choir members across all authorized choirs.'}
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 shadow-xs">
+                        <Users size={14} />
+                        Total Members: {pagination.total}
+                    </span>
+                </div>
             </div>
 
             {/* Toast */}
@@ -116,7 +160,7 @@ export default function AdminMembersPage() {
             )}
 
             {/* Filters & Search */}
-            <div className="grid gap-3 rounded-2xl border border-blue-100 bg-canvas p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3 rounded-2xl border border-blue-100 bg-white p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
                 <div className="relative sm:col-span-2">
                     <input
                         type="text"
@@ -126,39 +170,36 @@ export default function AdminMembersPage() {
                             setSearch(e.target.value);
                             setPage(1);
                         }}
-                        className="w-full rounded-xl border border-blue-200 bg-white px-4 py-2.5 pl-10 text-sm text-ink-900 placeholder:text-ink-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full rounded-xl border border-blue-200 bg-white px-4 py-2.5 pl-10 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     />
-                    <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" />
+                    <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 </div>
 
                 <div>
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => {
-                                setStatusFilter(e.target.value);
-                                setPage(1);
-                            }}
-                            className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm text-ink-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                        >
-                            <option value="all">All Statuses</option>
-                            <option value="approved">Approved</option>
-                            <option value="pending">Pending</option>
-                            <option value="rejected">Rejected</option>
-                        </select>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => {
+                            setStatusFilter(e.target.value);
+                            setPage(1);
+                        }}
+                        className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    >
+                        <option value="all">All Statuses</option>
+                        <option value="approved">Approved</option>
+                        <option value="pending">Pending</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
                 </div>
 
                 <div>
                     <select
                         value={choirFilter}
-                        onChange={(e) => {
-                            setChoirFilter(e.target.value);
-                            setPage(1);
-                        }}
-                        className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm text-ink-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        onChange={(e) => handleChoirFilterChange(e.target.value)}
+                        className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     >
                         <option value="all">All Choirs</option>
                         {choirs.map((c) => (
-                            <option key={c.id} value={c.id}>
+                            <option key={c.id} value={c.id.toString()}>
                                 {c.name}
                             </option>
                         ))}
@@ -167,21 +208,25 @@ export default function AdminMembersPage() {
             </div>
 
             {/* Members Table */}
-            <div className="overflow-hidden rounded-2xl border border-blue-100 bg-canvas shadow-sm">
+            <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
                 {loading ? (
                     <div className="flex justify-center py-24">
                         <LoadingSpinner size={36} />
                     </div>
                 ) : members.length === 0 ? (
-                    <div className="py-20 text-center text-ink-500">
-                        <Users size={40} className="mx-auto mb-2 text-ink-300" />
-                        <p className="font-semibold text-ink-700">No members found</p>
-                        <p className="text-xs text-ink-400">Try adjusting your filters or search terms.</p>
+                    <div className="py-20 text-center text-slate-500">
+                        <Users size={40} className="mx-auto mb-2 text-slate-300" />
+                        <p className="font-semibold text-slate-700">No members found</p>
+                        <p className="text-xs text-slate-400">
+                            {choirFilter !== 'all'
+                                ? `No members found for ${activeChoirName}. Try adjusting status or search terms.`
+                                : 'Try adjusting your filters or search terms.'}
+                        </p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm text-ink-700">
-                            <thead className="border-b border-blue-100 bg-blue-50/50 text-xs font-semibold uppercase tracking-wider text-ink-500">
+                        <table className="w-full text-left text-sm text-slate-700">
+                            <thead className="border-b border-blue-100 bg-blue-50/50 text-xs font-semibold uppercase tracking-wider text-slate-500">
                                 <tr>
                                     <th className="px-5 py-3.5">Name</th>
                                     <th className="px-5 py-3.5">Email</th>
@@ -195,12 +240,12 @@ export default function AdminMembersPage() {
                             </thead>
                             <tbody className="divide-y divide-blue-50">
                                 {members.map((m) => {
-                                    const name = m.full_name || m.email || 'Unknown';
-                                    const statusBadge = STATUS_BADGES[m.status] || STATUS_BADGES.active;
+                                    const name = m.full_name || m.name || m.email || 'Unknown';
+                                    const statusBadge = STATUS_BADGES[m.status] || STATUS_BADGES.approved;
                                     const StatusIcon = statusBadge.icon;
-                                    const roleBadge = ROLE_BADGES[m.user_role] || ROLE_BADGES.member;
-                                    const choirName = m.choir?.name || 'Unassigned';
-                                    const initials = (m.first_name || m.email || '?')
+                                    const roleBadge = ROLE_BADGES[m.user_role || m.role] || ROLE_BADGES.member;
+                                    const choirName = m.choir?.name || m.choirs?.[0]?.name || 'Unassigned';
+                                    const initials = (name || '?')
                                         .split(' ')
                                         .map((p) => p[0])
                                         .filter(Boolean)
@@ -216,21 +261,21 @@ export default function AdminMembersPage() {
                                                         {initials}
                                                     </span>
                                                     <div className="min-w-0">
-                                                        <p className="font-semibold text-ink-900 truncate">{name}</p>
+                                                        <p className="font-semibold text-slate-900 truncate">{name}</p>
                                                         {m.member_code && (
-                                                            <p className="text-xs text-ink-400 truncate">{m.member_code}</p>
+                                                            <p className="text-xs text-slate-400 truncate">{m.member_code}</p>
                                                         )}
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-5 py-4 text-xs font-medium text-ink-600 whitespace-nowrap">
+                                            <td className="px-5 py-4 text-xs font-medium text-slate-600 whitespace-nowrap">
                                                 {m.email || '—'}
                                             </td>
-                                            <td className="px-5 py-4 text-xs font-medium text-ink-600 whitespace-nowrap">
+                                            <td className="px-5 py-4 text-xs font-medium text-slate-600 whitespace-nowrap">
                                                 {m.phone || '—'}
                                             </td>
                                             <td className="px-5 py-4 whitespace-nowrap">
-                                                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-900">
+                                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-900">
                                                     <Church size={14} className="text-blue-500" />
                                                     {choirName}
                                                 </span>
@@ -250,7 +295,7 @@ export default function AdminMembersPage() {
                                                     {statusBadge.label}
                                                 </span>
                                             </td>
-                                            <td className="px-5 py-4 text-xs text-ink-500 whitespace-nowrap">
+                                            <td className="px-5 py-4 text-xs text-slate-500 whitespace-nowrap">
                                                 {formatDate(m.created_at)}
                                             </td>
                                             <td className="px-5 py-4 text-right whitespace-nowrap">
@@ -273,7 +318,7 @@ export default function AdminMembersPage() {
 
                 {/* Pagination */}
                 {pagination.last_page > 1 && (
-                    <div className="flex items-center justify-between border-t border-blue-100 px-5 py-3 text-xs text-ink-500">
+                    <div className="flex items-center justify-between border-t border-blue-100 px-5 py-3 text-xs text-slate-500">
                         <span>
                             Page {pagination.current_page} of {pagination.last_page} ({pagination.total} members)
                         </span>
@@ -281,14 +326,14 @@ export default function AdminMembersPage() {
                             <button
                                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                                 disabled={page === 1}
-                                className="rounded-lg border border-blue-200 p-1.5 text-ink-600 transition hover:bg-blue-50 disabled:opacity-40"
+                                className="rounded-lg border border-blue-200 p-1.5 text-slate-600 transition hover:bg-blue-50 disabled:opacity-40"
                             >
                                 <ChevronLeft size={16} />
                             </button>
                             <button
                                 onClick={() => setPage((p) => Math.min(pagination.last_page, p + 1))}
                                 disabled={page === pagination.last_page}
-                                className="rounded-lg border border-blue-200 p-1.5 text-ink-600 transition hover:bg-blue-50 disabled:opacity-40"
+                                className="rounded-lg border border-blue-200 p-1.5 text-slate-600 transition hover:bg-blue-50 disabled:opacity-40"
                             >
                                 <ChevronRight size={16} />
                             </button>
@@ -302,51 +347,51 @@ export default function AdminMembersPage() {
                 <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Member Details" size="md">
                     <div className="space-y-4">
                         <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4">
-                            <p className="text-lg font-bold text-ink-900">
-                                {selectedMember.full_name || selectedMember.email}
+                            <p className="text-lg font-bold text-slate-900">
+                                {selectedMember.full_name || selectedMember.name || selectedMember.email}
                             </p>
                             {selectedMember.member_code && (
-                                <p className="text-xs text-ink-400">{selectedMember.member_code}</p>
+                                <p className="text-xs text-slate-400">{selectedMember.member_code}</p>
                             )}
                         </div>
 
                         <div className="grid gap-4 sm:grid-cols-2">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">Email</p>
-                                <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-ink-800">
-                                    <Mail size={14} className="text-ink-400" />
+                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Email</p>
+                                <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-slate-800">
+                                    <Mail size={14} className="text-slate-400" />
                                     {selectedMember.email || '—'}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">Phone</p>
-                                <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-ink-800">
-                                    <Phone size={14} className="text-ink-400" />
+                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Phone</p>
+                                <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-slate-800">
+                                    <Phone size={14} className="text-slate-400" />
                                     {selectedMember.phone || '—'}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">Choir</p>
-                                <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-ink-800">
-                                    <Church size={14} className="text-ink-400" />
-                                    {selectedMember.choir?.name || 'Unassigned'}
+                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Choir</p>
+                                <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-slate-800">
+                                    <Church size={14} className="text-slate-400" />
+                                    {selectedMember.choir?.name || selectedMember.choirs?.[0]?.name || 'Unassigned'}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">Role</p>
-                                <p className="mt-0.5 text-sm font-medium text-ink-800">
-                                    {(ROLE_BADGES[selectedMember.user_role] || ROLE_BADGES.member).label}
+                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Role</p>
+                                <p className="mt-0.5 text-sm font-medium text-slate-800">
+                                    {(ROLE_BADGES[selectedMember.user_role || selectedMember.role] || ROLE_BADGES.member).label}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">Status</p>
-                                <p className="mt-0.5 text-sm font-medium text-ink-800">
-                                    {(STATUS_BADGES[selectedMember.status] || STATUS_BADGES.active).label}
+                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Status</p>
+                                <p className="mt-0.5 text-sm font-medium text-slate-800">
+                                    {(STATUS_BADGES[selectedMember.status] || STATUS_BADGES.approved).label}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">Created</p>
-                                <p className="mt-0.5 text-sm font-medium text-ink-800">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Created</p>
+                                <p className="mt-0.5 text-sm font-medium text-slate-800">
                                     {formatDate(selectedMember.created_at)}
                                 </p>
                             </div>

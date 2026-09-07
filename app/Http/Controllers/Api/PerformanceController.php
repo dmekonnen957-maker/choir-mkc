@@ -15,7 +15,12 @@ class PerformanceController extends ApiController
     {
         $this->authorize('viewAny', Performance::class);
 
-        return $this->paginate($choir->performances(), PerformanceResource::class);
+        $query = $choir->performances()
+            ->with(['choir', 'creator', 'songs'])
+            ->orderByDesc('date')
+            ->orderByDesc('start_time');
+
+        return $this->paginate($query, PerformanceResource::class);
     }
 
     public function store(StorePerformanceRequest $request, Choir $choir): \Illuminate\Http\JsonResponse
@@ -25,10 +30,13 @@ class PerformanceController extends ApiController
         $data = $request->validated();
         $data['choir_id'] = $choir->id;
         $data['created_by'] = $request->user()->id;
+        $data['venue'] = $data['venue'] ?? $data['location'] ?? 'Main Sanctuary';
+        $data['location'] = $data['location'] ?? $data['venue'] ?? 'Main Sanctuary';
+        $data['status'] = $data['status'] ?? 'scheduled';
 
         $performance = Performance::create($data);
 
-        return $this->ok(new PerformanceResource($performance), 'Created', 201);
+        return $this->ok(new PerformanceResource($performance->load(['choir', 'creator'])), 'Performance created successfully', 201);
     }
 
     public function show(Request $request, Choir $choir, Performance $performance): \Illuminate\Http\JsonResponse
@@ -36,6 +44,8 @@ class PerformanceController extends ApiController
         $this->authorize('view', $performance);
 
         $performance->load([
+            'choir.teamLeader',
+            'creator',
             'performanceMembers.member',
             'performanceSongs.song',
             'performanceRehearsals.rehearsal',
@@ -50,10 +60,13 @@ class PerformanceController extends ApiController
 
         $data = $request->validated();
         $data['updated_by'] = $request->user()->id;
+        if (isset($data['location']) && !isset($data['venue'])) {
+            $data['venue'] = $data['location'];
+        }
 
         $performance->update($data);
 
-        return $this->ok(new PerformanceResource($performance));
+        return $this->ok(new PerformanceResource($performance->load(['choir', 'creator'])), 'Performance updated successfully');
     }
 
     public function destroy(Choir $choir, Performance $performance): \Illuminate\Http\JsonResponse
@@ -62,6 +75,6 @@ class PerformanceController extends ApiController
 
         $performance->delete();
 
-        return $this->ok(null, 'Deleted');
+        return $this->ok(null, 'Performance deleted successfully');
     }
 }
