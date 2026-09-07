@@ -10,11 +10,13 @@ use App\Http\Resources\Api\UserResource;
 use App\Http\Requests\Api\Member\ChangePasswordRequest;
 use App\Http\Requests\Api\Member\UpdateNotificationPreferencesRequest;
 use App\Http\Requests\Api\Member\UpdateProfileSettingsRequest;
+use App\Http\Requests\Api\Song\StoreSongRequest;
 use App\Models\Choir;
 use App\Models\Member;
 use App\Models\Notification;
 use App\Models\Performance;
 use App\Models\Rehearsal;
+use App\Models\Song;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -227,8 +229,10 @@ class MemberController extends ApiController
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => ['nullable', 'string', 'regex:/^(09|07)[0-9]{8}$/'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+        ], [
+            'phone.regex' => 'Phone number must be exactly 10 Ethiopian digits starting with 09 or 07 (e.g., 0911223344 or 0711223344).',
         ]);
 
         if ($validator->fails()) {
@@ -505,11 +509,14 @@ class MemberController extends ApiController
                 'has_choir' => false,
                 'choir'     => null,
                 'songs'     => [],
+                'my_submissions' => [],
             ]);
         }
 
         $songs = $choir->songs()
             ->with('choir')
+            ->where('status', 'approved')
+            ->where('is_published', true)
             ->orderBy('title')
             ->get()
             ->map(fn ($s) => [
@@ -525,7 +532,31 @@ class MemberController extends ApiController
                 'audio_url'        => $s->audio_url ?? ($s->audio_path ? '/storage/' . ltrim($s->audio_path, '/') : null),
                 'cover_url'        => $s->cover_image_path ? (str_starts_with($s->cover_image_path, 'http') ? $s->cover_image_path : '/storage/' . ltrim($s->cover_image_path, '/')) : null,
                 'is_published'     => $s->is_published,
+                'status'           => $s->status,
                 'choir'            => ['id' => $choir->id, 'name' => $choir->name],
+                'created_at'       => $s->created_at,
+            ]);
+
+        $mySubmissions = Song::where('created_by', $user->id)
+            ->with('choir')
+            ->latest()
+            ->get()
+            ->map(fn ($s) => [
+                'id'               => $s->id,
+                'title'            => $s->title,
+                'artist'           => $s->artist,
+                'composer'         => $s->composer,
+                'description'      => $s->description,
+                'original_key'     => $s->original_key,
+                'has_lyrics'       => (bool) $s->lyrics,
+                'lyrics'           => $s->lyrics,
+                'has_audio'        => (bool) $s->audio_path || (bool) $s->audio_url,
+                'audio_url'        => $s->audio_url ?? ($s->audio_path ? '/storage/' . ltrim($s->audio_path, '/') : null),
+                'cover_url'        => $s->cover_image_path ? (str_starts_with($s->cover_image_path, 'http') ? $s->cover_image_path : '/storage/' . ltrim($s->cover_image_path, '/')) : null,
+                'is_published'     => $s->is_published,
+                'status'           => $s->status,
+                'rejection_reason' => $s->rejection_reason,
+                'choir'            => $s->choir ? ['id' => $s->choir->id, 'name' => $s->choir->name] : null,
                 'created_at'       => $s->created_at,
             ]);
 
@@ -533,7 +564,27 @@ class MemberController extends ApiController
             'has_choir' => true,
             'choir'     => new ChoirResource($choir),
             'songs'     => $songs,
+            'my_submissions' => $mySubmissions,
         ]);
+    }
+
+    /**
+     * Submit a song for approval by an administrator.
+     */
+    public function submitSong(StoreSongRequest $request): \Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+        $choir = $this->effectiveChoir($user);
+
+        if (!$choir && $request->filled('choir_id')) {
+            $choir = Choir::find($request->integer('choir_id'));
+        }
+
+        if (!$choir) {
+            return $this->error('You must be assigned to a choir to submit a song.', null, 422);
+        }
+
+        return app(SongController::class)->store($request, $choir);
     }
 
     /**

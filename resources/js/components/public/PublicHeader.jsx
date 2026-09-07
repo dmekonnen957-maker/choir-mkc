@@ -9,7 +9,7 @@ const NAV_ITEMS = [
     { label: 'Choirs', to: '/choirs' },
     { label: 'Songs', to: '/songs' },
     { label: 'Performances', to: '/performances' },
-    { label: 'History', to: '/history' },
+    { label: 'About', to: '/about' },
 ];
 
 function navClass({ isActive }) {
@@ -58,8 +58,8 @@ export default function PublicHeader() {
             >
                 <Link to="/" className="flex items-center gap-2.5 rounded-lg focus-visible:outline-blue-600">
                     <Logo size="md" className="shrink-0" />
-                    <span className="text-lg font-semibold tracking-tight text-slate-900 hidden lg:block ">
-                        <span>YEKA</span>  <span className='color:blue'>  M.K.C  </span> CHOIR
+                    <span className="text-lg font-black tracking-tight text-slate-900 hidden sm:block">
+                        <span>YEKA</span> <span className="text-blue-600">M.K.C</span> CHOIR
                     </span>
                 </Link>
 

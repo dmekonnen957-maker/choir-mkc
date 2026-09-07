@@ -37,7 +37,7 @@ export default function ChoirsPage() {
                     <SectionHeading
                         eyebrow="Community"
                         title="Our Choirs"
-                        subtitle="Discover the voices, people, and stories behind EKA MKC Choirs and Worship Teams."
+                        subtitle="Discover the voices, people, and stories behind YKA M.K.C Choirs and Worship Teams."
                         align="left"
                     />
                 </div>

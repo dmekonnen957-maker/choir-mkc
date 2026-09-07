@@ -33,6 +33,10 @@ class PerformanceController extends ApiController
         $data['venue'] = $data['venue'] ?? $data['location'] ?? 'Main Sanctuary';
         $data['location'] = $data['location'] ?? $data['venue'] ?? 'Main Sanctuary';
         $data['status'] = $data['status'] ?? 'scheduled';
+        $data['type'] = $data['type'] ?? 'Worship';
+        if (!array_key_exists('is_public', $data) || $data['is_public'] === null) {
+            $data['is_public'] = true;
+        }
 
         $performance = Performance::create($data);
 

@@ -11,7 +11,6 @@ import {
     ListMusic,
         Bell,
     User,
-    Settings,
     LogOut,
     X,
     Church,
@@ -132,9 +131,8 @@ function getMemberNav(basePath, role, can) {
         },
         {
             title: 'Account',
-                        items: [
+            items: [
                 { label: 'My Profile', to: `${basePath}/profile`, icon: User },
-                { label: 'Settings', to: `${basePath}/settings`, icon: Settings },
             ],
         },
     ];
@@ -272,9 +270,9 @@ export default function MemberSidebar({ open, onClose }) {
                 <div className="flex items-center gap-3 min-w-0">
                     <Logo size="sm" className="shrink-0" />
                     <div className="min-w-0 leading-tight">
-                        <p className="text-sm font-black tracking-wider text-white">CHOIR MKC</p>
+                        <p className="text-sm font-black tracking-wider text-white">YEKA M.K.C CHOIR</p>
                         <p className="truncate text-[11px] font-medium text-slate-400">
-                            EKA MKC Choirs &amp; Worship Teams
+                            YEKA M.K.C Choirs &amp; Worship Teams
                         </p>
                     </div>
                 </div>
@@ -292,14 +290,9 @@ export default function MemberSidebar({ open, onClose }) {
             {/* 2. Choir Selector & Identity Block */}
             <div className="pt-3 shrink-0">
                 {isAdmin ? (
-                    <div>
-                        <ChoirSelector />
-                        <ChoirIdentityBlock choir={currentChoir} isAllChoirs={isAllChoirs} />
-                    </div>
+                    <ChoirSelector />
                 ) : (
-                    <div>
-                        <ChoirIdentityBlock choir={currentChoir} isAllChoirs={false} />
-                    </div>
+                    <ChoirIdentityBlock choir={currentChoir} isAllChoirs={false} />
                 )}
             </div>
 

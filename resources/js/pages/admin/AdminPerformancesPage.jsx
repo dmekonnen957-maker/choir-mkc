@@ -31,8 +31,11 @@ import { useChoir } from '../../context/ChoirContext';
 function formatDate(dateStr) {
     if (!dateStr) return '—';
     try {
-        const [y, m, d] = dateStr.split('-');
-        return new Date(+y, +m - 1, +d).toLocaleDateString('en-US', {
+        const clean = String(dateStr).substring(0, 10);
+        const [y, m, d] = clean.split('-');
+        const date = new Date(+y, +m - 1, +d);
+        if (isNaN(date.getTime())) return dateStr;
+        return date.toLocaleDateString('en-US', {
             weekday: 'short',
             month: 'short',
             day: 'numeric',
@@ -58,20 +61,30 @@ function formatTime(timeStr) {
 
 function isUpcoming(dateStr) {
     if (!dateStr) return false;
-    const [y, m, d] = dateStr.split('-');
-    const perf = new Date(+y, +m - 1, +d);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return perf >= today;
+    try {
+        const clean = String(dateStr).substring(0, 10);
+        const [y, m, d] = clean.split('-');
+        const perf = new Date(+y, +m - 1, +d);
+        if (isNaN(perf.getTime())) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return perf >= today;
+    } catch {
+        return false;
+    }
 }
 
 const EMPTY_FORM = {
     title: '',
+    type: 'Worship',
     date: '',
     start_time: '',
+    end_time: '',
     location: '',
     description: '',
     status: 'scheduled',
+    is_public: true,
+    poster_path: '',
 };
 
 /* ─────────────────────── sub-components ─────────────────────── */
@@ -79,6 +92,7 @@ const EMPTY_FORM = {
 function StatusBadge({ status }) {
     const map = {
         scheduled: 'bg-blue-50 text-blue-700 border-blue-200',
+        confirmed: 'bg-indigo-50 text-indigo-700 border-indigo-200',
         completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
         cancelled: 'bg-rose-50 text-rose-700 border-rose-200',
         postponed: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -110,8 +124,20 @@ function PerformanceCard({ performance, onEdit, onDelete, onView }) {
                 {/* Header row */}
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                            <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200/80 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
+                                {performance.type || 'Worship'}
+                            </span>
                             <StatusBadge status={performance.status} />
+                            {performance.is_public ? (
+                                <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                                    Published
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-medium text-slate-500">
+                                    Private
+                                </span>
+                            )}
                             {upcoming && (
                                 <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-700">
                                     <Sparkles size={10} /> Upcoming
@@ -202,16 +228,20 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
             if (initial) {
                 setForm({
                     title: initial.title || '',
-                    date: initial.date || '',
+                    type: initial.type || 'Worship',
+                    date: initial.date ? String(initial.date).substring(0, 10) : '',
                     start_time: initial.start_time ? initial.start_time.substring(0, 5) : '',
+                    end_time: initial.end_time ? initial.end_time.substring(0, 5) : '',
                     location: initial.location || initial.venue || '',
                     description: initial.description || '',
                     status: initial.status || 'scheduled',
+                    is_public: initial.is_public !== undefined ? !!initial.is_public : true,
+                    poster_path: initial.poster_path || '',
                 });
-                setChoirId(initial.choir_id?.toString() || initial.choir?.id?.toString() || defaultChoirId || '');
+                setChoirId(initial.choir_id?.toString() || initial.choir?.id?.toString() || (defaultChoirId !== '__all__' ? defaultChoirId : '') || choirs[0]?.id?.toString() || '');
             } else {
                 setForm(EMPTY_FORM);
-                setChoirId(defaultChoirId || choirs[0]?.id?.toString() || '');
+                setChoirId((defaultChoirId && defaultChoirId !== '__all__') ? defaultChoirId : (choirs[0]?.id?.toString() || ''));
             }
             setErrors({});
         }
@@ -265,27 +295,51 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
             <form onSubmit={handleSubmit} className="space-y-5">
                 {errors.general && <Alert variant="error">{errors.general}</Alert>}
 
-                {/* Choir */}
-                <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                        Choir / Ministry Team <span className="text-rose-500">*</span>
-                    </label>
-                    <select
-                        value={choirId}
-                        onChange={(e) => setChoirId(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none"
-                        disabled={isEdit}
-                    >
-                        <option value="">Select choir…</option>
-                        {choirs.map((c) => (
-                            <option key={c.id} value={c.id}>
-                                {c.name}
-                            </option>
-                        ))}
-                    </select>
-                    {errors.choir_id && (
-                        <p className="mt-1 text-xs text-rose-600">{errors.choir_id}</p>
-                    )}
+                {/* Choir & Program Type */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                            Choir / Ministry Team <span className="text-rose-500">*</span>
+                        </label>
+                        <select
+                            value={choirId}
+                            onChange={(e) => setChoirId(e.target.value)}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none"
+                            disabled={isEdit}
+                        >
+                            <option value="">Select choir…</option>
+                            {choirs.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                    {c.name}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.choir_id && (
+                            <p className="mt-1 text-xs text-rose-600">{errors.choir_id}</p>
+                        )}
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                            Program / Event Type <span className="text-rose-500">*</span>
+                        </label>
+                        <select
+                            value={form.type}
+                            onChange={(e) => set('type', e.target.value)}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none"
+                        >
+                            <option value="Worship">Worship</option>
+                            <option value="Worship Night">Worship Night</option>
+                            <option value="Concert">Concert</option>
+                            <option value="Special Program">Special Program</option>
+                            <option value="Sunday Service">Sunday Service</option>
+                            <option value="Christmas">Christmas Program</option>
+                            <option value="Easter">Easter Program</option>
+                            <option value="Youth">Youth Program</option>
+                            <option value="Choir Presentation">Choir Presentation</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
                 </div>
 
                 {/* Title */}
@@ -306,8 +360,8 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
                     )}
                 </div>
 
-                {/* Date & Start Time */}
-                <div className="grid grid-cols-2 gap-4">
+                {/* Date, Start Time & End Time */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                             Date <span className="text-rose-500">*</span>
@@ -334,37 +388,81 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
                             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none"
                         />
                     </div>
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                            End Time
+                        </label>
+                        <input
+                            type="time"
+                            value={form.end_time}
+                            onChange={(e) => set('end_time', e.target.value)}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none"
+                        />
+                    </div>
                 </div>
 
-                {/* Location */}
-                <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                        Location / Venue
-                    </label>
-                    <input
-                        type="text"
-                        value={form.location}
-                        onChange={(e) => set('location', e.target.value)}
-                        placeholder="e.g. Main Sanctuary, EKA MKC"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none"
-                    />
+                {/* Location & Poster URL */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                            Location / Venue
+                        </label>
+                        <input
+                            type="text"
+                            value={form.location}
+                            onChange={(e) => set('location', e.target.value)}
+                            placeholder="e.g. Main Sanctuary, YKA M.K.C"
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                            Poster Image URL / Path (Optional)
+                        </label>
+                        <input
+                            type="text"
+                            value={form.poster_path}
+                            onChange={(e) => set('poster_path', e.target.value)}
+                            placeholder="e.g. /images/worship-night.jpg or https://..."
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none"
+                        />
+                    </div>
                 </div>
 
-                {/* Status */}
-                <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                        Status
-                    </label>
-                    <select
-                        value={form.status}
-                        onChange={(e) => set('status', e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none"
-                    >
-                        <option value="scheduled">Scheduled</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                        <option value="postponed">Postponed</option>
-                    </select>
+                {/* Status & Public Visibility */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                            Status
+                        </label>
+                        <select
+                            value={form.status}
+                            onChange={(e) => set('status', e.target.value)}
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none"
+                        >
+                            <option value="scheduled">Scheduled</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="postponed">Postponed</option>
+                        </select>
+                    </div>
+
+                    <div className="flex items-center pt-6">
+                        <label className="relative flex items-center gap-3 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                checked={form.is_public}
+                                onChange={(e) => set('is_public', e.target.checked)}
+                                className="h-5 w-5 rounded-lg border-slate-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <div>
+                                <span className="text-sm font-bold text-slate-800">Publish Event on Public Portal</span>
+                                <p className="text-[11px] text-slate-500">Makes this event visible to visitors on the website.</p>
+                            </div>
+                        </label>
+                    </div>
                 </div>
 
                 {/* Description */}
@@ -423,10 +521,22 @@ function PerformanceDetail({ performance, onBack, onEdit, onDelete }) {
                     <div className="flex flex-wrap items-start justify-between gap-4">
                         <div>
                             <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200/80 px-2.5 py-0.5 text-xs font-extrabold uppercase tracking-wider text-blue-700">
+                                    {performance.type || 'Worship'}
+                                </span>
                                 <StatusBadge status={performance.status} />
+                                {performance.is_public ? (
+                                    <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
+                                        Published on Public Site
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+                                        Private
+                                    </span>
+                                )}
                                 {upcoming && (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-700">
-                                        <Sparkles size={10} /> Upcoming
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-blue-700">
+                                        <Sparkles size={11} /> Upcoming
                                     </span>
                                 )}
                             </div>

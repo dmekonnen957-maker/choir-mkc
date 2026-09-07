@@ -20,13 +20,20 @@ class UpdateProfileSettingsRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'username' => ['nullable', 'string', 'max:50', 'alpha_dash', Rule::unique('users', 'username')->ignore($userId)],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => ['nullable', 'string', 'regex:/^(09|07)[0-9]{8}$/'],
             'role_title' => ['nullable', 'string', 'max:100'],
             'bio' => ['nullable', 'string', 'max:1000'],
             'language' => ['nullable', 'string', 'in:en,am,om,ti'],
             'timezone' => ['nullable', 'string', 'max:100'],
             'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
             'remove_photo' => ['sometimes', 'boolean'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'phone.regex' => 'Phone number must be exactly 10 Ethiopian digits starting with 09 or 07 (e.g., 0911223344 or 0711223344).',
         ];
     }
 

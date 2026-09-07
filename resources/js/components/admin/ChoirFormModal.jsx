@@ -267,7 +267,7 @@ export default function ChoirFormModal({ open, onClose, choir = null, onSaved })
                             value={form.church_name}
                             onChange={(e) => update('church_name', e.target.value)}
                             error={errors.church_name?.[0]}
-                            placeholder="e.g. EKA MKC Church"
+                            placeholder="e.g. YKA M.K.C Church"
                         />
                     </div>
 

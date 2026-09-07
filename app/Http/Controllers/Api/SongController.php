@@ -6,9 +6,12 @@ use App\Http\Requests\Api\Song\StoreSongRequest;
 use App\Http\Requests\Api\Song\UpdateSongRequest;
 use App\Http\Resources\Api\SongResource;
 use App\Models\Choir;
+use App\Models\Notification;
 use App\Models\Song;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class SongController extends ApiController
 {
@@ -16,12 +19,20 @@ class SongController extends ApiController
     {
         $this->authorize('viewAny', Song::class);
 
-        $q = Song::query()->with(['choir:id,name', 'creator:id,name']);
+        $q = Song::query()->with(['choir:id,name', 'creator:id,name', 'approver:id,name']);
 
         if ($choir) {
             $q->where('choir_id', $choir->id);
         } elseif ($request->filled('choir_id')) {
             $q->where('choir_id', $request->integer('choir_id'));
+        }
+
+        if ($request->filled('status')) {
+            $q->where('status', $request->input('status'));
+        }
+
+        if ($request->filled('created_by')) {
+            $q->where('created_by', $request->integer('created_by'));
         }
 
         if ($request->filled('search')) {
@@ -40,6 +51,11 @@ class SongController extends ApiController
         $data = $request->validated();
         $choirId = $choir?->id ?? $data['choir_id'];
         $choirModel = Choir::findOrFail($choirId);
+        $user = $request->user();
+
+        $isAdmin = $user->hasRole(['admin', 'super-admin'], 'api')
+            || $user->hasAnyRole(['admin', 'super-admin'])
+            || in_array($user->role, ['admin', 'super-admin']);
 
         $song = new Song();
         $song->choir_id = $choirModel->id;
@@ -51,8 +67,20 @@ class SongController extends ApiController
         $song->scale = $data['scale'] ?? null;
         $song->scale_mode = $data['scale_mode'] ?? null;
         $song->lyrics = $data['lyrics'] ?? null;
-        $song->is_published = $request->boolean('is_published', true);
-        $song->created_by = $request->user()->id;
+        $song->created_by = $user->id;
+
+        if ($isAdmin) {
+            $song->status = $request->input('status', 'approved');
+            $song->is_published = $request->boolean('is_published', true);
+            $song->approved_by = $user->id;
+            $song->approved_at = now();
+        } else {
+            // Member or Team Leader submission: always Pending and not published
+            $song->status = 'pending';
+            $song->is_published = false;
+            $song->approved_by = null;
+            $song->approved_at = null;
+        }
 
         if ($request->hasFile('audio')) {
             $song->audio_path = $this->storeAudio($request->file('audio'));
@@ -64,14 +92,124 @@ class SongController extends ApiController
 
         $song->save();
 
-        return $this->ok(SongResource::make($song->load('choir', 'creator')), 'Song created successfully', 201);
+        // If submitted by non-admin, notify all administrators
+        if (!$isAdmin) {
+            $admins = User::whereHas('roles', fn ($q) => $q->whereIn('name', ['admin', 'super-admin']))
+                ->orWhereIn('role', ['admin', 'super-admin'])
+                ->get();
+
+            foreach ($admins as $admin) {
+                Notification::create([
+                    'id' => (string) Str::uuid(),
+                    'type' => 'song_submitted',
+                    'notifiable_type' => User::class,
+                    'notifiable_id' => $admin->id,
+                    'data' => [
+                        'title' => 'New Song Submitted',
+                        'message' => "{$user->name} submitted a new song: \"{$song->title}\" ({$choirModel->name})",
+                        'song_id' => $song->id,
+                        'song_title' => $song->title,
+                        'choir_name' => $choirModel->name,
+                        'submitted_by' => $user->name,
+                        'action_url' => '/admin/songs',
+                    ],
+                    'read_at' => null,
+                ]);
+            }
+        }
+
+        $message = $isAdmin
+            ? 'Song created successfully.'
+            : 'Song submitted successfully! It is now pending administrator review.';
+
+        return $this->ok(
+            SongResource::make($song->load('choir', 'creator', 'approver')),
+            $message,
+            201
+        );
     }
 
     public function show(Request $request, Song $song)
     {
         $this->authorize('view', $song);
-        $song->load(['choir', 'creator', 'lyrics' => fn ($q) => $q->latest()]);
+        $song->load(['choir', 'creator', 'approver', 'lyrics' => fn ($q) => $q->latest()]);
         return $this->ok(SongResource::make($song));
+    }
+
+    public function approve(Request $request, Song $song)
+    {
+        $this->authorize('approve', $song);
+
+        $song->status = 'approved';
+        $song->is_published = true;
+        $song->approved_by = $request->user()->id;
+        $song->approved_at = now();
+        $song->rejection_reason = null;
+        $song->save();
+
+        // Notify submitter if they exist and are not the approving admin
+        if ($song->created_by && $song->created_by !== $request->user()->id) {
+            Notification::create([
+                'id' => (string) Str::uuid(),
+                'type' => 'song_approved',
+                'notifiable_type' => User::class,
+                'notifiable_id' => $song->created_by,
+                'data' => [
+                    'title' => 'Song Approved',
+                    'message' => "Your submitted song \"{$song->title}\" has been approved and published to the library.",
+                    'song_id' => $song->id,
+                    'song_title' => $song->title,
+                    'action_url' => '/member/songs',
+                ],
+                'read_at' => null,
+            ]);
+        }
+
+        return $this->ok(
+            SongResource::make($song->load('choir', 'creator', 'approver')),
+            'Song approved successfully.'
+        );
+    }
+
+    public function reject(Request $request, Song $song)
+    {
+        $this->authorize('reject', $song);
+
+        $validated = $request->validate([
+            'rejection_reason' => 'required|string|max:1000',
+        ], [
+            'rejection_reason.required' => 'Please provide a reason for rejecting this song.',
+            'rejection_reason.max' => 'Rejection reason cannot exceed 1000 characters.',
+        ]);
+
+        $song->status = 'rejected';
+        $song->is_published = false;
+        $song->rejection_reason = $validated['rejection_reason'];
+        $song->save();
+
+        // Notify submitter
+        if ($song->created_by && $song->created_by !== $request->user()->id) {
+            Notification::create([
+                'id' => (string) Str::uuid(),
+                'type' => 'song_rejected',
+                'notifiable_type' => User::class,
+                'notifiable_id' => $song->created_by,
+                'data' => [
+                    'title' => 'Song Submission Rejected',
+                    'message' => "Your submitted song \"{$song->title}\" was rejected: {$song->rejection_reason}",
+                    'song_id' => $song->id,
+                    'song_title' => $song->title,
+                    'rejection_reason' => $song->rejection_reason,
+                    'action_url' => '/member/songs',
+                ],
+                'read_at' => null,
+            ]);
+        }
+
+        return $this->ok(
+            SongResource::make($song->load('choir', 'creator', 'approver')),
+            'Song rejected.'
+        );
     }
 
     public function update(UpdateSongRequest $request, Song $song)

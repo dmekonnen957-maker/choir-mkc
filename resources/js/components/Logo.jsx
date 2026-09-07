@@ -13,11 +13,11 @@ const Logo = ({ size = 'md', className = '' }) => {
     <a
       href="/"
       className={`skip-link-focus-ring outline-none focus-visible:outline-focusRing ${className}`}
-      aria-label="Choir MKC - Home"
+      aria-label="YKA M.K.C CHOIR - Home"
     >
       <img
         src="/images/logo.png"
-        alt="Choir MKC Logo"
+        alt="YKA M.K.C CHOIR Logo"
         width={width}
         height={height}
         className="block object-contain"

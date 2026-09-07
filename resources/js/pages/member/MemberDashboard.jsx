@@ -81,7 +81,7 @@ export default function MemberDashboard() {
                     <div className="flex items-center gap-4 mb-4">
                         <Logo size="lg" />
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-ink-900">CHOIR MKC</h1>
+                            <h1 className="text-2xl font-bold tracking-tight text-ink-900">YKA M.K.C CHOIR</h1>
                             <p className="text-sm text-ink-500">Member Portal</p>
                         </div>
                     </div>
@@ -110,7 +110,7 @@ export default function MemberDashboard() {
                 <div className="flex items-center gap-4 mb-4">
                     <Logo size="lg" />
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-ink-900">CHOIR MKC</h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-ink-900">YKA M.K.C CHOIR</h1>
                         <p className="text-sm text-ink-500">Member Portal</p>
                     </div>
                 </div>

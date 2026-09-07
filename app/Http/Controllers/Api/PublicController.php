@@ -9,6 +9,8 @@ use App\Http\Resources\Api\MemberResource;
 use App\Http\Resources\Api\PerformanceResource;
 use App\Http\Resources\Api\SongResource;
 use App\Models\Choir;
+use App\Models\GalleryItem;
+use App\Models\Performance;
 use App\Models\Song;
 use Illuminate\Http\Request;
 
@@ -38,8 +40,14 @@ class PublicController extends ApiController
 
     public function performances(Request $request, Choir $choir): \Illuminate\Http\JsonResponse
     {
+        $today = now()->toDateString();
         return $this->paginate(
-            $choir->performances()->where('is_public', true),
+            $choir->performances()
+                ->where('is_public', true)
+                ->where('date', '>=', $today)
+                ->whereNotIn('status', ['cancelled'])
+                ->orderBy('date', 'asc')
+                ->orderBy('start_time', 'asc'),
             PerformanceResource::class
         );
     }
@@ -63,14 +71,14 @@ class PublicController extends ApiController
     public function songs(Request $request, Choir $choir): \Illuminate\Http\JsonResponse
     {
         return $this->paginate(
-            $choir->songs()->where('is_published', true)->with('songCategory'),
+            $choir->songs()->where('is_published', true)->where('status', 'approved')->with('songCategory'),
             SongResource::class
         );
     }
 
     public function song(Request $request, Choir $choir, Song $song): \Illuminate\Http\JsonResponse
     {
-        if (!$song->is_published || $song->choir_id !== $choir->id) {
+        if (!$song->is_published || $song->status !== 'approved' || $song->choir_id !== $choir->id) {
             abort(404);
         }
 
@@ -84,6 +92,7 @@ class PublicController extends ApiController
     {
         $q = Song::query()
             ->where('is_published', true)
+            ->where('status', 'approved')
             ->with(['choir:id,name', 'songCategory']);
 
         if ($request->filled('choir_id')) {
@@ -123,7 +132,7 @@ class PublicController extends ApiController
 
     public function publicSongDetail(Request $request, Song $song): \Illuminate\Http\JsonResponse
     {
-        if (!$song->is_published) {
+        if (!$song->is_published || $song->status !== 'approved') {
             abort(404);
         }
 
@@ -132,5 +141,75 @@ class PublicController extends ApiController
             'songCategory',
             'lyrics' => fn ($q) => $q->where('is_published', true),
         ])));
+    }
+
+    public function allPerformances(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $today = now()->toDateString();
+
+        $q = Performance::query()
+            ->where('is_public', true)
+            ->where('date', '>=', $today)
+            ->whereNotIn('status', ['cancelled'])
+            ->with([
+                'choir:id,name,description,logo_path',
+                'songs:id,title,composer,artist,original_key,scale,lyrics,cover_image_path',
+            ]);
+
+        if ($request->filled('choir_id')) {
+            $q->where('choir_id', $request->integer('choir_id'));
+        }
+
+        if ($request->filled('type') && $request->input('type') !== 'all') {
+            $q->where('type', $request->input('type'));
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $q->where(function ($sub) use ($search) {
+                $sub->where('title', 'like', '%' . $search . '%')
+                    ->orWhere('venue', 'like', '%' . $search . '%')
+                    ->orWhere('location', 'like', '%' . $search . '%')
+                    ->orWhere('description', 'like', '%' . $search . '%')
+                    ->orWhere('type', 'like', '%' . $search . '%')
+                    ->orWhereHas('choir', function ($c) use ($search) {
+                        $c->where('name', 'like', '%' . $search . '%');
+                    });
+            });
+        }
+
+        // Always sort nearest upcoming date first, then earliest start_time
+        $q->orderBy('date', 'asc')->orderBy('start_time', 'asc');
+
+        return $this->paginate($q, PerformanceResource::class);
+    }
+
+    public function publicPerformanceDetail(Request $request, Performance $performance): \Illuminate\Http\JsonResponse
+    {
+        if (!$performance->is_public) {
+            abort(404);
+        }
+
+        return $this->ok(new PerformanceResource($performance->load([
+            'choir:id,name,description,logo_path',
+            'songs' => function ($q) {
+                $q->where('is_published', true);
+            },
+        ])));
+    }
+
+    public function allGallery(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $q = GalleryItem::query()
+            ->where('is_public', true)
+            ->with(['choir:id,name', 'performance:id,title']);
+
+        if ($request->filled('choir_id')) {
+            $q->where('choir_id', $request->integer('choir_id'));
+        }
+
+        $q->latest('event_date')->latest('id');
+
+        return $this->paginate($q, GalleryResource::class);
     }
 }

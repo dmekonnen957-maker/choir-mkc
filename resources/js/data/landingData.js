@@ -160,7 +160,7 @@ export const choirs = [
         milestones: [
             { id: 11, year: '1998', title: 'Choir founded', description: 'A small group begins singing after Sunday service.' },
             { id: 12, year: '2005', title: 'First major concert', description: 'The choir’s first full-length sacred concert.' },
-            { id: 13, year: '2026', title: 'CHOIR MKC launch', description: 'The choir joins the unified CHOIR MKC platform.' },
+            { id: 13, year: '2026', title: 'YKA M.K.C launch', description: 'The choir joins the unified YKA M.K.C platform.' },
         ],
     },
     {
@@ -181,7 +181,7 @@ export const choirs = [
         milestones: [
             { id: 21, year: '2005', title: 'Youth program begins', description: 'A choir for the next generation is formed.' },
             { id: 22, year: '2015', title: 'First festival', description: 'Performs at the regional youth festival of praise.' },
-            { id: 23, year: '2026', title: 'CHOIR MKC launch', description: 'Joins the unified platform alongside the other choirs.' },
+            { id: 23, year: '2026', title: 'YKA M.K.C launch', description: 'Joins the unified platform alongside the other choirs.' },
         ],
     },
     {
@@ -202,7 +202,7 @@ export const choirs = [
         milestones: [
             { id: 31, year: '2012', title: 'Ensemble founded', description: 'A dedicated men’s group is formed.' },
             { id: 32, year: '2019', title: 'Advent tradition', description: 'Begins the annual Advent service of hymns.' },
-            { id: 33, year: '2026', title: 'CHOIR MKC launch', description: 'Joins the unified platform.' },
+            { id: 33, year: '2026', title: 'YKA M.K.C launch', description: 'Joins the unified platform.' },
         ],
     },
 ];
@@ -265,7 +265,7 @@ export const historyMilestones = [
     { id: 102, year: '2005', title: 'First major performance', description: 'The choir presents its first full-length sacred concert to a packed sanctuary.' },
     { id: 103, year: '2012', title: 'New generation of members', description: 'A youth program begins, welcoming a new generation of singers.' },
     { id: 104, year: '2020', title: 'Digital music archive begins', description: 'Songs, recordings and stories are gathered into a digital archive.' },
-    { id: 105, year: '2026', title: 'CHOIR MKC platform', description: 'The CHOIR MKC platform launches, uniting multiple choirs in one digital home.' },
+    { id: 105, year: '2026', title: 'YKA M.K.C platform', description: 'The YKA M.K.C platform launches, uniting multiple choirs in one digital home.' },
 ];
 
 export const gallery = [

@@ -69,7 +69,14 @@ export async function fetchAllSongs(params = {}) {
     return lists.flat();
 }
 
-export async function fetchAllPerformances() {
+export async function fetchAllPerformances(params = {}) {
+    try {
+        const res = await api.get('/public/performances', { params: { per_page: 200, ...params } });
+        const items = normalize(res);
+        if (items && items.length >= 0) return items;
+    } catch {
+        // Fall back if endpoint fails
+    }
     const choirs = await fetchChoirs();
     const lists = await Promise.all(
         choirs.map((c) =>
@@ -79,6 +86,31 @@ export async function fetchAllPerformances() {
         ),
     );
     return lists.flat();
+}
+
+export async function fetchPublicPerformance(id) {
+    try {
+        const res = await api.get(`/public/performances/${id}`);
+        return res.data?.data ?? null;
+    } catch (e) {
+        return null;
+    }
+}
+
+export async function fetchPublicSong(id, transpose = 0) {
+    const res = await api.get(`/public/songs/${id}`, {
+        params: transpose ? { transpose } : {},
+    });
+    return res.data?.data ?? null;
+}
+
+export async function fetchAllGallery(params = {}) {
+    try {
+        const res = await api.get('/public/gallery', { params: { per_page: 100, ...params } });
+        return normalize(res);
+    } catch {
+        return [];
+    }
 }
 
 export function imageUrl(path) {
@@ -115,3 +147,26 @@ export function isUpcoming(dateValue) {
     today.setHours(0, 0, 0, 0);
     return d >= today;
 }
+
+/**
+ * Automatically determine performance status from date and backend status.
+ * Returns 'today' | 'upcoming' | 'completed' | 'cancelled'
+ */
+export function getPerformanceStatus(dateValue, rawStatus = '') {
+    if (rawStatus === 'cancelled') return 'cancelled';
+    if (!dateValue) return rawStatus || 'upcoming';
+    
+    // Compare date with today in local time
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const cleanDateStr = String(dateValue).split('T')[0];
+
+    if (cleanDateStr === todayStr) {
+        return 'today';
+    } else if (cleanDateStr > todayStr) {
+        return 'upcoming';
+    } else {
+        return 'completed';
+    }
+}
+

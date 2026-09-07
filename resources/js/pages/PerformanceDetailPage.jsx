@@ -1,46 +1,81 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, CalendarDays, MapPin, Clock, Users, Info } from 'lucide-react';
+import { ArrowLeft, CalendarDays, MapPin, Clock, Users, Info, Music, Disc3, FileText, Sparkles, ChevronRight, Tag } from 'lucide-react';
 import CoverImage from '../components/public/CoverImage';
 import Reveal from '../components/ui/Reveal';
 import EmptyState from '../components/public/EmptyState';
-import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { fetchAllPerformances, formatDate, imageUrl } from '../lib/publicApi';
+import SongLyricsModal from '../components/public/SongLyricsModal';
+import { fetchPublicPerformance, fetchAllPerformances, formatDate, getPerformanceStatus } from '../lib/publicApi';
+import { PerformanceCardSkeleton } from '../components/public/PublicSkeletons';
 
 export default function PerformanceDetailPage() {
     const { id } = useParams();
     const [performance, setPerformance] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [selectedSong, setSelectedSong] = useState(null);
+    const [isLyricsOpen, setIsLyricsOpen] = useState(false);
 
     useEffect(() => {
-        fetchAllPerformances()
-            .then((list) => list.find((p) => String(p.id) === String(id)) ?? null)
-            .then(setPerformance)
-            .catch(() => {})
-            .finally(() => setLoading(false));
+        let isMounted = true;
+        setLoading(true);
+
+        fetchPublicPerformance(id)
+            .then((data) => {
+                if (!isMounted) return;
+                if (data) {
+                    setPerformance(data);
+                } else {
+                    // Fallback to searching all performances
+                    return fetchAllPerformances().then((list) => {
+                        if (!isMounted) return;
+                        const found = list.find((p) => String(p.id) === String(id));
+                        setPerformance(found || null);
+                    });
+                }
+            })
+            .catch(() => {
+                if (isMounted) setPerformance(null);
+            })
+            .finally(() => {
+                if (isMounted) setLoading(false);
+            });
+
+        return () => {
+            isMounted = false;
+        };
     }, [id]);
+
+    const handleOpenSong = (song) => {
+        setSelectedSong({
+            ...song,
+            choir: song.choir || (performance?.choir ? { id: performance.choir.id, name: performance.choir.name } : null),
+        });
+        setIsLyricsOpen(true);
+    };
 
     if (loading) {
         return (
-            <div className="flex h-64 items-center justify-center bg-white">
-                <LoadingSpinner text="Loading performance..." />
+            <div className="min-h-screen bg-slate-50 py-16">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6">
+                    <PerformanceCardSkeleton />
+                </div>
             </div>
         );
     }
 
     if (!performance) {
         return (
-            <div className="mx-auto max-w-3xl px-4 py-24">
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-24">
                 <EmptyState
                     icon={CalendarDays}
-                    title="This performance could not be found."
-                    message="It may be private or no longer available."
+                    title="Program Not Found"
+                    message="This worship program or performance may be private, cancelled, or does not exist."
                     action={
                         <Link
                             to="/performances"
-                            className="inline-flex items-center gap-2 rounded-full bg-blue-700 px-6 py-3 text-sm font-semibold text-white"
+                            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 text-sm font-semibold text-white transition shadow-sm"
                         >
-                            <ArrowLeft size={16} /> Back to Performances
+                            <ArrowLeft size={16} /> Back to Upcoming Programs
                         </Link>
                     }
                 />
@@ -49,116 +84,226 @@ export default function PerformanceDetailPage() {
     }
 
     const choir = performance.choir;
+    const computedStatus = getPerformanceStatus(performance.date, performance.status);
+    const songs = performance.songs || [];
+    const posterSrc = performance.poster_url || performance.poster_path;
+    const eventType = performance.type || 'Worship';
 
     return (
-        <div className="bg-white">
-            <section className="relative overflow-hidden bg-gradient-to-b from-blue-50/70 to-white pb-12 pt-14 sm:pb-16 sm:pt-20">
-                <div className="pointer-events-none absolute -top-24 -left-20 h-80 w-80 rounded-full bg-blue-200/40 blur-3xl" />
-                <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <div className="bg-slate-50 min-h-screen text-slate-800 pb-20">
+            {/* Header Hero */}
+            <section className="relative overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-950 text-white py-14 sm:py-18">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.15),transparent_50%)] pointer-events-none" />
+                <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
                     <Link
                         to="/performances"
-                        className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-blue-700"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-blue-200 hover:text-white transition mb-6"
                     >
-                        <ArrowLeft size={16} /> All Performances
+                        <ArrowLeft size={14} /> Back to Upcoming Programs
                     </Link>
-                    <span className="mt-5 inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700 ring-1 ring-inset ring-blue-100">
-                        <CalendarDays size={14} /> Performance
-                    </span>
-                    <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+                    
+                    <div className="flex flex-wrap items-center gap-3 mb-4">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/20 text-blue-200 border border-blue-400/30 px-3.5 py-1 text-xs font-bold uppercase tracking-wider">
+                            <Tag size={12} /> {eventType}
+                        </span>
+                        {computedStatus === 'today' && (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 px-3.5 py-1 text-xs font-bold uppercase tracking-wider">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Today
+                            </span>
+                        )}
+                        {computedStatus === 'upcoming' && (
+                            <span className="inline-flex items-center rounded-full bg-blue-400/20 text-blue-100 border border-blue-300/30 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
+                                Upcoming
+                            </span>
+                        )}
+                    </div>
+
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
                         {performance.title}
                     </h1>
+
                     {choir?.name && (
                         <Link
                             to={`/choirs/${choir.id}`}
-                            className="mt-3 inline-flex w-fit items-center gap-2 text-base font-medium text-blue-700 hover:text-blue-800"
+                            className="mt-4 inline-flex items-center gap-2 text-sm sm:text-base font-semibold text-blue-200 hover:text-white group"
                         >
-                            <Users size={16} /> {choir.name}
+                            <Users size={18} className="text-blue-300" />
+                            <span>{choir.name}</span>
+                            <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                         </Link>
                     )}
 
-                    <div className="mt-8 grid gap-4 sm:grid-cols-3">
-                        <DetailMeta
-                            icon={CalendarDays}
-                            label="Date"
-                            value={formatDate(performance.date)}
-                        />
+                    {/* Metadata Cards */}
+                    <div className="mt-8 grid gap-4 grid-cols-1 sm:grid-cols-3">
+                        <div className="bg-white/10 border border-white/15 backdrop-blur-md rounded-2xl p-4">
+                            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-200 mb-1">
+                                <CalendarDays size={14} className="text-blue-300" /> Date
+                            </p>
+                            <p className="text-base font-bold text-white">{formatDate(performance.date)}</p>
+                        </div>
+
                         {performance.start_time && (
-                            <DetailMeta
-                                icon={Clock}
-                                label="Time"
-                                value={`${performance.start_time}${
-                                    performance.end_time ? ` – ${performance.end_time}` : ''
-                                }`}
-                            />
+                            <div className="bg-white/10 border border-white/15 backdrop-blur-md rounded-2xl p-4">
+                                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-200 mb-1">
+                                    <Clock size={14} className="text-blue-300" /> Time
+                                </p>
+                                <p className="text-base font-bold text-white">
+                                    {performance.start_time}
+                                    {performance.end_time ? ` - ${performance.end_time}` : ''}
+                                </p>
+                            </div>
                         )}
+
                         {(performance.venue || performance.location) && (
-                            <DetailMeta
-                                icon={MapPin}
-                                label="Location"
-                                value={performance.venue || performance.location}
-                                sub={performance.location}
-                            />
+                            <div className="bg-white/10 border border-white/15 backdrop-blur-md rounded-2xl p-4">
+                                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-200 mb-1">
+                                    <MapPin size={14} className="text-blue-300" /> Venue / Location
+                                </p>
+                                <p className="text-base font-bold text-white truncate">
+                                    {performance.venue || performance.location}
+                                </p>
+                                {performance.venue && performance.location && (
+                                    <p className="text-xs text-blue-200 truncate mt-0.5">{performance.location}</p>
+                                )}
+                            </div>
                         )}
                     </div>
                 </div>
             </section>
 
-            <section className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-                <Reveal>
-                    <div className="overflow-hidden rounded-3xl border border-slate-100 bg-slate-50 shadow-sm">
-                        <div className="aspect-[16/9] w-full">
-                            <CoverImage src={null} label={performance.title} className="h-full w-full" />
+            {/* Main Details Body */}
+            <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 mt-10 space-y-10">
+                {/* Poster Image if available */}
+                {posterSrc && (
+                    <Reveal>
+                        <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-md max-h-[480px]">
+                            <CoverImage
+                                src={posterSrc}
+                                label={performance.title}
+                                className="w-full h-full max-h-[480px] object-cover"
+                            />
                         </div>
-                    </div>
-                </Reveal>
+                    </Reveal>
+                )}
 
+                {/* Description & Overview */}
                 {performance.description && (
                     <Reveal>
-                        <div className="mt-10">
-                            <h2 className="flex items-center gap-2 text-xl font-semibold text-slate-900">
-                                <Info size={18} className="text-blue-600" /> About this Performance
+                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm">
+                            <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 mb-4">
+                                <Info size={20} className="text-blue-600" /> Program Overview
                             </h2>
-                            <p className="mt-3 whitespace-pre-line leading-relaxed text-slate-600">
+                            <p className="whitespace-pre-line text-slate-600 leading-relaxed text-sm sm:text-base">
                                 {performance.description}
                             </p>
                         </div>
                     </Reveal>
                 )}
 
-                <div className="mt-10 grid gap-4 sm:grid-cols-2">
-                    {performance.organizer && (
-                        <DetailMeta icon={Users} label="Organizer" value={performance.organizer} />
-                    )}
-                    {performance.dress_code && (
-                        <DetailMeta icon={Info} label="Dress Code" value={performance.dress_code} />
-                    )}
-                </div>
+                {/* Additional Performance Information */}
+                {(performance.organizer || performance.dress_code || performance.special_instructions) && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {performance.organizer && (
+                            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+                                <p className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2 mb-2">
+                                    <Users size={14} className="text-blue-600" /> Organized By
+                                </p>
+                                <p className="text-sm font-semibold text-slate-800">{performance.organizer}</p>
+                            </div>
+                        )}
 
-                {performance.special_instructions && (
-                    <Reveal>
-                        <div className="mt-8 rounded-3xl border border-blue-100 bg-blue-50/60 p-6">
-                            <h3 className="text-sm font-semibold uppercase tracking-wide text-blue-700">
-                                Special Instructions
-                            </h3>
-                            <p className="mt-2 leading-relaxed text-slate-600">
-                                {performance.special_instructions}
-                            </p>
-                        </div>
-                    </Reveal>
+                        {performance.dress_code && (
+                            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+                                <p className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2 mb-2">
+                                    <Sparkles size={14} className="text-blue-600" /> Dress Code
+                                </p>
+                                <p className="text-sm font-semibold text-slate-800">{performance.dress_code}</p>
+                            </div>
+                        )}
+
+                        {performance.special_instructions && (
+                            <div className="md:col-span-2 bg-blue-50/60 rounded-2xl p-6 border border-blue-100 shadow-sm">
+                                <p className="text-xs font-bold uppercase tracking-wider text-blue-700 flex items-center gap-2 mb-2">
+                                    <Info size={14} /> Special Instructions
+                                </p>
+                                <p className="text-sm text-slate-700 leading-relaxed">{performance.special_instructions}</p>
+                            </div>
+                        )}
+                    </div>
                 )}
-            </section>
-        </div>
-    );
-}
 
-function DetailMeta({ icon: Icon, label, value, sub }) {
-    return (
-        <div className="rounded-2xl border border-slate-100 bg-white p-4">
-            <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">
-                <Icon size={13} /> {label}
-            </p>
-            <p className="mt-1.5 text-sm font-semibold text-slate-800">{value}</p>
-            {sub && sub !== value && <p className="text-xs text-slate-400">{sub}</p>}
+                {/* Program Songs List */}
+                <Reveal>
+                    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-5 mb-6">
+                            <div>
+                                <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
+                                    <Music size={22} className="text-blue-600" /> Assigned Program Songs
+                                </h2>
+                                <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                                    Musical pieces scheduled for this worship presentation.
+                                </p>
+                            </div>
+                            <span className="px-3 py-1 bg-blue-50 text-blue-700 font-bold text-xs rounded-full border border-blue-100">
+                                {songs.length} {songs.length === 1 ? 'Song' : 'Songs'}
+                            </span>
+                        </div>
+
+                        {songs.length === 0 ? (
+                            <div className="text-center py-10 bg-slate-50 rounded-2xl border border-slate-100">
+                                <Music size={32} className="mx-auto text-slate-300 mb-2" />
+                                <p className="text-sm font-semibold text-slate-600">No songs currently assigned.</p>
+                                <p className="text-xs text-slate-400 mt-1">The choir leadership will update the setlist before the event.</p>
+                            </div>
+                        ) : (
+                            <div className="grid gap-3">
+                                {songs.map((song, index) => (
+                                    <div
+                                        key={song.id || index}
+                                        onClick={() => handleOpenSong(song)}
+                                        className="group flex items-center justify-between gap-4 p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-blue-50/50 hover:border-blue-200 transition cursor-pointer"
+                                    >
+                                        <div className="flex items-center gap-3.5 min-w-0">
+                                            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                                                {index + 1}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-700 transition-colors truncate">
+                                                    {song.title}
+                                                </h3>
+                                                <p className="text-xs text-slate-500 truncate flex items-center gap-2 mt-0.5">
+                                                    {song.artist && <span>Artist: {song.artist}</span>}
+                                                    {song.original_key && (
+                                                        <span className="bg-white px-2 py-0.5 rounded text-[10px] font-semibold text-slate-600 border border-slate-200">
+                                                            Key: {song.original_key}
+                                                        </span>
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            {song.lyrics && (
+                                                <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-blue-600 bg-white px-3 py-1.5 rounded-lg border border-blue-100 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition">
+                                                    <FileText size={13} /> View Lyrics
+                                                </span>
+                                            )}
+                                            <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-1 group-hover:text-blue-600 transition" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </Reveal>
+            </main>
+
+            {/* Song Lyrics Modal */}
+            <SongLyricsModal
+                song={selectedSong}
+                isOpen={isLyricsOpen}
+                onClose={() => setIsLyricsOpen(false)}
+            />
         </div>
     );
 }

@@ -52,7 +52,24 @@ class SongPolicy
 
     public function create(User $user): bool
     {
-        return $this->hasPerm($user, ['songs.create', 'songs.manage']);
+        return $this->hasPerm($user, ['songs.create', 'songs.manage'])
+            || $user->hasRole(['member', 'team_leader', 'admin', 'super-admin'], 'api')
+            || $user->hasAnyRole(['member', 'team_leader', 'admin', 'super-admin'])
+            || in_array($user->role, ['member', 'team_leader', 'admin', 'super-admin']);
+    }
+
+    public function approve(User $user, Song $song): bool
+    {
+        return $user->hasRole(['super-admin', 'admin'], 'api')
+            || $user->hasAnyRole(['super-admin', 'admin'])
+            || in_array($user->role, ['admin', 'super-admin']);
+    }
+
+    public function reject(User $user, Song $song): bool
+    {
+        return $user->hasRole(['super-admin', 'admin'], 'api')
+            || $user->hasAnyRole(['super-admin', 'admin'])
+            || in_array($user->role, ['admin', 'super-admin']);
     }
 
     public function update(User $user, Song $song): bool

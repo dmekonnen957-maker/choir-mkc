@@ -129,8 +129,8 @@ export default function RegisterPage() {
             {/* Content */}
             <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
                 <div className="glass-panel w-full max-w-lg p-7 sm:p-9">
-                    <Logo size="md" className="mb-6" />
-                    <p className="text-lg font-bold tracking-wide text-white">CHOIR MKC</p>
+                    <Logo size="md" className="mb-4" />
+                    <p className="text-lg font-black tracking-wide text-white">YEKA M.K.C CHOIR</p>
 
                     <div className="mb-6 text-center">
                         <h1 className="text-2xl font-semibold text-white">Create an Account</h1>

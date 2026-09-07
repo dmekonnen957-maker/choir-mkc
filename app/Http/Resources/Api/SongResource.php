@@ -45,6 +45,13 @@ class SongResource extends JsonResource
             'display_lyrics' => $displayLyrics,
             'has_lyrics' => (bool) $this->lyrics,
             'is_published' => $this->is_published,
+            'status' => $this->status ?? ($this->is_published ? 'approved' : 'pending'),
+            'rejection_reason' => $this->rejection_reason,
+            'approved_by' => $this->approved_by,
+            'approved_at' => $this->approved_at,
+            'approver' => $this->whenLoaded('approver', function () {
+                return $this->approver ? ['id' => $this->approver->id, 'name' => $this->approver->name] : null;
+            }),
             'created_by' => $this->created_by,
             'creator' => $this->whenLoaded('creator', function () {
                 return $this->creator ? ['id' => $this->creator->id, 'name' => $this->creator->name] : null;

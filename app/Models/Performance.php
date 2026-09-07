@@ -16,6 +16,7 @@ class Performance extends Model
     protected $fillable = [
         'choir_id',
         'title',
+        'type',
         'date',
         'start_time',
         'end_time',
@@ -25,6 +26,7 @@ class Performance extends Model
         'organizer',
         'dress_code',
         'special_instructions',
+        'poster_path',
         'status',
         'is_public',
         'created_by',
@@ -34,7 +36,7 @@ class Performance extends Model
     protected function casts(): array
     {
         return [
-            'date' => 'date',
+            'date' => 'date:Y-m-d',
             'is_public' => 'boolean',
         ];
     }

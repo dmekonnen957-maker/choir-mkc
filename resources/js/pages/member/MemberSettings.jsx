@@ -154,6 +154,17 @@ export default function MemberSettings() {
     const handleProfileSubmit = async (e) => {
         e.preventDefault();
         setAlert(null);
+
+        // Ethiopian phone validation
+        if (form.phone && !/^(09|07)\d{8}$/.test(form.phone)) {
+            setErrors((prev) => ({
+                ...prev,
+                phone: ['Phone number must be exactly 10 Ethiopian digits starting with 09 or 07 (e.g., 0911223344 or 0711223344).'],
+            }));
+            setAlert({ variant: 'error', message: 'Please provide a valid 10-digit Ethiopian phone number (09XXXXXXXX or 07XXXXXXXX).' });
+            return;
+        }
+
         setSavingProfile(true);
         try {
             const payload = new FormData();
@@ -568,6 +579,7 @@ export default function MemberSettings() {
                                         value={form.name}
                                         onChange={update('name')}
                                         error={errors.name?.[0]}
+                                        maxLength={255}
                                         required
                                     />
 
@@ -578,6 +590,7 @@ export default function MemberSettings() {
                                         error={errors.username?.[0]}
                                         prefix="@"
                                         placeholder="username"
+                                        maxLength={50}
                                         hint="Letters, numbers, dashes, and underscores."
                                     />
                                 </div>
@@ -587,6 +600,7 @@ export default function MemberSettings() {
                                     value={form.role_title}
                                     onChange={update('role_title')}
                                     error={errors.role_title?.[0]}
+                                    maxLength={100}
                                     placeholder="e.g. Lead Vocalist, Tenor Section Leader, Sound Engineer"
                                 />
 
@@ -598,6 +612,7 @@ export default function MemberSettings() {
                                         rows={3}
                                         value={form.bio}
                                         onChange={update('bio')}
+                                        maxLength={1000}
                                         placeholder="Share a brief introduction about your choir journey and background..."
                                         className="w-full rounded-lg border border-ink-200 bg-canvas px-3.5 py-2.5 text-sm text-ink-800 placeholder:text-ink-400 transition-colors focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
                                     />
@@ -650,6 +665,7 @@ export default function MemberSettings() {
                                         value={form.email}
                                         onChange={update('email')}
                                         error={errors.email?.[0]}
+                                        maxLength={255}
                                         required
                                     />
                                     {!isEmailVerified && (
@@ -672,13 +688,14 @@ export default function MemberSettings() {
                                 </div>
 
                                 <Input
-                                    label="Phone Number"
+                                    label="Phone Number (Ethiopian format: 09XXXXXXXX or 07XXXXXXXX)"
                                     type="tel"
                                     value={form.phone}
                                     onChange={update('phone')}
                                     error={errors.phone?.[0]}
-                                    placeholder="+251 9..."
-                                    hint="Used for choir rehearsal SMS alerts and leader contact."
+                                    placeholder="0911223344"
+                                    maxLength={10}
+                                    hint="Must be exactly 10 Ethiopian digits (e.g. 0911223344 or 0711223344)."
                                 />
 
                                 <div className="flex justify-end pt-2">

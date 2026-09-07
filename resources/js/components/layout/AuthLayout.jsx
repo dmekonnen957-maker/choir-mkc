@@ -7,8 +7,8 @@ export default function AuthLayout({ children, title, subtitle }) {
             <div className="flex items-center justify-between gap-2 px-4 py-4 sm:px-6 lg:px-8">
                 <Link to="/" className="flex min-w-0 items-center gap-2.5">
                     <Logo size="md" className="shrink-0" />
-                    <span className="truncate text-base font-bold tracking-wide text-ink-900 sm:text-lg hidden lg:block">
-                       YEKA   M.K.C  CHOIR
+                    <span className="truncate text-base font-bold tracking-wide text-ink-900 sm:text-lg hidden sm:block">
+                        YKA M.K.C CHOIR
                     </span>
                 </Link>
                 <Link

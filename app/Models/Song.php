@@ -32,6 +32,10 @@ class Song extends Model
         'scale_mode',
         'lyrics',
         'is_published',
+        'status',
+        'rejection_reason',
+        'approved_by',
+        'approved_at',
         'created_by',
         'updated_by',
     ];
@@ -41,6 +45,7 @@ class Song extends Model
         return [
             'year_written' => 'integer',
             'is_published' => 'boolean',
+            'approved_at' => 'datetime',
         ];
     }
 
@@ -93,9 +98,24 @@ class Song extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
     public function scopePublished($query)
     {
         return $query->where('is_published', true);
+    }
+
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'approved');
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
     }
 
     public function scopeForChoir($query, $choirId)

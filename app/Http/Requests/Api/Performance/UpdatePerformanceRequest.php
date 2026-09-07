@@ -44,6 +44,7 @@ class UpdatePerformanceRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:255'],
+            'type' => ['nullable', 'string', 'max:100'],
             'date' => ['required', 'date'],
             'start_time' => ['nullable', 'string'],
             'end_time' => ['nullable', 'string'],
@@ -53,6 +54,7 @@ class UpdatePerformanceRequest extends FormRequest
             'organizer' => ['nullable', 'string', 'max:255'],
             'dress_code' => ['nullable', 'string', 'max:255'],
             'special_instructions' => ['nullable', 'string'],
+            'poster_path' => ['nullable', 'string', 'max:500'],
             'status' => ['nullable', 'string', 'in:scheduled,confirmed,completed,cancelled,postponed,planned,ongoing'],
             'is_public' => ['nullable', 'boolean'],
         ];

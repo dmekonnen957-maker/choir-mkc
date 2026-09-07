@@ -91,13 +91,13 @@ export default function LoginPage() {
                         {/* Logo and Title - Centered */}
                         <div className="flex flex-col items-center justify-center mb-8">
                             <Logo size="lg" className="mb-3" />
-                            <h1 className="text-2xl font-light text-white/90 tracking-wide">
-                                <span >YEKA</span>  
-                                <span>M.K.C </span>
-                                <span>CHOIR </span>
+                            <h1 className="text-2xl font-bold text-white tracking-wide">
+                                <span>YEKA</span>{' '}
+                                <span className="text-blue-400">M.K.C</span>{' '}
+                                <span>CHOIR</span>
                             </h1>
-                            <p className="text-xs text-blue-300/60 font-light tracking-wider mt-1">
-                                Choir & Worship Team
+                            <p className="text-xs text-blue-300/70 font-medium tracking-wider mt-1">
+                                Choirs &amp; Worship Teams
                             </p>
                         </div>
 
@@ -115,15 +115,15 @@ export default function LoginPage() {
                                 type="email"
                                 autoComplete="email"
                                 required
-                                placeholder="member@yekamkc.org"
+                                placeholder="member@ykamkc.org"
                                 value={form.email}
                                 onChange={update('email')}
                                 error={errors.email?.[0]}
                                 className="bg-white/5 border-white/10 text-white/90 placeholder:text-white/30"
                                 trailing={
                                     <span className="text-white/30">
-                                        <Mail size={18} />
-                                    </span>
+                                         <Mail size={18} />
+                                     </span>
                                 }
                             />
 
@@ -180,8 +180,8 @@ export default function LoginPage() {
                     </div>
 
                     {/* Footer */}
-                    <p className="mt-6 text-center text-xs text-white/20">
-                        © 2026 Yeka MKC
+                    <p className="mt-6 text-center text-xs text-white/30">
+                        © {new Date().getFullYear()} YKA M.K.C CHOIR
                     </p>
                 </div>
             </div>

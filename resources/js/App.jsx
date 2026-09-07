@@ -1,15 +1,20 @@
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PublicLayout from './components/layout/PublicLayout';
 import AuthLayout from './components/layout/AuthLayout';
-import HomePage from './pages/HomePage';
-import ChoirsPage from './pages/ChoirsPage';
-import ChoirDetailPage from './pages/ChoirDetailPage';
-import ChoirHistoryPage from './pages/ChoirHistoryPage';
-import SongsPage from './pages/SongsPage';
-import SongDetailPage from './pages/SongDetailPage';
-import PerformancesPage from './pages/PerformancesPage';
-import PerformanceDetailPage from './pages/PerformanceDetailPage';
-import HistoryPage from './pages/HistoryPage';
+import { PublicPageSkeleton } from './components/public/PublicSkeletons';
+
+// Lazy-loaded public pages for performance optimization
+const HomePage = lazy(() => import('./pages/HomePage'));
+const ChoirsPage = lazy(() => import('./pages/ChoirsPage'));
+const ChoirDetailPage = lazy(() => import('./pages/ChoirDetailPage'));
+const ChoirHistoryPage = lazy(() => import('./pages/ChoirHistoryPage'));
+const SongsPage = lazy(() => import('./pages/SongsPage'));
+const SongDetailPage = lazy(() => import('./pages/SongDetailPage'));
+const PerformancesPage = lazy(() => import('./pages/PerformancesPage'));
+const PerformanceDetailPage = lazy(() => import('./pages/PerformanceDetailPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import RegistrationPendingPage from './pages/RegistrationPendingPage';
@@ -48,15 +53,79 @@ export default function App() {
     return (
         <Routes>
             <Route element={<PublicLayout />}>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/choirs" element={<ChoirsPage />} />
-                <Route path="/choirs/:id" element={<ChoirDetailPage />} />
-                <Route path="/choirs/:id/history" element={<ChoirHistoryPage />} />
-                <Route path="/songs" element={<SongsPage />} />
-                <Route path="/songs/:id" element={<SongDetailPage />} />
-                <Route path="/performances" element={<PerformancesPage />} />
-                <Route path="/performances/:id" element={<PerformanceDetailPage />} />
-                <Route path="/history" element={<HistoryPage />} />
+                <Route
+                    path="/"
+                    element={
+                        <Suspense fallback={<PublicPageSkeleton />}>
+                            <HomePage />
+                        </Suspense>
+                    }
+                />
+                <Route
+                    path="/choirs"
+                    element={
+                        <Suspense fallback={<PublicPageSkeleton />}>
+                            <ChoirsPage />
+                        </Suspense>
+                    }
+                />
+                <Route
+                    path="/choirs/:id"
+                    element={
+                        <Suspense fallback={<PublicPageSkeleton />}>
+                            <ChoirDetailPage />
+                        </Suspense>
+                    }
+                />
+                <Route
+                    path="/choirs/:id/history"
+                    element={
+                        <Suspense fallback={<PublicPageSkeleton />}>
+                            <ChoirHistoryPage />
+                        </Suspense>
+                    }
+                />
+                <Route
+                    path="/songs"
+                    element={
+                        <Suspense fallback={<PublicPageSkeleton />}>
+                            <SongsPage />
+                        </Suspense>
+                    }
+                />
+                <Route
+                    path="/songs/:id"
+                    element={
+                        <Suspense fallback={<PublicPageSkeleton />}>
+                            <SongDetailPage />
+                        </Suspense>
+                    }
+                />
+                <Route
+                    path="/performances"
+                    element={
+                        <Suspense fallback={<PublicPageSkeleton />}>
+                            <PerformancesPage />
+                        </Suspense>
+                    }
+                />
+                <Route
+                    path="/performances/:id"
+                    element={
+                        <Suspense fallback={<PublicPageSkeleton />}>
+                            <PerformanceDetailPage />
+                        </Suspense>
+                    }
+                />
+                <Route
+                    path="/about"
+                    element={
+                        <Suspense fallback={<PublicPageSkeleton />}>
+                            <AboutPage />
+                        </Suspense>
+                    }
+                />
+                <Route path="/history" element={<Navigate to="/about" replace />} />
             </Route>
 
             <Route path="/login" element={<LoginPage />} />

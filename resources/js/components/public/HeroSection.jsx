@@ -6,11 +6,11 @@ import CoverImage from './CoverImage';
 const DEFAULT_SLIDES = [
     {
         id: 1,
-        title: "YEKA MKC CHOIR IS SO MUCH MORE THAN JUST A CHOIR",
+        title: "YKA M.K.C CHOIR IS SO MUCH MORE THAN JUST A CHOIR",
         subtitle: "United in Voice. Connected in Faith.",
         ctaText: "EXPLORE OUR CHOIRS",
         ctaLink: "/choirs",
-        badge: "Yeka MKC Ministry",
+        badge: "YKA M.K.C Ministry",
         image: "/images/p1.jpg",
     },
     {
@@ -40,7 +40,7 @@ export default function HeroSection({ featuredChoir = null, choirs = [] }) {
     const slides = choirs.length > 0
         ? choirs.map((choir, idx) => ({
             id: choir.id || idx,
-            title: choir.name ? `${choir.name.toUpperCase()} AT YEKA MKC` : DEFAULT_SLIDES[idx % 3].title,
+            title: choir.name ? `${choir.name.toUpperCase()} AT YKA M.K.C` : DEFAULT_SLIDES[idx % 3].title,
             subtitle: choir.description || DEFAULT_SLIDES[idx % 3].subtitle,
             ctaText: "EXPLORE CHOIR",
             ctaLink: `/choirs/${choir.id || ''}`,
@@ -64,6 +64,16 @@ export default function HeroSection({ featuredChoir = null, choirs = [] }) {
         }, 6000);
         return () => clearInterval(timer);
     }, [handleNext]);
+
+    // Preload slide images to ensure seamless transition
+    useEffect(() => {
+        slides.forEach((s) => {
+            if (s.image) {
+                const img = new Image();
+                img.src = s.image;
+            }
+        });
+    }, [slides]);
 
     const getSlideIndex = (offset) => {
         return (currentIndex + offset + slides.length) % slides.length;

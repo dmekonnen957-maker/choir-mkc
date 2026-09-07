@@ -64,7 +64,7 @@ class AdminSettingController extends ApiController
             'settings.church_name' => 'nullable|string|max:255',
             'settings.church_address' => 'nullable|string|max:255',
             'settings.contact_email' => 'nullable|email|max:255',
-            'settings.contact_phone' => 'nullable|string|max:50',
+            'settings.contact_phone' => ['nullable', 'string', 'regex:/^(09|07)[0-9]{8}$/'],
             'settings.default_language' => 'nullable|string|in:en,am,om,ti',
             'settings.default_timezone' => 'nullable|string|max:100',
             'settings.default_rehearsal_duration_minutes' => 'nullable|numeric|min:15|max:480',
@@ -78,6 +78,12 @@ class AdminSettingController extends ApiController
             'settings.sms_alerts_enabled' => 'nullable|in:0,1,true,false',
             'settings.rehearsal_reminder_lead_hours' => 'nullable|numeric|min:1|max:168',
             'settings.performance_reminder_lead_hours' => 'nullable|numeric|min:1|max:168',
+        ], [
+            'settings.contact_phone.regex' => 'Contact phone number must be exactly 10 Ethiopian digits starting with 09 or 07 (e.g., 0911223344 or 0711223344).',
+            'settings.contact_email.email' => 'Please provide a valid contact email address.',
+            'settings.contact_email.max' => 'Contact email cannot exceed 255 characters.',
+            'settings.ministry_tagline.max' => 'Ministry tagline cannot exceed 500 characters.',
+            'settings.church_address.max' => 'Church address cannot exceed 255 characters.',
         ]);
 
         $groups = [

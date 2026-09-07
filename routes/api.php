@@ -81,6 +81,9 @@ Route::prefix('public')->group(function () {
     Route::get('/choirs/{choir}/songs/{song}', [PublicController::class, 'song']);
     Route::get('/songs', [PublicController::class, 'allSongs']);
     Route::get('/songs/{song}', [PublicController::class, 'publicSongDetail']);
+    Route::get('/performances', [PublicController::class, 'allPerformances']);
+    Route::get('/performances/{performance}', [PublicController::class, 'publicPerformanceDetail']);
+    Route::get('/gallery', [PublicController::class, 'allGallery']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -145,6 +148,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/reports', [ReportController::class, 'index']);
         Route::get('/reports/{report}', [ReportController::class, 'show']);
         Route::apiResource('songs', SongController::class);
+        Route::post('songs/{song}/approve', [SongController::class, 'approve']);
+        Route::post('songs/{song}/reject', [SongController::class, 'reject']);
         Route::get('songs/{song}/audio', [SongController::class, 'audio'])->name('admin.songs.audio');
         Route::get('/calendar', [CalendarController::class, 'adminCalendar']);
         Route::get('/settings', [AdminSettingController::class, 'index']);
@@ -195,6 +200,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/notifications', [MemberController::class, 'notifications']);
         Route::get('/performances', [MemberController::class, 'performances']);
         Route::get('/songs', [MemberController::class, 'songs']);
+        Route::post('/songs', [MemberController::class, 'submitSong']);
         Route::get('/calendar', [MemberController::class, 'calendar']);
     });
 
@@ -203,5 +209,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'teamLeaderDashboard']);
         Route::get('/calendar', [CalendarController::class, 'teamLeaderCalendar']);
         Route::get('/songs', [MemberController::class, 'songs']);
+        Route::post('/songs', [MemberController::class, 'submitSong']);
     });
 });

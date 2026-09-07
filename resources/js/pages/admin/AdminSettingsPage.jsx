@@ -59,11 +59,11 @@ export default function AdminSettingsPage() {
 
     // System Settings State
     const [settings, setSettings] = useState({
-        ministry_name: 'EKA MKC Choirs & Worship Ministry',
+        ministry_name: 'YKA M.K.C Choirs & Worship Ministry',
         ministry_tagline: 'Serving the Lord with passion, unity, and choral excellence.',
-        church_name: 'Ethiopian Kale Heywet Church (EKA MKC)',
+        church_name: 'Ethiopian Kale Heywet Church (YKA M.K.C)',
         church_address: 'Addis Ababa, Ethiopia',
-        contact_email: 'contact@ekamkc-choir.org',
+        contact_email: 'contact@ykamkc.org',
         contact_phone: '+251 911 000 000',
         default_language: 'en',
         default_timezone: 'Africa/Addis_Ababa',
@@ -151,8 +151,19 @@ export default function AdminSettingsPage() {
 
     const handleSaveSystemSettings = async (e) => {
         e.preventDefault();
-        setSavingSettings(true);
         setAlert(null);
+
+        // Ethiopian phone validation
+        if (settings.contact_phone && !/^(09|07)\d{8}$/.test(settings.contact_phone)) {
+            setErrors((prev) => ({
+                ...prev,
+                'settings.contact_phone': ['Contact phone must be exactly 10 Ethiopian digits starting with 09 or 07 (e.g., 0911223344 or 0711223344).'],
+            }));
+            setAlert({ variant: 'error', message: 'Contact phone must be exactly 10 Ethiopian digits starting with 09 or 07.' });
+            return;
+        }
+
+        setSavingSettings(true);
         try {
             await api.put('/admin/settings', { settings });
             setAlert({ variant: 'success', message: 'System settings saved successfully!' });
@@ -166,8 +177,19 @@ export default function AdminSettingsPage() {
 
     const handleSaveProfile = async (e) => {
         e.preventDefault();
-        setSavingProfile(true);
         setAlert(null);
+
+        // Ethiopian phone validation
+        if (profileForm.phone && !/^(09|07)\d{8}$/.test(profileForm.phone)) {
+            setErrors((prev) => ({
+                ...prev,
+                phone: ['Phone number must be exactly 10 Ethiopian digits starting with 09 or 07 (e.g., 0911223344 or 0711223344).'],
+            }));
+            setAlert({ variant: 'error', message: 'Phone number must be exactly 10 Ethiopian digits starting with 09 or 07.' });
+            return;
+        }
+
+        setSavingProfile(true);
         try {
             await api.put('/member/settings', profileForm);
             await refreshUser();
@@ -344,30 +366,13 @@ export default function AdminSettingsPage() {
                         </div>
 
                         <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
-                            <Input
-                                label="Ministry Name"
-                                value={settings.ministry_name || ''}
-                                onChange={(e) => handleSettingChange('ministry_name', e.target.value)}
-                                error={errors['settings.ministry_name']?.[0]}
-                                placeholder="e.g. EKA MKC Choirs & Worship Ministry"
-                                required
-                            />
-
-                            <Input
-                                label="Church / Organization Name"
-                                value={settings.church_name || ''}
-                                onChange={(e) => handleSettingChange('church_name', e.target.value)}
-                                error={errors['settings.church_name']?.[0]}
-                                placeholder="e.g. Ethiopian Kale Heywet Church"
-                                required
-                            />
-
                             <div className="sm:col-span-2">
                                 <Input
                                     label="Ministry Tagline / Motto"
                                     value={settings.ministry_tagline || ''}
                                     onChange={(e) => handleSettingChange('ministry_tagline', e.target.value)}
                                     error={errors['settings.ministry_tagline']?.[0]}
+                                    maxLength={500}
                                     placeholder="e.g. Serving the Lord with passion and choral excellence"
                                 />
                             </div>
@@ -378,15 +383,19 @@ export default function AdminSettingsPage() {
                                 value={settings.contact_email || ''}
                                 onChange={(e) => handleSettingChange('contact_email', e.target.value)}
                                 error={errors['settings.contact_email']?.[0]}
-                                placeholder="contact@ekamkc-choir.org"
+                                maxLength={255}
+                                placeholder="contact@ykamkc.org"
                             />
 
                             <Input
                                 label="Primary Contact Phone"
+                                type="tel"
                                 value={settings.contact_phone || ''}
                                 onChange={(e) => handleSettingChange('contact_phone', e.target.value)}
                                 error={errors['settings.contact_phone']?.[0]}
-                                placeholder="+251 911 000 000"
+                                placeholder="0911223344"
+                                maxLength={10}
+                                hint="Must be exactly 10 Ethiopian digits starting with 09 or 07."
                             />
 
                             <div className="sm:col-span-2">
@@ -395,6 +404,7 @@ export default function AdminSettingsPage() {
                                     value={settings.church_address || ''}
                                     onChange={(e) => handleSettingChange('church_address', e.target.value)}
                                     error={errors['settings.church_address']?.[0]}
+                                    maxLength={255}
                                     placeholder="Addis Ababa, Ethiopia"
                                 />
                             </div>
@@ -691,6 +701,7 @@ export default function AdminSettingsPage() {
                                 value={profileForm.name}
                                 onChange={handleProfileChange('name')}
                                 error={errors.name?.[0]}
+                                maxLength={255}
                                 required
                             />
 
@@ -700,6 +711,7 @@ export default function AdminSettingsPage() {
                                 onChange={handleProfileChange('username')}
                                 error={errors.username?.[0]}
                                 prefix="@"
+                                maxLength={50}
                                 placeholder="admin"
                             />
 
@@ -709,6 +721,7 @@ export default function AdminSettingsPage() {
                                 value={profileForm.email}
                                 onChange={handleProfileChange('email')}
                                 error={errors.email?.[0]}
+                                maxLength={255}
                                 required
                             />
 
@@ -718,7 +731,9 @@ export default function AdminSettingsPage() {
                                 value={profileForm.phone}
                                 onChange={handleProfileChange('phone')}
                                 error={errors.phone?.[0]}
-                                placeholder="+251 9..."
+                                placeholder="0911223344"
+                                maxLength={10}
+                                hint="Must be exactly 10 Ethiopian digits (09XXXXXXXX or 07XXXXXXXX)."
                             />
 
                             <div>
