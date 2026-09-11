@@ -31,6 +31,7 @@ class Song extends Model
         'scale',
         'scale_mode',
         'lyrics',
+        'lyrics_visible_to_public',
         'is_published',
         'status',
         'rejection_reason',
@@ -43,9 +44,10 @@ class Song extends Model
     protected function casts(): array
     {
         return [
-            'year_written' => 'integer',
-            'is_published' => 'boolean',
-            'approved_at' => 'datetime',
+            'year_written'              => 'integer',
+            'is_published'              => 'boolean',
+            'lyrics_visible_to_public'  => 'boolean',
+            'approved_at'               => 'datetime',
         ];
     }
 

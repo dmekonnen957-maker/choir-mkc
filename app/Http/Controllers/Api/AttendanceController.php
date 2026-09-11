@@ -38,7 +38,9 @@ class AttendanceController extends ApiController
             return true;
         }
 
-        return $user->choirs()->where('choirs.id', $choir->id)->exists();
+        return $user->choirs()->where('choirs.id', $choir->id)->wherePivot('status', 'active')->exists()
+            || (int) $choir->team_leader_id === (int) $user->id
+            || $user->can('attendance.view.all');
     }
 
     /**
@@ -59,13 +61,39 @@ class AttendanceController extends ApiController
             ->wherePivot('status', 'active')
             ->exists();
 
-        if (! $isAssigned) {
+        if (! $isAssigned && (int) $choir->team_leader_id !== (int) $user->id) {
             return false;
         }
 
         return $user->hasAnyRole(['team_leader', 'admin', 'super-admin'])
             || $user->can('attendance.manage')
             || $user->can('rehearsals.manage');
+    }
+
+    /**
+     * Return only choirs the authenticated user may use for attendance.
+     */
+    public function choirs(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->hasAnyRole(['super-admin', 'admin'])) {
+            $choirs = Choir::active()->orderBy('name')->get(['id', 'name']);
+        } else {
+            $assignedIds = $user->choirs()
+                ->wherePivot('status', 'active')
+                ->pluck('choirs.id');
+
+            $choirs = Choir::active()
+                ->where(function ($query) use ($user, $assignedIds) {
+                    $query->whereIn('id', $assignedIds)
+                        ->orWhere('team_leader_id', $user->id);
+                })
+                ->orderBy('name')
+                ->get(['id', 'name']);
+        }
+
+        return $this->ok(['choirs' => $choirs]);
     }
 
     /**
@@ -91,6 +119,43 @@ class AttendanceController extends ApiController
             'unmarked' => $unmarked,
             'attendance_rate' => $totalMembers > 0 ? round((($present + $late) / $totalMembers) * 100, 1) : 0,
         ];
+    }
+
+    /**
+     * Resolve only current, active members for a choir.
+     *
+     * Rules (all must be satisfied for a member to be included):
+     *  1. Not soft-deleted (SoftDeletes trait handles this automatically).
+     *  2. Member status = 'active' (excludes inactive / suspended / former).
+     *  3a. If the member has a linked user (user_id IS NOT NULL):
+     *       – The user must have status = 'approved'.
+     *       – The user must not be deactivated (deactivated_at IS NULL).
+     *       – The user must still be an active member of THIS choir in the
+     *         choir_user pivot (choir_user.status = 'active').
+     *  3b. If the member has NO linked user (guest / offline member):
+     *       – Include them as-is since the member record itself is the source
+     *         of truth. (The UserObserver soft-deletes linked members when
+     *         their user account is removed, so reaching this branch means
+     *         the member was intentionally created without a user account.)
+     */
+    private function currentMembers(Choir $choir)
+    {
+        return $choir->members()
+            ->where('members.status', 'active')
+            ->where(function ($query) use ($choir) {
+                // Branch A: guest members (no linked user account)
+                $query->whereNull('members.user_id')
+                    // Branch B: user-linked members — verify the user is still
+                    // active, approved, and belongs to this choir.
+                    ->orWhereHas('user', function ($userQuery) use ($choir) {
+                        $userQuery->where('status', User::STATUS_APPROVED)
+                            ->whereNull('deactivated_at')
+                            ->whereHas('choirs', function ($choirQuery) use ($choir) {
+                                $choirQuery->where('choirs.id', $choir->id)
+                                    ->where('choir_user.status', 'active');
+                            });
+                    });
+            });
     }
 
     /**
@@ -209,7 +274,7 @@ class AttendanceController extends ApiController
 
         $sessions = $query->paginate($request->integer('per_page', 20));
 
-        $totalMembers = $choir->members()->where('status', 'active')->count();
+        $totalMembers = $this->currentMembers($choir)->count();
 
         $items = collect($sessions->items())->map(function (AttendanceSession $s) use ($totalMembers) {
             $data = (new AttendanceSessionResource($s))->toArray(request());
@@ -328,10 +393,9 @@ class AttendanceController extends ApiController
         $attendanceSession->load(['choir', 'performance', 'rehearsal', 'creator']);
         $records = $attendanceSession->attendanceRecords()->with(['member.voiceSection', 'marker'])->get();
 
-        // Load active choir members exclusively belonging to this choir
-        $members = $choir->members()
+        // Load the current active roster for this choir only.
+        $members = $this->currentMembers($choir)
             ->with(['voiceSection', 'user'])
-            ->where('status', 'active')
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get();
@@ -445,8 +509,8 @@ class AttendanceController extends ApiController
         }
 
         // Validate member belongs to this choir
-        $member = Member::where('id', $request->member_id)
-            ->where('choir_id', $choir->id)
+        $member = $this->currentMembers($choir)
+            ->where('members.id', $request->member_id)
             ->first();
 
         if (! $member) {
@@ -489,7 +553,7 @@ class AttendanceController extends ApiController
             ]
         );
 
-        $totalMembers = $choir->members()->where('status', 'active')->count();
+        $totalMembers = $this->currentMembers($choir)->count();
         $counts = $this->sessionCounts($session, $totalMembers);
 
         return $this->ok([
@@ -542,7 +606,7 @@ class AttendanceController extends ApiController
         $record->check_out_at = $checkOutTime;
         $record->save();
 
-        $totalMembers = $choir->members()->where('status', 'active')->count();
+        $totalMembers = $this->currentMembers($choir)->count();
         $counts = $this->sessionCounts($session, $totalMembers);
 
         return $this->ok([
@@ -580,8 +644,8 @@ class AttendanceController extends ApiController
         }
 
         // Validate member belongs to choir
-        $member = Member::where('id', $request->member_id)
-            ->where('choir_id', $choir->id)
+        $member = $this->currentMembers($choir)
+            ->where('members.id', $request->member_id)
             ->first();
 
         if (! $member) {
@@ -628,7 +692,7 @@ class AttendanceController extends ApiController
             }
         }
 
-        $totalMembers = $choir->members()->where('status', 'active')->count();
+        $totalMembers = $this->currentMembers($choir)->count();
         $counts = $this->sessionCounts($session, $totalMembers);
 
         return $this->ok([
@@ -667,7 +731,7 @@ class AttendanceController extends ApiController
         }
 
         $action = $request->action;
-        $activeMembers = $choir->members()->where('status', 'active')->get();
+        $activeMembers = $this->currentMembers($choir)->get();
         $now = Carbon::now();
 
         DB::transaction(function () use ($action, $session, $choir, $activeMembers, $user, $now) {
@@ -745,9 +809,8 @@ class AttendanceController extends ApiController
 
         $totalSessions = AttendanceSession::where('choir_id', $choir->id)->count();
 
-        $members = $choir->members()
+        $members = $this->currentMembers($choir)
             ->with(['voiceSection', 'attendanceRecords' => fn ($q) => $q->where('choir_id', $choir->id)])
-            ->where('status', 'active')
             ->orderBy('first_name')
             ->get();
 

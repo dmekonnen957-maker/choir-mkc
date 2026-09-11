@@ -80,12 +80,20 @@ class UserController extends ApiController
 
         // Assign choir
         if ($choirId) {
-            $user->choirs()->sync([
-                $choirId => [
-                    'is_primary_leader' => ($roleName === 'team_leader'),
-                    'status' => 'active',
-                ],
-            ]);
+            $choir = Choir::find($choirId);
+
+            if ($choir) {
+                $user->choirs()->sync([
+                    $choir->id => [
+                        'is_primary_leader' => ($roleName === 'team_leader'),
+                        'status' => 'active',
+                    ],
+                ]);
+
+                // Keep the roster record in sync so the new member immediately
+                // appears on the Attendance page.
+                $this->syncMemberForChoir($user, $choir);
+            }
         }
 
         return $this->ok(UserResource::make($user->load('roles', 'choirs', 'approvedBy')), 'Created', 201);
@@ -156,32 +164,65 @@ class UserController extends ApiController
                         ],
                     ]);
 
-                    // Update or create linked Member record
-                    $nameParts = explode(' ', $user->name, 2);
-                    $firstName = $nameParts[0] ?? $user->name;
-                    $lastName = $nameParts[1] ?? '';
-                    $codePrefix = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $choir->name ?? 'CHOIR'), 0, 3));
-                    $memberCode = $codePrefix . '-' . str_pad((string)$user->id, 4, '0', STR_PAD_LEFT);
-
-                    Member::updateOrCreate(
-                        ['user_id' => $user->id],
-                        [
-                            'choir_id' => $choir->id,
-                            'member_code' => $memberCode,
-                            'first_name' => $firstName,
-                            'last_name' => $lastName,
-                            'email' => $user->email,
-                            'phone' => $user->phone,
-                            'status' => 'active',
-                        ]
-                    );
+                    // Keep the roster record in sync (create or re-activate).
+                    $this->syncMemberForChoir($user, $choir);
                 }
+
+                // Any member records for choirs the user no longer belongs to
+                // must not appear in attendance or member counts anymore.
+                $this->deactivateMembersForRemovedChoirs($user);
             } else {
                 $user->choirs()->detach();
+
+                // The user is no longer assigned to any choir, so their linked
+                // roster records must not appear anywhere as active members.
+                Member::where('user_id', $user->id)
+                    ->where('status', 'active')
+                    ->update(['status' => 'inactive']);
             }
         }
 
         return $this->ok(UserResource::make($user->load('roles', 'permissions', 'choirs', 'approvedBy')), 'User updated successfully');
+    }
+
+    /**
+     * Create or reactivate the roster (Member) record that ties a user to a
+     * choir. Attendance is built from these active records, so a newly assigned
+     * user automatically appears on the Attendance page.
+     */
+    private function syncMemberForChoir(User $user, Choir $choir): void
+    {
+        $nameParts = explode(' ', $user->name, 2);
+        $firstName = $nameParts[0] ?? $user->name;
+        $lastName = $nameParts[1] ?? '';
+        $codePrefix = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $choir->name ?? 'CHOIR'), 0, 3));
+        $memberCode = $codePrefix . '-' . str_pad((string) $user->id, 4, '0', STR_PAD_LEFT);
+
+        Member::updateOrCreate(
+            ['user_id' => $user->id, 'choir_id' => $choir->id],
+            [
+                'member_code' => $memberCode,
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'status' => 'active',
+            ]
+        );
+    }
+
+    /**
+     * Soft-deactivate Member records for choirs the user is no longer assigned
+     * to (kept as "inactive" so historical attendance stays linked).
+     */
+    private function deactivateMembersForRemovedChoirs(User $user): void
+    {
+        $assignedChoirIds = $user->choirs()->pluck('choirs.id');
+
+        Member::where('user_id', $user->id)
+            ->where('status', 'active')
+            ->whereNotIn('choir_id', $assignedChoirIds)
+            ->update(['status' => 'inactive']);
     }
 
     public function approve(Request $request, User $user)
@@ -226,6 +267,9 @@ class UserController extends ApiController
 
         try {
             $user->tokens()->delete();
+            // Note: The UserObserver::deleting() event will automatically
+            // soft-delete any linked Member records, preserving attendance
+            // history while removing the member from the active roster.
             $user->delete();
         } catch (\Illuminate\Database\QueryException $e) {
             return $this->error(

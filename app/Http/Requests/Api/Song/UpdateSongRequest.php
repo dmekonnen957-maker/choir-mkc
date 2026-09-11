@@ -14,20 +14,21 @@ class UpdateSongRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'choir_id' => ['nullable', 'integer', 'exists:choirs,id'],
-            'title' => ['sometimes', 'required', 'string', 'max:255'],
-            'composer' => ['nullable', 'string', 'max:255'],
-            'artist' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'original_key' => ['sometimes', 'required', 'string', 'in:C,C#,D,D#,E,F,F#,G,G#,A,A#,B,Db,Eb,Gb,Ab,Bb'],
-            'scale' => ['sometimes', 'required', 'string', 'in:major,minor,ethiopian'],
-            'scale_mode' => ['nullable', 'string', 'max:60'],
-            'lyrics' => ['nullable', 'string'],
-            'is_published' => ['nullable', 'boolean'],
-            'audio' => ['nullable', 'file', 'mimes:mp3', 'max:15360'],
-            'remove_audio' => ['nullable', 'boolean'],
-            'cover_image' => ['nullable', 'image', 'max:5120'],
-            'remove_cover_image' => ['nullable', 'boolean'],
+            'choir_id'               => ['nullable', 'integer', 'exists:choirs,id'],
+            'title'                  => ['sometimes', 'required', 'string', 'max:255'],
+            'composer'               => ['nullable', 'string', 'max:255'],
+            'artist'                 => ['nullable', 'string', 'max:255'],
+            'description'            => ['nullable', 'string'],
+            'original_key'           => ['sometimes', 'required', 'string', 'in:C,C#,D,D#,E,F,F#,G,G#,A,A#,B,Db,Eb,Gb,Ab,Bb'],
+            'scale'                  => ['sometimes', 'required', 'string', 'in:tizita_major,tizita_minor,bati_major,bati_minor,ambassel_major,ambassel_minor,anchihoye,major,minor,ethiopian'],
+            'scale_mode'             => ['nullable', 'string', 'max:60'],
+            'lyrics'                 => ['nullable', 'string'],
+            'lyrics_visible_to_public' => ['nullable', 'boolean'],
+            'is_published'           => ['nullable', 'boolean'],
+            'audio'                  => ['nullable', 'file', 'mimes:mp3', 'max:15360'],
+            'remove_audio'           => ['nullable', 'boolean'],
+            'cover_image'            => ['nullable', 'image', 'max:5120'],
+            'remove_cover_image'     => ['nullable', 'boolean'],
         ];
     }
 

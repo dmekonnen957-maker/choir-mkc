@@ -48,6 +48,7 @@ import AdminPerformancesPage from './pages/admin/AdminPerformancesPage';
 import AdminRehearsalsPage from './pages/admin/AdminRehearsalsPage';
 import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 import MemberAttendancePage from './pages/member/MemberAttendancePage';
+import MemberChoirHistoryPage from './pages/member/MemberChoirHistoryPage';
 
 export default function App() {
     return (
@@ -134,6 +135,16 @@ export default function App() {
 
             {/* Member Area */}
             <Route
+                path="/member/choir-history"
+                element={
+                    <ProtectedRoute>
+                        <MemberLayout />
+                    </ProtectedRoute>
+                }
+            >
+                <Route index element={<MemberChoirHistoryPage />} />
+            </Route>
+            <Route
                 path="/member"
                 element={
                     <ProtectedRoute allowedRoles={['member']}>
@@ -151,7 +162,7 @@ export default function App() {
                 <Route path="performances" element={<MemberPerformancesPage />} />
                 <Route path="calendar" element={<MemberCalendarPage />} />
                 <Route path="attendance" element={<MemberAttendancePage />} />
-                <Route path="my-performances" element={<MemberPlaceholder title="My Performances" />} />
+                <Route path="my-performances" element={<MemberPerformancesPage />} />
                 <Route path="settings" element={<MemberSettings />} />
             </Route>
 

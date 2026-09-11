@@ -146,6 +146,7 @@ export default function AdminAttendancePage() {
     });
     const [members, setMembers] = useState([]);
     const [loadingSession, setLoadingSession] = useState(false);
+    const [sessionError, setSessionError] = useState('');
     const [savingMemberId, setSavingMemberId] = useState(null);
     const [isSyncing, setIsSyncing] = useState(false);
 
@@ -180,8 +181,8 @@ export default function AdminAttendancePage() {
     useEffect(() => {
         const fetchChoirs = async () => {
             try {
-                const res = await api.get('/public/choirs?per_page=100');
-                const items = res.data?.data?.items || res.data?.data || [];
+                const res = await api.get('/attendance/choirs');
+                const items = res.data?.data?.choirs || [];
                 setChoirs(items);
 
                 if (items.length > 0) {
@@ -196,9 +197,14 @@ export default function AdminAttendancePage() {
                         ? items.find((c) => c.id === primaryChoir.id) || items[0]
                         : items[0];
                     setSelectedChoirId(defaultChoir.id.toString());
+                } else {
+                    setSelectedChoirId('');
+                    setSelectedEventValue('');
+                    setMembers([]);
                 }
             } catch (err) {
-                showToast('error', 'Failed to load choirs list');
+                setSessionError(err.message || 'Failed to load your authorized choirs.');
+                showToast('error', err.message || 'Failed to load your authorized choirs.');
             }
         };
 
@@ -249,11 +255,18 @@ export default function AdminAttendancePage() {
         }
     }, [paramRehearsalId, paramPerformanceId, paramDate]);
 
+    // When choir changes: clear stale state immediately so old members/events
+    // are not shown while the new choir's data loads.
     useEffect(() => {
         if (selectedChoirId) {
+            setMembers([]);
+            setCurrentSession(null);
+            setSessionCounts({ total_members: 0, present: 0, late: 0, absent: 0, excused: 0, unmarked: 0, attendance_rate: 0 });
+            setSessionError('');
+            setSelectedEventValue('');
             fetchEvents(selectedChoirId);
         }
-    }, [selectedChoirId, fetchEvents]);
+    }, [selectedChoirId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // 3. Load or Initialize Attendance Session
     const loadSession = useCallback(async (isBackground = false) => {
@@ -261,6 +274,9 @@ export default function AdminAttendancePage() {
 
         if (!isBackground) {
             setLoadingSession(true);
+            setSessionError('');
+            setMembers([]);
+            setCurrentSession(null);
         } else {
             setIsSyncing(true);
         }
@@ -295,7 +311,14 @@ export default function AdminAttendancePage() {
             }
         } catch (err) {
             if (!isBackground) {
-                showToast('error', err.response?.data?.message || 'Failed to load attendance session');
+                const message =
+                    err.response?.data?.message ||
+                    err.response?.data?.error ||
+                    err.message ||
+                    'Failed to load attendance session.';
+                setSessionError(message);
+                setMembers([]);
+                showToast('error', message);
             }
         } finally {
             if (!isBackground) {
@@ -992,15 +1015,41 @@ export default function AdminAttendancePage() {
                             <LoadingSpinner size={32} className="text-blue-600" />
                             <p className="mt-3 text-sm font-semibold text-slate-500">Loading attendance roster...</p>
                         </div>
+                    ) : sessionError ? (
+                        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center">
+                            <AlertCircle size={32} className="mx-auto text-rose-500" />
+                            <h3 className="mt-2 text-base font-bold text-rose-800">Unable to load attendance roster</h3>
+                            <p className="mx-auto mt-1 max-w-xl text-sm text-rose-700">{sessionError}</p>
+                            <button
+                                type="button"
+                                onClick={() => loadSession(false)}
+                                className="mt-4 rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700"
+                            >
+                                Try Again
+                            </button>
+                        </div>
                     ) : filteredMembers.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center">
+                        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center px-6">
                             <Users size={40} className="text-slate-300" />
-                            <h3 className="mt-2 text-base font-bold text-slate-700">No members found</h3>
+                            <h3 className="mt-2 text-base font-bold text-slate-700">
+                                {searchQuery || statusFilter !== 'all' || sectionFilter !== 'all'
+                                    ? 'No members match your filters'
+                                    : 'No active members in this choir'}
+                            </h3>
                             <p className="text-xs text-slate-400 max-w-sm mt-1">
-                                {searchQuery || statusFilter !== 'all'
-                                    ? 'Try changing your search query or filter options.'
-                                    : 'No active members registered in this choir yet.'}
+                                {searchQuery || statusFilter !== 'all' || sectionFilter !== 'all'
+                                    ? 'Try clearing your search or filter options to see all roster members.'
+                                    : 'This choir currently has no active members. Add members from the Members section, then return here to take attendance.'}
                             </p>
+                            {(searchQuery || statusFilter !== 'all' || sectionFilter !== 'all') && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setSearchQuery(''); setStatusFilter('all'); setSectionFilter('all'); }}
+                                    className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+                                >
+                                    Clear Filters
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <>

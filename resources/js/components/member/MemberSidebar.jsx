@@ -19,6 +19,7 @@ import {
     BarChart3,
     History,
     ScrollText,
+    BookOpen,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useChoir } from '../../context/ChoirContext';
@@ -78,6 +79,7 @@ function getAdminNav(can) {
     items.push({
         title: 'Reports',
         items: [
+            { label: 'Choir History', to: '/member/choir-history', icon: BookOpen },
             { label: 'Reports', to: '/admin/reports', icon: BarChart3 },
             { label: 'Choir History', to: '/admin/choir-history', icon: History },
         ],
@@ -127,6 +129,7 @@ function getMemberNav(basePath, role, can) {
                     ? []
                     : [{ label: 'My Attendance', to: `${basePath}/attendance`, icon: CheckCircle2 }]),
                 { label: 'My Performances', to: `${basePath}/my-performances`, icon: ListMusic },
+                { label: 'Choir History', to: '/member/choir-history', icon: BookOpen },
             ],
         },
         {

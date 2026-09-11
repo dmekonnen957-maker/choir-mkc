@@ -15,9 +15,13 @@ const KEYS = [
 ];
 
 const SCALES = [
-    { value: 'major', label: 'Major' },
-    { value: 'minor', label: 'Minor' },
-    { value: 'ethiopian', label: 'Ethiopian (extensible)' },
+    { value: 'tizita_major', label: 'Tizita Major' },
+    { value: 'tizita_minor', label: 'Tizita Minor' },
+    { value: 'bati_major', label: 'Bati Major' },
+    { value: 'bati_minor', label: 'Bati Minor' },
+    { value: 'ambassel_major', label: 'Ambassel Major' },
+    { value: 'ambassel_minor', label: 'Ambassel Minor' },
+    { value: 'anchihoye', label: 'Anchihoye' },
 ];
 
 const EMPTY = {
@@ -45,7 +49,7 @@ function Section({ title, hint, children }) {
     );
 }
 
-export default function AdminSongFormPage({ mode = 'create' }) {
+export default function AdminSongFormPage({ mode = 'create', embedded = false, onSuccess, onCancel }) {
     const navigate = useNavigate();
     const { id } = useParams();
     const [form, setForm] = useState(EMPTY);
@@ -60,6 +64,9 @@ export default function AdminSongFormPage({ mode = 'create' }) {
     const [submitting, setSubmitting] = useState(false);
     const [loading, setLoading] = useState(mode === 'edit');
     const [error, setError] = useState('');
+    const scaleOptions = mode === 'edit' && form.scale && !SCALES.some((scale) => scale.value === form.scale)
+        ? [{ value: form.scale, label: `${form.scale} (existing)` }, ...SCALES]
+        : SCALES;
 
     const loadChoirs = useCallback(() => {
         api.get('/admin/choirs', { params: { per_page: 200 } })
@@ -122,12 +129,18 @@ export default function AdminSongFormPage({ mode = 'create' }) {
                 : api.post('/admin/songs', fd);
 
         req
-            .then((res) => navigate(`/admin/songs/${res.data.data.id}`))
-            .catch((err) => {
-                if (err.response?.status === 422) {
-                    setErrors(err.response.data.errors || {});
+            .then((res) => {
+                if (embedded && mode === 'create') {
+                    onSuccess?.(res.data.data);
                 } else {
-                    setError(err.response?.data?.message || 'Something went wrong.');
+                    navigate(`/admin/songs/${res.data.data.id}`);
+                }
+            })
+            .catch((err) => {
+                if (err.status === 422 || err.response?.status === 422) {
+                    setErrors(err.errors || err.response?.data?.errors || {});
+                } else {
+                    setError(err.message || err.response?.data?.message || 'Something went wrong.');
                 }
             })
             .finally(() => setSubmitting(false));
@@ -142,17 +155,21 @@ export default function AdminSongFormPage({ mode = 'create' }) {
     }
 
     return (
-        <div className="mx-auto max-w-2xl space-y-6">
-            <button
-                onClick={() => navigate(-1)}
-                className="inline-flex items-center gap-1 text-sm font-medium text-ink-500 hover:text-ink-700"
-            >
-                <ArrowLeft size={16} /> Back
-            </button>
+        <div className={embedded ? 'space-y-6' : 'mx-auto max-w-2xl space-y-6'}>
+            {!embedded && (
+                <>
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="inline-flex items-center gap-1 text-sm font-medium text-ink-500 hover:text-ink-700"
+                    >
+                        <ArrowLeft size={16} /> Back
+                    </button>
 
-            <h1 className="text-2xl font-bold tracking-tight text-ink-900">
-                {mode === 'edit' ? 'Edit Song' : 'New Song'}
-            </h1>
+                    <h1 className="text-2xl font-bold tracking-tight text-ink-900">
+                        {mode === 'edit' ? 'Edit Song' : 'New Song'}
+                    </h1>
+                </>
+            )}
 
             {error && <Alert variant="error">{error}</Alert>}
 
@@ -243,7 +260,7 @@ export default function AdminSongFormPage({ mode = 'create' }) {
                                     onChange={(e) => update('scale', e.target.value)}
                                 >
                                     <option value="">Select scale</option>
-                                    {SCALES.map((s) => (
+                                    {scaleOptions.map((s) => (
                                         <option key={s.value} value={s.value}>
                                             {s.label}
                                         </option>
@@ -368,7 +385,7 @@ export default function AdminSongFormPage({ mode = 'create' }) {
                 </Card>
 
                 <div className="flex justify-end gap-3 pt-2">
-                    <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
+                    <Button type="button" variant="ghost" onClick={onCancel || (() => navigate(-1))}>
                         Cancel
                     </Button>
                     <Button type="submit" disabled={submitting}>

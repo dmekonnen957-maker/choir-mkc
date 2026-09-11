@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\GalleryController;
 use App\Http\Controllers\Api\MemberController;
+use App\Http\Controllers\Api\MemberChoirHistoryController;
 use App\Http\Controllers\Api\AdminMemberController;
 use App\Http\Controllers\Api\AdminSettingController;
 use App\Http\Controllers\Api\NotificationController;
@@ -159,6 +160,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Attendance Management routes (accessible to admins, team leaders with choir authorization)
     Route::prefix('attendance')->group(function () {
+        Route::get('/choirs', [AttendanceController::class, 'choirs']);
         Route::get('/events', [AttendanceController::class, 'events']);
         Route::get('/sessions', [AttendanceController::class, 'sessions']);
         Route::post('/sessions/find-or-create', [AttendanceController::class, 'findOrCreateSession']);
@@ -202,6 +204,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/songs', [MemberController::class, 'songs']);
         Route::post('/songs', [MemberController::class, 'submitSong']);
         Route::get('/calendar', [MemberController::class, 'calendar']);
+    });
+
+    // Protected choir history. The controller authorizes assigned members and
+    // management permissions without exposing history through public routes.
+    Route::prefix('member/choir-history')->name('member.choir-history.')->group(function () {
+        Route::get('/', [MemberChoirHistoryController::class, 'show'])->name('show');
+        Route::put('/', [MemberChoirHistoryController::class, 'update'])->name('update');
+        Route::post('/photos', [MemberChoirHistoryController::class, 'storePhoto'])->name('photos.store');
+        Route::put('/photos/{galleryItem}', [MemberChoirHistoryController::class, 'replacePhoto'])->name('photos.replace');
+        Route::delete('/photos/{galleryItem}', [MemberChoirHistoryController::class, 'destroyPhoto'])->name('photos.destroy');
+        Route::get('/photos/{galleryItem}/file', [MemberChoirHistoryController::class, 'photo'])->name('photo');
     });
 
     // Team Leader area

@@ -71,7 +71,10 @@ class PublicController extends ApiController
     public function songs(Request $request, Choir $choir): \Illuminate\Http\JsonResponse
     {
         return $this->paginate(
-            $choir->songs()->where('is_published', true)->where('status', 'approved')->with('songCategory'),
+            $choir->songs()
+                ->where('is_published', true)
+                ->where('status', 'approved')
+                ->with('songCategory'),
             SongResource::class
         );
     }
@@ -82,10 +85,14 @@ class PublicController extends ApiController
             abort(404);
         }
 
-        return $this->ok(new SongResource($song->load([
-            'songCategory',
-            'lyrics' => fn ($q) => $q->where('is_published', true),
-        ])));
+        // Only load published lyric records when lyrics are publicly allowed
+        $lyricsRelation = $song->lyrics_visible_to_public
+            ? ['lyrics' => fn ($q) => $q->where('is_published', true)]
+            : [];
+
+        return $this->ok(new SongResource($song->load(
+            array_merge(['songCategory'], $lyricsRelation)
+        )));
     }
 
     public function allSongs(Request $request): \Illuminate\Http\JsonResponse
@@ -127,7 +134,7 @@ class PublicController extends ApiController
             $q->latest();
         }
 
-        return $this->paginate($q, SongResource::class);
+        return $this->paginate($q, SongResource::class, 16);
     }
 
     public function publicSongDetail(Request $request, Song $song): \Illuminate\Http\JsonResponse
@@ -136,11 +143,14 @@ class PublicController extends ApiController
             abort(404);
         }
 
-        return $this->ok(new SongResource($song->load([
-            'choir:id,name',
-            'songCategory',
-            'lyrics' => fn ($q) => $q->where('is_published', true),
-        ])));
+        // Only load published lyric records when lyrics are publicly allowed
+        $lyricsRelation = $song->lyrics_visible_to_public
+            ? ['lyrics' => fn ($q) => $q->where('is_published', true)]
+            : [];
+
+        return $this->ok(new SongResource($song->load(
+            array_merge(['choir:id,name', 'songCategory'], $lyricsRelation)
+        )));
     }
 
     public function allPerformances(Request $request): \Illuminate\Http\JsonResponse
@@ -153,7 +163,13 @@ class PublicController extends ApiController
             ->whereNotIn('status', ['cancelled'])
             ->with([
                 'choir:id,name,description,logo_path',
-                'songs:id,title,composer,artist,original_key,scale,lyrics,cover_image_path',
+                // Select only public-safe columns from songs — deliberately excludes 'lyrics'
+                'songs' => function ($q) {
+                    $q->select(
+                        'songs.id', 'songs.title', 'songs.composer', 'songs.artist',
+                        'songs.original_key', 'songs.scale', 'songs.cover_image_path'
+                    );
+                },
             ]);
 
         if ($request->filled('choir_id')) {
@@ -181,7 +197,7 @@ class PublicController extends ApiController
         // Always sort nearest upcoming date first, then earliest start_time
         $q->orderBy('date', 'asc')->orderBy('start_time', 'asc');
 
-        return $this->paginate($q, PerformanceResource::class);
+        return $this->paginate($q, PerformanceResource::class, 12);
     }
 
     public function publicPerformanceDetail(Request $request, Performance $performance): \Illuminate\Http\JsonResponse
@@ -192,8 +208,13 @@ class PublicController extends ApiController
 
         return $this->ok(new PerformanceResource($performance->load([
             'choir:id,name,description,logo_path',
+            // Only load published songs; do NOT include raw lyrics field
             'songs' => function ($q) {
-                $q->where('is_published', true);
+                $q->where('is_published', true)
+                  ->select(
+                      'songs.id', 'songs.title', 'songs.composer', 'songs.artist',
+                      'songs.original_key', 'songs.scale', 'songs.cover_image_path'
+                  );
             },
         ])));
     }

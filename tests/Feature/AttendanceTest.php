@@ -130,6 +130,22 @@ class AttendanceTest extends TestCase
         $memberIds = collect($response->json('data.members'))->pluck('member_id')->all();
         $this->assertContains($this->memberRecordA->id, $memberIds);
         $this->assertNotContains($memberB->id, $memberIds);
+
+        $inactiveMember = Member::create([
+            'choir_id' => $this->choirA->id,
+            'first_name' => 'Inactive',
+            'last_name' => 'Member',
+            'member_code' => 'IM-003',
+            'status' => 'inactive',
+        ]);
+
+        $reload = $this->postJson('/api/attendance/sessions/find-or-create', [
+            'choir_id' => $this->choirA->id,
+            'session_date' => Carbon::tomorrow()->toDateString(),
+        ]);
+
+        $reload->assertStatus(200);
+        $this->assertNotContains($inactiveMember->id, collect($reload->json('data.members'))->pluck('member_id')->all());
     }
 
     /**
@@ -362,6 +378,27 @@ class AttendanceTest extends TestCase
         $checkInB->assertStatus(403);
     }
 
+    public function test_team_leader_column_assignment_loads_only_led_choir(): void
+    {
+        $this->choirA->update(['team_leader_id' => $this->leaderA->id]);
+        $this->leaderA->choirs()->detach($this->choirA->id);
+
+        Sanctum::actingAs($this->leaderA, ['*']);
+
+        $choirs = $this->getJson('/api/attendance/choirs');
+        $choirs->assertOk();
+        $choirs->assertJsonFragment(['id' => $this->choirA->id, 'name' => $this->choirA->name]);
+        $choirs->assertJsonMissing(['id' => $this->choirB->id, 'name' => $this->choirB->name]);
+
+        $session = $this->postJson('/api/attendance/sessions/find-or-create', [
+            'choir_id' => $this->choirA->id,
+            'session_date' => Carbon::today()->toDateString(),
+        ]);
+
+        $session->assertOk();
+        $session->assertJsonFragment(['member_id' => $this->memberRecordA->id]);
+    }
+
     /**
      * TEST 12: Admin can access all choirs.
      */
@@ -374,5 +411,256 @@ class AttendanceTest extends TestCase
 
         $eventsB = $this->getJson("/api/attendance/events?choir_id={$this->choirB->id}");
         $eventsB->assertStatus(200);
+    }
+
+    /**
+     * Create a fresh approved user + active roster record + active pivot for a
+     * choir. Each call uses a unique email so tests are idempotent.
+     *
+     * @return array{0: User, 1: Member}
+     */
+    private function createUserInChoir(Choir $choir, string $prefix = 'member'): array
+    {
+        $suffix = uniqid();
+        $user = User::create([
+            'name' => ucfirst($prefix) . ' Member ' . $suffix,
+            'email' => strtolower($prefix) . '.' . $suffix . '@test.local',
+            'password' => bcrypt('password123'),
+            'role' => 'member',
+            'status' => User::STATUS_APPROVED,
+        ]);
+        $user->assignRole('member');
+        $user->choirs()->syncWithoutDetaching([$choir->id => ['status' => 'active']]);
+
+        $member = Member::updateOrCreate(
+            ['user_id' => $user->id, 'choir_id' => $choir->id],
+            [
+                'member_code' => strtoupper(substr($prefix, 0, 3)) . '-' . $suffix,
+                'first_name' => ucfirst($prefix),
+                'last_name' => 'Member',
+                'status' => 'active',
+            ]
+        );
+
+        return [$user, $member];
+    }
+
+    private function rosterIds($response): array
+    {
+        $response->assertStatus(200);
+
+        return collect($response->json('data.members'))->pluck('member_id')->all();
+    }
+
+    /**
+     * Log the user in and return bearer auth headers so admin routes resolve
+     * through the real Sanctum token flow (Spatie role/permission middleware
+     * requires it in this test suite).
+     */
+    private function loginAs(User $user): array
+    {
+        $res = $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ]);
+        $res->assertStatus(200);
+
+        return ['Authorization' => 'Bearer ' . $res->json('data.token')];
+    }
+
+    /**
+     * TEST B: A newly added member appears automatically in attendance.
+     */
+    public function test_new_member_appears_automatically_in_attendance(): void
+    {
+        Sanctum::actingAs($this->admin, ['*']);
+
+        [$user, $member] = $this->createUserInChoir($this->choirA, 'newbie');
+
+        $roster = $this->postJson('/api/attendance/sessions/find-or-create', [
+            'choir_id' => $this->choirA->id,
+            'session_date' => Carbon::today()->addDays(30)->toDateString(),
+            'event_type' => 'service',
+            'title' => 'Auto Member Test',
+        ]);
+
+        $this->assertContains($member->id, $this->rosterIds($roster));
+    }
+
+    /**
+     * TEST C/E: A deleted (soft-deleted) member disappears from new attendance
+     * while their previous attendance records remain in history.
+     */
+    public function test_deleted_member_excluded_from_roster_but_history_remains(): void
+    {
+        Sanctum::actingAs($this->admin, ['*']);
+
+        [$user, $member] = $this->createUserInChoir($this->choirA, 'ghost');
+
+        $date = Carbon::today()->addDays(31)->toDateString();
+        $session = AttendanceSession::firstOrCreate(
+            ['choir_id' => $this->choirA->id, 'session_date' => $date, 'event_type' => 'service', 'title' => 'Ghost History Test'],
+            ['status' => 'open', 'created_by' => $this->admin->id]
+        );
+
+        AttendanceRecord::updateOrCreate(
+            ['attendance_session_id' => $session->id, 'member_id' => $member->id],
+            ['choir_id' => $this->choirA->id, 'status' => 'present', 'marked_by' => $this->admin->id]
+        );
+
+        $before = $this->postJson('/api/attendance/sessions/find-or-create', [
+            'choir_id' => $this->choirA->id,
+            'session_date' => $date,
+            'event_type' => 'service',
+            'title' => 'Ghost History Test',
+        ]);
+        $this->assertContains($member->id, $this->rosterIds($before));
+
+        // Soft-delete the member (exactly what UserObserver does on user delete).
+        $member->delete();
+
+        $after = $this->postJson('/api/attendance/sessions/find-or-create', [
+            'choir_id' => $this->choirA->id,
+            'session_date' => Carbon::today()->addDays(32)->toDateString(),
+            'event_type' => 'service',
+            'title' => 'Ghost History Test',
+        ]);
+        $this->assertNotContains($member->id, $this->rosterIds($after));
+
+        // Historical attendance record must remain untouched.
+        $this->assertDatabaseHas('attendance_records', [
+            'attendance_session_id' => $session->id,
+            'member_id' => $member->id,
+            'status' => 'present',
+        ]);
+    }
+
+    /**
+     * TEST C/D/E: Deleting a user removes them from new attendance (via the
+     * UserObserver soft-deleting the linked Member) while history survives.
+     */
+    public function test_deleted_user_removed_from_roster_but_history_remains(): void
+    {
+        Permission::firstOrCreate(['name' => 'users.delete', 'guard_name' => 'api']);
+        $this->admin->syncRoles(['admin']);
+        $this->admin->givePermissionTo('users.delete');
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $headers = $this->loginAs($this->admin);
+
+        [$user, $member] = $this->createUserInChoir($this->choirA, 'doomed');
+
+        $date = Carbon::today()->addDays(33)->toDateString();
+        $session = AttendanceSession::firstOrCreate(
+            ['choir_id' => $this->choirA->id, 'session_date' => $date, 'event_type' => 'service', 'title' => 'Doomed User History'],
+            ['status' => 'open', 'created_by' => $this->admin->id]
+        );
+
+        AttendanceRecord::updateOrCreate(
+            ['attendance_session_id' => $session->id, 'member_id' => $member->id],
+            ['choir_id' => $this->choirA->id, 'status' => 'late', 'marked_by' => $this->admin->id]
+        );
+
+        $before = $this->withHeaders($headers)->postJson('/api/attendance/sessions/find-or-create', [
+            'choir_id' => $this->choirA->id,
+            'session_date' => $date,
+            'event_type' => 'service',
+            'title' => 'Doomed User History',
+        ]);
+        $this->assertContains($member->id, $this->rosterIds($before));
+
+        // Delete the user account through the admin API.
+        $deleted = $this->withHeaders($headers)->deleteJson("/api/admin/users/{$user->id}");
+        $deleted->assertOk();
+
+        $after = $this->withHeaders($headers)->postJson('/api/attendance/sessions/find-or-create', [
+            'choir_id' => $this->choirA->id,
+            'session_date' => Carbon::today()->addDays(34)->toDateString(),
+            'event_type' => 'service',
+            'title' => 'Doomed User History',
+        ]);
+        $this->assertNotContains($member->id, $this->rosterIds($after));
+
+        $this->assertDatabaseHas('attendance_records', [
+            'attendance_session_id' => $session->id,
+            'member_id' => $member->id,
+            'status' => 'late',
+        ]);
+    }
+
+    /**
+     * TEST (2): A member removed from the choir no longer appears for new
+     * attendance.
+     */
+    public function test_member_removed_from_choir_excluded_from_roster(): void
+    {
+        $headers = $this->loginAs($this->admin);
+
+        [$user, $member] = $this->createUserInChoir($this->choirA, 'leave');
+
+        $before = $this->withHeaders($headers)->postJson('/api/attendance/sessions/find-or-create', [
+            'choir_id' => $this->choirA->id,
+            'session_date' => Carbon::today()->addDays(35)->toDateString(),
+            'event_type' => 'service',
+            'title' => 'Left Choir Test',
+        ]);
+        $this->assertContains($member->id, $this->rosterIds($before));
+
+        // Admin edits the user and removes the choir assignment.
+        $this->withHeaders($headers)
+            ->putJson("/api/admin/users/{$user->id}", ['choir_id' => null])
+            ->assertOk();
+
+        $this->assertDatabaseMissing('choir_user', ['user_id' => $user->id, 'choir_id' => $this->choirA->id]);
+        $this->assertSame('inactive', Member::withTrashed()->find($member->id)?->status);
+
+        $after = $this->withHeaders($headers)->postJson('/api/attendance/sessions/find-or-create', [
+            'choir_id' => $this->choirA->id,
+            'session_date' => Carbon::today()->addDays(36)->toDateString(),
+            'event_type' => 'service',
+            'title' => 'Left Choir Test',
+        ]);
+        $this->assertNotContains($member->id, $this->rosterIds($after));
+    }
+
+    /**
+     * TEST B (admin flow): Creating a user through the admin Users API with a
+     * choir assignment automatically creates the roster record and the new
+     * member appears in attendance.
+     */
+    public function test_admin_created_user_with_choir_appears_in_attendance(): void
+    {
+        $headers = $this->loginAs($this->admin);
+
+        $suffix = uniqid();
+        $response = $this->withHeaders($headers)->postJson('/api/admin/users', [
+            'name' => 'Fresh Member',
+            'email' => 'fresh.' . $suffix . '@test.local',
+            'phone' => '+2519' . random_int(10000000, 99999999),
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'role' => 'member',
+            'status' => 'approved',
+            'choir_id' => $this->choirA->id,
+        ]);
+
+        $response->assertStatus(201);
+
+        $userId = $response->json('data.id');
+        $member = Member::where('user_id', $userId)
+            ->where('choir_id', $this->choirA->id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        $this->assertNotNull($member, 'A roster record must be auto-created when a user is assigned to a choir.');
+
+        $roster = $this->withHeaders($headers)->postJson('/api/attendance/sessions/find-or-create', [
+            'choir_id' => $this->choirA->id,
+            'session_date' => Carbon::today()->addDays(37)->toDateString(),
+            'event_type' => 'service',
+            'title' => 'Fresh Admin User Test',
+        ]);
+
+        $this->assertContains($member->id, $this->rosterIds($roster));
     }
 }

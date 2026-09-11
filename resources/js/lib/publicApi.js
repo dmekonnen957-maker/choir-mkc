@@ -88,6 +88,38 @@ export async function fetchAllPerformances(params = {}) {
     return lists.flat();
 }
 
+export async function fetchPaginatedSongs(params = {}) {
+    try {
+        const res = await api.get('/public/songs', { params });
+        const data = res.data?.data;
+        return {
+            items: Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []),
+            pagination: data?.pagination || { current_page: 1, last_page: 1, per_page: 16, total: 0 }
+        };
+    } catch {
+        return {
+            items: [],
+            pagination: { current_page: 1, last_page: 1, per_page: 16, total: 0 }
+        };
+    }
+}
+
+export async function fetchPaginatedPerformances(params = {}) {
+    try {
+        const res = await api.get('/public/performances', { params });
+        const data = res.data?.data;
+        return {
+            items: Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []),
+            pagination: data?.pagination || { current_page: 1, last_page: 1, per_page: 12, total: 0 }
+        };
+    } catch {
+        return {
+            items: [],
+            pagination: { current_page: 1, last_page: 1, per_page: 12, total: 0 }
+        };
+    }
+}
+
 export async function fetchPublicPerformance(id) {
     try {
         const res = await api.get(`/public/performances/${id}`);

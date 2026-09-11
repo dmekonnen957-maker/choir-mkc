@@ -1,11 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-    Users,
     Music2,
     CalendarDays,
     CalendarClock,
-    Building2,
     Activity,
     CheckCircle2,
     ChevronRight,
@@ -351,23 +349,7 @@ export default function AdminDashboard() {
             ) : (
                 <>
                     {/* 1. KEY METRIC STAT CARDS */}
-                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-                        {!isSpecificChoir && (
-                            <ModernStatCard
-                                icon={Building2}
-                                label="Total Choirs"
-                                value={counts.choirs ?? choirs.length}
-                                subtext="Active ministries"
-                                color="blue"
-                            />
-                        )}
-                        <ModernStatCard
-                            icon={Users}
-                            label="Active Members"
-                            value={counts.members ?? 0}
-                            subtext={isSpecificChoir ? 'In this choir' : 'Across all choirs'}
-                            color="emerald"
-                        />
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                         <ModernStatCard
                             icon={Music2}
                             label="Total Songs"

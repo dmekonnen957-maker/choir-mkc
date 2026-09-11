@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useChoir } from '../../context/ChoirContext';
 import { api } from '../../axios';
@@ -28,6 +28,7 @@ import Button from '../../components/ui/Button';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Alert from '../../components/ui/Alert';
 import Modal from '../../components/ui/Modal';
+import AdminSongFormPage from './AdminSongFormPage';
 
 export default function AdminSongsPage() {
     const { can } = useAuth();
@@ -48,6 +49,7 @@ export default function AdminSongsPage() {
     const [rejecting, setRejecting] = useState(false);
     const [toReview, setToReview] = useState(null);
     const [approvingId, setApprovingId] = useState(null);
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
     const [toast, setToast] = useState(null);
     const [playingId, setPlayingId] = useState(null);
@@ -203,12 +205,13 @@ export default function AdminSongsPage() {
                     <p className="text-sm text-ink-500">Review member submissions, approve songs, and manage choir music</p>
                 </div>
                 {can('songs.create') && (
-                    <Link
-                        to="/admin/songs/new"
+                    <button
+                        type="button"
+                        onClick={() => setShowCreateModal(true)}
                         className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition"
                     >
                         <Plus className="h-4 w-4" /> Add Song
-                    </Link>
+                    </button>
                 )}
             </div>
 
@@ -224,6 +227,24 @@ export default function AdminSongsPage() {
                     </Button>
                 </div>
             )}
+
+            <Modal
+                open={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                title="Create New Song"
+                size="full"
+            >
+                <AdminSongFormPage
+                    mode="create"
+                    embedded
+                    onCancel={() => setShowCreateModal(false)}
+                    onSuccess={(song) => {
+                        setShowCreateModal(false);
+                        setToast({ variant: 'success', message: `"${song.title}" created successfully.` });
+                        load();
+                    }}
+                />
+            </Modal>
 
             {/* Status Tabs */}
             <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">

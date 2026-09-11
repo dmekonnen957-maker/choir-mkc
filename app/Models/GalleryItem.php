@@ -21,6 +21,7 @@ class GalleryItem extends Model
         'event_date',
         'performance_id',
         'is_public',
+        'is_history',
         'uploaded_by',
     ];
 
@@ -29,6 +30,7 @@ class GalleryItem extends Model
         return [
             'event_date' => 'date',
             'is_public' => 'boolean',
+            'is_history' => 'boolean',
         ];
     }
 

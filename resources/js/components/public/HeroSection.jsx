@@ -45,7 +45,7 @@ export default function HeroSection({ featuredChoir = null, choirs = [] }) {
             ctaText: "EXPLORE CHOIR",
             ctaLink: `/choirs/${choir.id || ''}`,
             badge: "Worship Team",
-            image: choir.logo_path || choir.cover_path,
+            image: choir.logo_path || choir.cover_path || DEFAULT_SLIDES[idx % DEFAULT_SLIDES.length].image,
         }))
         : DEFAULT_SLIDES;
 

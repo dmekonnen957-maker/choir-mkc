@@ -67,6 +67,7 @@ class SongController extends ApiController
         $song->scale = $data['scale'] ?? null;
         $song->scale_mode = $data['scale_mode'] ?? null;
         $song->lyrics = $data['lyrics'] ?? null;
+        $song->lyrics_visible_to_public = $request->boolean('lyrics_visible_to_public', true);
         $song->created_by = $user->id;
 
         if ($isAdmin) {
@@ -248,6 +249,10 @@ class SongController extends ApiController
         }
         if ($request->has('is_published')) {
             $song->is_published = $request->boolean('is_published');
+        }
+
+        if ($request->has('lyrics_visible_to_public')) {
+            $song->lyrics_visible_to_public = $request->boolean('lyrics_visible_to_public');
         }
 
         if ($request->hasFile('audio')) {

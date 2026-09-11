@@ -264,27 +264,40 @@ class MemberController extends ApiController
 
     public function notifications(Request $request): \Illuminate\Http\JsonResponse
     {
-        $user = $request->user();
+        $user    = $request->user();
+        $perPage = min((int) $request->input('per_page', 20), 50);
 
-        $notifications = Notification::query()
+        $paginated = Notification::query()
             ->where('notifiable_type', $user->getMorphClass())
             ->where('notifiable_id', $user->id)
             ->orderByDesc('created_at')
-            ->take(20)
-            ->get()
-            ->map(function ($notification) {
-                return [
-                    'id' => $notification->id,
-                    'type' => $notification->type,
-                    'data' => $notification->data,
-                    'read_at' => $notification->read_at,
-                    'created_at' => $notification->created_at,
-                ];
-            });
+            ->paginate($perPage);
+
+        $items = collect($paginated->items())->map(function ($notification) {
+            return [
+                'id'         => $notification->id,
+                'type'       => $notification->type,
+                'data'       => $notification->data,
+                'read_at'    => $notification->read_at,
+                'created_at' => $notification->created_at,
+            ];
+        });
+
+        $unreadCount = Notification::where('notifiable_type', $user->getMorphClass())
+            ->where('notifiable_id', $user->id)
+            ->whereNull('read_at')
+            ->count();
 
         return $this->ok([
-            'notifications' => $notifications,
-            'unread_count' => $notifications->whereNull('read_at')->count(),
+            'notifications' => $items,
+            'items'         => $items,
+            'pagination'    => [
+                'current_page' => $paginated->currentPage(),
+                'last_page'    => $paginated->lastPage(),
+                'per_page'     => $paginated->perPage(),
+                'total'        => $paginated->total(),
+            ],
+            'unread_count'  => $unreadCount,
         ]);
     }
 
@@ -496,7 +509,7 @@ class MemberController extends ApiController
     }
 
     /**
-     * Return the songs belonging to the member's choir.
+     * Return the songs belonging to the member's choir, paginated.
      * The choir is derived from the authenticated user — never from request input.
      */
     public function songs(Request $request): \Illuminate\Http\JsonResponse
@@ -506,59 +519,89 @@ class MemberController extends ApiController
 
         if (! $choir) {
             return $this->ok([
-                'has_choir' => false,
-                'choir'     => null,
-                'songs'     => [],
-                'my_submissions' => [],
+                'has_choir'      => false,
+                'choir'          => null,
+                'songs'          => ['items' => [], 'pagination' => ['current_page' => 1, 'last_page' => 1, 'per_page' => 20, 'total' => 0]],
+                'my_submissions' => ['items' => [], 'pagination' => ['current_page' => 1, 'last_page' => 1, 'per_page' => 15, 'total' => 0]],
             ]);
         }
 
-        $songs = $choir->songs()
+        $search         = trim($request->input('search', ''));
+        $songsPage      = max(1, (int) $request->input('songs_page', 1));
+        $submissionsPage = max(1, (int) $request->input('submissions_page', 1));
+
+        // ── Approved choir songs (library) ────────────────────────────────
+        $songsQuery = $choir->songs()
             ->with('choir')
             ->where('status', 'approved')
             ->where('is_published', true)
-            ->orderBy('title')
-            ->get()
-            ->map(fn ($s) => [
-                'id'               => $s->id,
-                'title'            => $s->title,
-                'artist'           => $s->artist,
-                'composer'         => $s->composer,
-                'description'      => $s->description,
-                'original_key'     => $s->original_key,
-                'has_lyrics'       => (bool) $s->lyrics,
-                'lyrics'           => $s->lyrics,
-                'has_audio'        => (bool) $s->audio_path || (bool) $s->audio_url,
-                'audio_url'        => $s->audio_url ?? ($s->audio_path ? '/storage/' . ltrim($s->audio_path, '/') : null),
-                'cover_url'        => $s->cover_image_path ? (str_starts_with($s->cover_image_path, 'http') ? $s->cover_image_path : '/storage/' . ltrim($s->cover_image_path, '/')) : null,
-                'is_published'     => $s->is_published,
-                'status'           => $s->status,
-                'choir'            => ['id' => $choir->id, 'name' => $choir->name],
-                'created_at'       => $s->created_at,
-            ]);
+            ->orderBy('title');
 
-        $mySubmissions = Song::where('created_by', $user->id)
+        if ($search !== '') {
+            $songsQuery->where(function ($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%')
+                  ->orWhere('artist', 'like', '%' . $search . '%')
+                  ->orWhere('composer', 'like', '%' . $search . '%');
+            });
+        }
+
+        $songsPaginated = $songsQuery->paginate(20, ['*'], 'songs_page', $songsPage);
+
+        $songItems = collect($songsPaginated->items())->map(fn ($s) => [
+            'id'           => $s->id,
+            'title'        => $s->title,
+            'artist'       => $s->artist,
+            'composer'     => $s->composer,
+            'description'  => $s->description,
+            'original_key' => $s->original_key,
+            'has_lyrics'   => (bool) $s->lyrics,
+            'lyrics'       => $s->lyrics,
+            'has_audio'    => (bool) $s->audio_path || (bool) $s->audio_url,
+            'audio_url'    => $s->audio_url ?? ($s->audio_path ? '/storage/' . ltrim($s->audio_path, '/') : null),
+            'cover_url'    => $s->cover_image_path
+                ? (str_starts_with($s->cover_image_path, 'http') ? $s->cover_image_path : '/storage/' . ltrim($s->cover_image_path, '/'))
+                : null,
+            'is_published' => $s->is_published,
+            'status'       => $s->status,
+            'choir'        => ['id' => $choir->id, 'name' => $choir->name],
+            'created_at'   => $s->created_at,
+        ]);
+
+        // ── Member's own submissions ───────────────────────────────────────
+        $submissionsQuery = Song::where('created_by', $user->id)
             ->with('choir')
-            ->latest()
-            ->get()
-            ->map(fn ($s) => [
-                'id'               => $s->id,
-                'title'            => $s->title,
-                'artist'           => $s->artist,
-                'composer'         => $s->composer,
-                'description'      => $s->description,
-                'original_key'     => $s->original_key,
-                'has_lyrics'       => (bool) $s->lyrics,
-                'lyrics'           => $s->lyrics,
-                'has_audio'        => (bool) $s->audio_path || (bool) $s->audio_url,
-                'audio_url'        => $s->audio_url ?? ($s->audio_path ? '/storage/' . ltrim($s->audio_path, '/') : null),
-                'cover_url'        => $s->cover_image_path ? (str_starts_with($s->cover_image_path, 'http') ? $s->cover_image_path : '/storage/' . ltrim($s->cover_image_path, '/')) : null,
-                'is_published'     => $s->is_published,
-                'status'           => $s->status,
-                'rejection_reason' => $s->rejection_reason,
-                'choir'            => $s->choir ? ['id' => $s->choir->id, 'name' => $s->choir->name] : null,
-                'created_at'       => $s->created_at,
-            ]);
+            ->latest();
+
+        if ($search !== '') {
+            $submissionsQuery->where(function ($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%')
+                  ->orWhere('artist', 'like', '%' . $search . '%')
+                  ->orWhere('composer', 'like', '%' . $search . '%');
+            });
+        }
+
+        $submissionsPaginated = $submissionsQuery->paginate(15, ['*'], 'submissions_page', $submissionsPage);
+
+        $submissionItems = collect($submissionsPaginated->items())->map(fn ($s) => [
+            'id'               => $s->id,
+            'title'            => $s->title,
+            'artist'           => $s->artist,
+            'composer'         => $s->composer,
+            'description'      => $s->description,
+            'original_key'     => $s->original_key,
+            'has_lyrics'       => (bool) $s->lyrics,
+            'lyrics'           => $s->lyrics,
+            'has_audio'        => (bool) $s->audio_path || (bool) $s->audio_url,
+            'audio_url'        => $s->audio_url ?? ($s->audio_path ? '/storage/' . ltrim($s->audio_path, '/') : null),
+            'cover_url'        => $s->cover_image_path
+                ? (str_starts_with($s->cover_image_path, 'http') ? $s->cover_image_path : '/storage/' . ltrim($s->cover_image_path, '/'))
+                : null,
+            'is_published'     => $s->is_published,
+            'status'           => $s->status,
+            'rejection_reason' => $s->rejection_reason,
+            'choir'            => $s->choir ? ['id' => $s->choir->id, 'name' => $s->choir->name] : null,
+            'created_at'       => $s->created_at,
+        ]);
 
         $userChoirs = $user->choirs()
             ->wherePivot('status', 'active')
@@ -569,8 +612,24 @@ class MemberController extends ApiController
             'has_choir'      => true,
             'choir'          => new ChoirResource($choir),
             'user_choirs'    => $userChoirs,
-            'songs'          => $songs,
-            'my_submissions' => $mySubmissions,
+            'songs'          => [
+                'items'      => $songItems,
+                'pagination' => [
+                    'current_page' => $songsPaginated->currentPage(),
+                    'last_page'    => $songsPaginated->lastPage(),
+                    'per_page'     => $songsPaginated->perPage(),
+                    'total'        => $songsPaginated->total(),
+                ],
+            ],
+            'my_submissions' => [
+                'items'      => $submissionItems,
+                'pagination' => [
+                    'current_page' => $submissionsPaginated->currentPage(),
+                    'last_page'    => $submissionsPaginated->lastPage(),
+                    'per_page'     => $submissionsPaginated->perPage(),
+                    'total'        => $submissionsPaginated->total(),
+                ],
+            ],
         ]);
     }
 

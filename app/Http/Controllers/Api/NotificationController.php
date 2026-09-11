@@ -10,15 +10,19 @@ use Illuminate\Support\Str;
 
 class NotificationController extends ApiController
 {
+    /**
+     * List the authenticated user's notifications with pagination.
+     * Returns both a paginated items list and the unread count.
+     */
     public function index(Request $request)
     {
-        $userId = $request->user()->id;
+        $userId  = $request->user()->id;
+        $perPage = min((int) $request->input('per_page', 20), 50);
 
         $notifications = Notification::where('notifiable_type', User::class)
             ->where('notifiable_id', $userId)
             ->latest()
-            ->take(30)
-            ->get();
+            ->paginate($perPage);
 
         $unreadCount = Notification::where('notifiable_type', User::class)
             ->where('notifiable_id', $userId)
@@ -26,8 +30,13 @@ class NotificationController extends ApiController
             ->count();
 
         return $this->ok([
-            'notifications' => $notifications,
-            'items' => $notifications,
+            'items'       => $notifications->items(),
+            'pagination'  => [
+                'current_page' => $notifications->currentPage(),
+                'last_page'    => $notifications->lastPage(),
+                'per_page'     => $notifications->perPage(),
+                'total'        => $notifications->total(),
+            ],
             'unread_count' => $unreadCount,
         ]);
     }
@@ -35,7 +44,7 @@ class NotificationController extends ApiController
     public function markAsRead(Request $request, Notification $notification)
     {
         if ($notification->notifiable_id != $request->user()->id) {
-            return $this->forbidden('Unauthorized access to notification');
+            return $this->error('Unauthorized access to notification', null, 403);
         }
 
         if (! $notification->read_at) {
@@ -60,12 +69,12 @@ class NotificationController extends ApiController
         $data = $request->validated();
 
         $notification = Notification::create([
-            'id' => (string) Str::uuid(),
-            'type' => $data['type'],
+            'id'             => (string) Str::uuid(),
+            'type'           => $data['type'],
             'notifiable_type' => User::class,
-            'notifiable_id' => $data['notifiable_user_id'],
-            'data' => $data['data'],
-            'read_at' => null,
+            'notifiable_id'  => $data['notifiable_user_id'],
+            'data'           => $data['data'],
+            'read_at'        => null,
         ]);
 
         return $this->ok($notification, 'Created', 201);
