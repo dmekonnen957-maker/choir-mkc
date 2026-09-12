@@ -2,8 +2,10 @@ import React from 'react';
 import Modal from '../ui/Modal';
 import LyricsViewer from '../public/LyricsViewer';
 import { Music2, Disc3, Download } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function MemberSongLyricsModal({ song, isOpen, onClose }) {
+    const { t } = useLanguage();
     if (!song) return null;
 
     return (
@@ -11,7 +13,7 @@ export default function MemberSongLyricsModal({ song, isOpen, onClose }) {
             open={isOpen}
             onClose={onClose}
             size="lg"
-            title="Song Lyrics"
+            title={t('lyrics.modal_title', 'Song Lyrics')}
             labelledBy={`member-song-modal-${song.id}`}
         >
             <div className="space-y-6">
@@ -29,7 +31,9 @@ export default function MemberSongLyricsModal({ song, isOpen, onClose }) {
                             {song.choir?.name || song.choir_name || 'Choir MKC'}
                         </p>
                         {song.artist && (
-                            <p className="mt-0.5 text-xs text-slate-500 truncate">Artist: {song.artist}</p>
+                            <p className="mt-0.5 text-xs text-slate-500 truncate">
+                                {t('songs.artist_label', 'Artist: {artist}', { artist: song.artist })}
+                            </p>
                         )}
                         {song.audio_url && (
                             <a
@@ -37,7 +41,7 @@ export default function MemberSongLyricsModal({ song, isOpen, onClose }) {
                                 download
                                 className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-95"
                             >
-                                <Download size={14} /> Download Audio
+                                <Download size={14} /> {t('common.download_audio', 'Download Audio')}
                             </a>
                         )}
                     </div>
@@ -47,7 +51,7 @@ export default function MemberSongLyricsModal({ song, isOpen, onClose }) {
                 <div className="rounded-2xl border border-slate-100 bg-white p-5 sm:p-6 shadow-sm">
                     <div className="mb-4 border-b border-slate-100 pb-3">
                         <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">
-                            Lyrics
+                            {t('common.lyrics', 'Lyrics')}
                         </h3>
                     </div>
                     <LyricsViewer lyrics={song.lyrics} />

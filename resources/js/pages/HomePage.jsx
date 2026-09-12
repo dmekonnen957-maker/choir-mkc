@@ -5,13 +5,14 @@ import { useAuth } from '../context/AuthContext';
 import { fetchAllPerformances, fetchAllSongs, formatDate, isUpcoming, likeSong, unlikeSong } from '../lib/publicApi';
 
 function FeaturedSongRow({ song, onLikeChanged, onPlay, isPlaying, onPromptLogin }) {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, hasRole } = useAuth();
+    const canLike = isAuthenticated && hasRole('member');
     const [liked, setLiked] = useState(Boolean(song.is_liked));
     const [likes, setLikes] = useState(Number(song.likes_count || 0));
     const [saving, setSaving] = useState(false);
 
     const toggleLike = async () => {
-        if (!isAuthenticated) {
+        if (!canLike) {
             onPromptLogin();
             return;
         }
@@ -50,8 +51,8 @@ function FeaturedSongRow({ song, onLikeChanged, onPlay, isPlaying, onPromptLogin
                 type="button"
                 onClick={toggleLike}
                 disabled={saving}
-                title={isAuthenticated ? (liked ? 'Unlike song' : 'Like song') : 'Login to like song'}
-                aria-label={isAuthenticated ? (liked ? 'Unlike song' : 'Like song') : 'Login to like song'}
+                title={canLike ? (liked ? 'Unlike song' : 'Like song') : 'Login to like this song'}
+                aria-label={canLike ? (liked ? 'Unlike song' : 'Like song') : 'Login to like this song'}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${liked ? 'bg-rose-50 text-rose-600' : 'text-slate-500 hover:bg-rose-50 hover:text-rose-600'} disabled:cursor-not-allowed disabled:opacity-60`}
             >
                 <Heart size={15} className={liked ? 'fill-current' : ''} />

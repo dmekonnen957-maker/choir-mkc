@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Instrument Sans', 'Noto Sans Ethiopic', 'Nyala', 'Abyssinica SIL', 'Kefa', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
     /* ---- THEME CSS VARIABLES (dynamic choir colors) ---- */
     --color-theme-primary: var(--theme-primary, #2563eb);
@@ -43,6 +43,167 @@
 
     /* ---- timing ---- */
     --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Member portal dark theme. Kept scoped so public and landing pages retain
+   their existing light appearance. */
+.member-dark {
+    --member-bg: #101827;
+    --member-surface: #182235;
+    --member-surface-raised: #202d42;
+    --member-border: #33445e;
+    --member-text: #f1f5f9;
+    --member-text-strong: #f8fafc;
+    --member-text-muted: #a8b5c7;
+    --member-text-faint: #8190a5;
+    background-color: var(--member-bg) !important;
+    color: var(--member-text);
+}
+
+.member-dark main {
+    background-color: var(--member-bg);
+    transition: background-color 300ms ease, color 300ms ease;
+}
+
+.member-dark header {
+    background-color: color-mix(in srgb, var(--member-surface) 94%, transparent) !important;
+    border-color: var(--member-border) !important;
+}
+
+.member-dark .bg-white\/90,
+.member-dark .bg-slate-50\/80 {
+    background-color: var(--member-surface) !important;
+}
+
+.member-dark .member-theme-control,
+.member-dark .bg-white,
+.member-dark .bg-canvas,
+.member-dark .bg-slate-50,
+.member-dark .bg-slate-50\/80,
+.member-dark .bg-slate-100 {
+    background-color: var(--member-surface) !important;
+    color: var(--member-text) !important;
+}
+
+.member-dark .border-slate-100,
+.member-dark .border-slate-200,
+.member-dark .border-slate-200\/80,
+.member-dark .border-blue-100,
+.member-dark .border-blue-200,
+.member-dark .divide-slate-100 > :not(:last-child),
+.member-dark .divide-slate-200 > :not(:last-child) {
+    border-color: var(--member-border) !important;
+}
+
+.member-dark .text-slate-900,
+.member-dark .text-slate-800,
+.member-dark .text-slate-700,
+.member-dark .text-slate-600,
+.member-dark .text-ink-900,
+.member-dark .text-ink-800,
+.member-dark .text-ink-700,
+.member-dark .text-ink-600 {
+    color: var(--member-text-strong) !important;
+}
+
+.member-dark .text-slate-500,
+.member-dark .text-slate-400,
+.member-dark .text-ink-500,
+.member-dark .text-ink-400 {
+    color: var(--member-text-muted) !important;
+}
+
+.member-dark .text-slate-300,
+.member-dark .text-ink-300 {
+    color: var(--member-text-faint) !important;
+}
+
+.member-dark input,
+.member-dark textarea,
+.member-dark select {
+    background-color: var(--member-surface) !important;
+    border-color: var(--member-border) !important;
+    color: var(--member-text) !important;
+    color-scheme: dark;
+}
+
+.member-dark input::placeholder,
+.member-dark textarea::placeholder {
+    color: var(--member-text-faint) !important;
+}
+
+.member-dark .hover\:bg-slate-50:hover,
+.member-dark .hover\:bg-slate-100:hover,
+.member-dark .hover\:bg-blue-50:hover,
+.member-dark .hover\:bg-blue-50\/80:hover {
+    background-color: var(--member-surface-raised) !important;
+}
+
+.member-dark .bg-blue-50,
+.member-dark .bg-blue-100,
+.member-dark .bg-emerald-50,
+.member-dark .bg-amber-50,
+.member-dark .bg-rose-50 {
+    background-color: color-mix(in srgb, var(--theme-primary) 18%, var(--member-surface)) !important;
+}
+
+.member-dark .shadow-sm,
+.member-dark .shadow-xs,
+.member-dark .shadow-md,
+.member-dark .shadow-xl,
+.member-dark .shadow-2xl {
+    --tw-shadow-color: #00000080;
+}
+
+.member-dark .recharts-cartesian-axis-tick-value,
+.member-dark .recharts-legend-item-text {
+    fill: var(--member-text-muted) !important;
+    color: var(--member-text-muted) !important;
+}
+
+.member-dark .recharts-cartesian-grid line,
+.member-dark .recharts-cartesian-axis line,
+.member-dark .recharts-cartesian-axis path {
+    stroke: var(--member-border) !important;
+}
+
+.member-dark .recharts-tooltip-wrapper,
+.member-dark .recharts-default-tooltip {
+    color: var(--member-text) !important;
+}
+
+.member-dark .recharts-default-tooltip {
+    background-color: var(--member-surface-raised) !important;
+    border-color: var(--member-border) !important;
+}
+
+.member-dark-mode .modal-panel,
+.member-dark-mode .recharts-default-tooltip {
+    background-color: var(--member-surface-raised) !important;
+    color: var(--member-text) !important;
+    border-color: var(--member-border) !important;
+}
+
+.member-dark-mode .modal-panel .border-blue-100,
+.member-dark-mode .modal-panel .border-slate-200 {
+    border-color: var(--member-border) !important;
+}
+
+.member-dark-mode .modal-panel .text-blue-900,
+.member-dark-mode .modal-panel .text-slate-900,
+.member-dark-mode .modal-panel .text-slate-800,
+.member-dark-mode .modal-panel .text-slate-700,
+.member-dark-mode .modal-panel .text-slate-600,
+.member-dark-mode .modal-panel .text-ink-900,
+.member-dark-mode .modal-panel .text-ink-800 {
+    color: var(--member-text-strong) !important;
+}
+
+.member-dark-mode .modal-panel .text-slate-500,
+.member-dark-mode .modal-panel .text-slate-400,
+.member-dark-mode .modal-panel .text-ink-500,
+.member-dark-mode .modal-panel .text-ink-400 {
+    color: var(--member-text-muted) !important;
 }
 
 @layer base {

@@ -3,6 +3,7 @@ import { Users, Church, Mail, Phone } from 'lucide-react';
 import { api } from '../../axios';
 import EmptyState from '../../components/member/EmptyState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useLanguage } from '../../context/LanguageContext';
 
 function asset(path) {
     if (!path) return null;
@@ -19,6 +20,7 @@ function initials(name) {
 }
 
 export default function MemberChoir({ apiPath = '/member/choir' }) {
+    const { t } = useLanguage();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -45,17 +47,17 @@ export default function MemberChoir({ apiPath = '/member/choir' }) {
     }
 
     if (error) {
-        return <EmptyState icon={Church} title="Could not load choir" message={error} />;
+        return <EmptyState icon={Church} title={t('choir.load_error', 'Could not load choir')} message={error} />;
     }
 
     if (!data?.choir) {
         return (
             <div className="space-y-6">
-                <h1 className="text-2xl font-bold text-ink-900">My Choir</h1>
+                <h1 className="text-2xl font-bold text-ink-900">{t('choir.title', 'My Choir')}</h1>
                 <EmptyState
                     icon={Church}
-                    title="No choir assigned"
-                    message="You are not assigned to a choir yet. An administrator will assign you soon."
+                    title={t('choir.not_assigned_title', 'No choir assigned')}
+                    message={t('choir.not_assigned_desc', 'You are not assigned to a choir yet. An administrator will assign you soon.')}
                 />
             </div>
         );
@@ -66,7 +68,7 @@ export default function MemberChoir({ apiPath = '/member/choir' }) {
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-ink-900">My Choir</h1>
+            <h1 className="text-2xl font-bold text-ink-900">{t('choir.title', 'My Choir')}</h1>
 
             <div className="overflow-hidden rounded-2xl border border-blue-100 bg-canvas shadow-sm">
                 <div className="h-28 bg-gradient-to-r from-blue-600 to-blue-400" />
@@ -88,13 +90,13 @@ export default function MemberChoir({ apiPath = '/member/choir' }) {
                         <p className="text-sm text-ink-500">{choir.church_name}</p>
                     )}
                     <p className="mt-3 max-w-2xl text-sm text-ink-600">
-                        {choir.description || 'No description provided.'}
+                        {choir.description || t('choir.no_description', 'No description provided.')}
                     </p>
 
                     <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div className="rounded-xl bg-surface p-4">
                             <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-                                Members
+                                {t('choir.members', 'Members')}
                             </p>
                             <p className="mt-1 text-2xl font-bold text-ink-900">
                                 {choir.members_count ?? members.length}
@@ -102,10 +104,10 @@ export default function MemberChoir({ apiPath = '/member/choir' }) {
                         </div>
                         <div className="rounded-xl bg-surface p-4">
                             <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-                                Leader
+                                {t('choir.leader', 'Leader')}
                             </p>
                             <p className="mt-1 text-sm font-semibold text-ink-900">
-                                {leader ? `${leader.name} · ${leader.role_title}` : 'Not listed'}
+                                {leader ? `${leader.name} · ${leader.role_title || t('role.team_leader', 'Leader')}` : t('choir.not_listed', 'Not listed')}
                             </p>
                         </div>
                     </div>
@@ -114,10 +116,10 @@ export default function MemberChoir({ apiPath = '/member/choir' }) {
 
             <section className="rounded-2xl border border-blue-100 bg-canvas p-6 shadow-sm">
                 <h3 className="flex items-center gap-2 text-lg font-semibold text-ink-900">
-                    <Users size={18} className="text-blue-600" /> Choir Members
+                    <Users size={18} className="text-blue-600" /> {t('choir.members_list', 'Choir Members')}
                 </h3>
                 {members.length === 0 ? (
-                    <p className="mt-4 text-sm text-ink-500">No members to display.</p>
+                    <p className="mt-4 text-sm text-ink-500">{t('choir.no_members', 'No members to display.')}</p>
                 ) : (
                     <ul className="mt-4 divide-y divide-blue-50">
                         {members.map((m) => (
@@ -130,7 +132,7 @@ export default function MemberChoir({ apiPath = '/member/choir' }) {
                                         {m.full_name}
                                     </p>
                                     <p className="text-xs text-ink-500">
-                                        {m.role_title || 'Member'}
+                                        {m.role_title || t('role.member', 'Member')}
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-3 text-ink-400">

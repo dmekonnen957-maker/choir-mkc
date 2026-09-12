@@ -58,6 +58,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
         return $this->status === self::STATUS_APPROVED;
     }
 
+    public function isApprovedMember(): bool
+    {
+        return $this->isApproved()
+            && ($this->hasRole('member', 'api') || $this->hasRole('member') || $this->role === 'member');
+    }
+
     public function isPending(): bool
     {
         return $this->status === self::STATUS_PENDING;

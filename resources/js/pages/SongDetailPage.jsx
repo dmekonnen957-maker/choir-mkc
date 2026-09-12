@@ -29,7 +29,8 @@ const QUICK_STEPS = [-3, -2, -1, 0, 1, 2, 3];
 export default function SongDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, hasRole } = useAuth();
+    const canLike = isAuthenticated && hasRole('member');
 
     const [song, setSong] = useState(null);
     const [transpose, setTranspose] = useState(0);
@@ -93,7 +94,7 @@ export default function SongDetailPage() {
     };
 
     const handleLikeToggle = async () => {
-        if (!isAuthenticated) {
+        if (!canLike) {
             setShowLoginModal(true);
             return;
         }
@@ -265,7 +266,7 @@ export default function SongDetailPage() {
                                         type="button"
                                         onClick={handleLikeToggle}
                                         disabled={liking}
-                                        aria-label={isLiked ? 'Unlike song' : 'Like song'}
+                                        aria-label={canLike ? (isLiked ? 'Unlike song' : 'Like song') : 'Login to like this song'}
                                         className={`group relative flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold text-sm transition-all duration-200 shadow-sm active:scale-95 ${
                                             isLiked
                                                 ? 'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 hover:border-rose-300'
@@ -280,7 +281,7 @@ export default function SongDetailPage() {
                                                     : 'text-slate-400 group-hover:text-rose-500'
                                             }`}
                                         />
-                                        <span>{isLiked ? 'Liked' : 'Like Song'}</span>
+                                        <span>{canLike ? (isLiked ? 'Liked' : 'Like Song') : 'Login to like this song'}</span>
                                     </button>
                                 </div>
                             </div>

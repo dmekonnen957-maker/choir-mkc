@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useChoir } from '../../context/ChoirContext';
+import { useLanguage } from '../../context/LanguageContext';
 import ChoirSelector from './ChoirSelector';
 
 const BASE_PATHS = {
@@ -32,60 +33,60 @@ const BASE_PATHS = {
 };
 
 // Full admin navigation
-function getAdminNav(can) {
+function getAdminNav(can, t) {
     const items = [
-        { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard },
+        { label: t('nav.dashboard', 'Dashboard'), to: '/admin/dashboard', icon: LayoutDashboard },
     ];
 
-    const orgItems = [{ label: 'Choirs', to: '/admin/choirs', icon: Church }];
+    const orgItems = [{ label: t('nav.choirs', 'Choirs'), to: '/admin/choirs', icon: Church }];
     if (can('members.view')) {
-        orgItems.push({ label: 'Members', to: '/admin/members', icon: Users });
+        orgItems.push({ label: t('nav.members', 'Members'), to: '/admin/members', icon: Users });
     }
-    items.push({ title: 'Organization', items: orgItems });
+    items.push({ title: t('nav.section.organization', 'Organization'), items: orgItems });
 
     items.push({
-        title: 'Content',
+        title: t('nav.section.content', 'Content'),
         items: [
-            ...(can('songs.view') ? [{ label: 'Songs', to: '/admin/songs', icon: Music }] : []),
+            ...(can('songs.view') ? [{ label: t('nav.songs', 'Songs'), to: '/admin/songs', icon: Music }] : []),
         ],
     });
 
     items.push({
-        title: 'Schedule',
+        title: t('nav.section.schedule', 'Schedule'),
         items: [
-            { label: 'Performances', to: '/admin/performances', icon: CalendarDays },
-            { label: 'Rehearsals', to: '/admin/rehearsals', icon: CalendarClock },
-            { label: 'Calendar', to: '/admin/calendar', icon: Calendar },
+            { label: t('nav.performances', 'Performances'), to: '/admin/performances', icon: CalendarDays },
+            { label: t('nav.rehearsals', 'Rehearsals'), to: '/admin/rehearsals', icon: CalendarClock },
+            { label: t('nav.calendar', 'Calendar'), to: '/admin/calendar', icon: Calendar },
         ],
     });
 
     items.push({
-        title: 'Attendance',
+        title: t('nav.attendance', 'Attendance'),
         items: [
-            { label: 'Attendance', to: '/admin/attendance', icon: CheckCircle2 },
+            { label: t('nav.attendance', 'Attendance'), to: '/admin/attendance', icon: CheckCircle2 },
         ],
     });
 
     const userMgmt = [];
     if (can('users.view')) {
-        userMgmt.push({ label: 'Users', to: '/admin/users', icon: UserCheck });
+        userMgmt.push({ label: t('nav.users', 'Users'), to: '/admin/users', icon: UserCheck });
     }
     if (can('roles.view') || can('permissions.view')) {
-        userMgmt.push({ label: 'Roles & Permissions', to: '/admin/roles', icon: Shield });
+        userMgmt.push({ label: t('nav.roles_permissions', 'Roles & Permissions'), to: '/admin/roles', icon: Shield });
     }
-    items.push({ title: 'User Management', items: userMgmt });
+    items.push({ title: t('nav.section.user_management', 'User Management'), items: userMgmt });
 
     items.push({
-        title: 'Reports',
+        title: t('nav.section.reports', 'Reports'),
         items: [
-            { label: 'Reports', to: '/admin/reports', icon: BarChart3 },
+            { label: t('nav.reports', 'Reports'), to: '/admin/reports', icon: BarChart3 },
         ],
     });
 
     items.push({
-        title: 'System',
+        title: t('nav.section.system', 'System'),
         items: [
-            { label: 'Activity Logs', to: '/admin/activity-logs', icon: ScrollText },
+            { label: t('nav.activity_logs', 'Activity Logs'), to: '/admin/activity-logs', icon: ScrollText },
         ],
     });
 
@@ -93,56 +94,56 @@ function getAdminNav(can) {
 }
 
 // Member / Team Leader navigation
-function getMemberNav(basePath, role, can) {
+function getMemberNav(basePath, role, can, t) {
     const isLeader = role === 'team_leader';
 
     return [
-        { label: 'Dashboard', to: `${basePath}/dashboard`, icon: LayoutDashboard },
+        { label: t('nav.dashboard', 'Dashboard'), to: `${basePath}/dashboard`, icon: LayoutDashboard },
         {
-            title: 'My Choir',
+            title: t('nav.section.my_choir', 'My Choir'),
             items: [
-                { label: 'My Choir', to: `${basePath}/choir`, icon: Users },
-                ...(isLeader ? [{ label: 'Attendance', to: `${basePath}/attendance`, icon: CheckCircle2 }] : []),
+                { label: t('nav.my_choir', 'My Choir'), to: `${basePath}/choir`, icon: Users },
+                ...(isLeader ? [{ label: t('nav.attendance', 'Attendance'), to: `${basePath}/attendance`, icon: CheckCircle2 }] : []),
             ],
         },
         {
-            title: 'Music',
+            title: t('nav.section.music', 'Music'),
             items: [
-                { label: 'Songs', to: `${basePath}/songs`, icon: Music },
+                { label: t('nav.songs', 'Songs'), to: `${basePath}/songs`, icon: Music },
             ],
         },
         {
-            title: 'Schedule',
+            title: t('nav.section.schedule', 'Schedule'),
             items: [
-                { label: 'Rehearsals', to: `${basePath}/rehearsals`, icon: CalendarClock },
-                { label: 'Performances', to: `${basePath}/performances`, icon: CalendarDays },
-                { label: 'Calendar', to: `${basePath}/calendar`, icon: Calendar },
+                { label: t('nav.rehearsals', 'Rehearsals'), to: `${basePath}/rehearsals`, icon: CalendarClock },
+                { label: t('nav.performances', 'Performances'), to: `${basePath}/performances`, icon: CalendarDays },
+                { label: t('nav.calendar', 'Calendar'), to: `${basePath}/calendar`, icon: Calendar },
             ],
         },
         {
-            title: isLeader ? 'Ministry' : 'My Participation',
+            title: isLeader ? t('nav.section.ministry', 'Ministry') : t('nav.section.my_participation', 'My Participation'),
             items: [
                 ...(isLeader
                     ? []
-                    : [{ label: 'My Attendance', to: `${basePath}/attendance`, icon: CheckCircle2 }]),
-                { label: 'My Performances', to: `${basePath}/my-performances`, icon: ListMusic },
-                { label: 'Choir History', to: '/member/choir-history', icon: BookOpen },
+                    : [{ label: t('nav.my_attendance', 'My Attendance'), to: `${basePath}/attendance`, icon: CheckCircle2 }]),
+                { label: t('nav.my_performances', 'My Performances'), to: `${basePath}/my-performances`, icon: ListMusic },
+                { label: t('nav.choir_history', 'Choir History'), to: '/member/choir-history', icon: BookOpen },
             ],
         },
         {
-            title: 'Account',
+            title: t('nav.section.account', 'Account'),
             items: [
-                { label: 'My Profile', to: `${basePath}/profile`, icon: User },
+                { label: t('nav.my_profile', 'My Profile'), to: `${basePath}/profile`, icon: User },
             ],
         },
     ];
 }
 
-function getNav(basePath, role, can) {
+function getNav(basePath, role, can, t) {
     if (role === 'admin' || role === 'super-admin') {
-        return getAdminNav(can);
+        return getAdminNav(can, t);
     }
-    return getMemberNav(basePath, role, can);
+    return getMemberNav(basePath, role, can, t);
 }
 
 function NavItem({ item, onNavigate }) {
@@ -178,7 +179,7 @@ function NavItem({ item, onNavigate }) {
     );
 }
 
-function ChoirIdentityBlock({ choir, isAllChoirs }) {
+function ChoirIdentityBlock({ choir, isAllChoirs, t }) {
     if (isAllChoirs) {
         return (
             <div className="mx-4 mb-3 rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3 shadow-inner">
@@ -190,8 +191,12 @@ function ChoirIdentityBlock({ choir, isAllChoirs }) {
                         <Church size={16} style={{ color: '#3b82f6' }} />
                     </div>
                     <div className="min-w-0 leading-tight">
-                        <p className="truncate text-sm font-bold text-slate-100">All Choirs</p>
-                        <p className="truncate text-xs text-slate-400">Global Overview</p>
+                        <p className="truncate text-sm font-bold text-slate-100">
+                            {t ? t('header.all_choirs', 'All Choirs') : 'All Choirs'}
+                        </p>
+                        <p className="truncate text-xs text-slate-400">
+                            {t ? t('header.global_overview', 'Global Overview') : 'Global Overview'}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -206,8 +211,12 @@ function ChoirIdentityBlock({ choir, isAllChoirs }) {
                         <Church size={16} className="text-slate-500" />
                     </div>
                     <div className="min-w-0 leading-tight">
-                        <p className="truncate text-sm font-bold text-slate-400">No Choir</p>
-                        <p className="truncate text-xs text-slate-500">Not assigned</p>
+                        <p className="truncate text-sm font-bold text-slate-400">
+                            {t ? t('header.no_choir', 'No Choir') : 'No Choir'}
+                        </p>
+                        <p className="truncate text-xs text-slate-500">
+                            {t ? t('header.not_assigned', 'Not assigned') : 'Not assigned'}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -250,10 +259,11 @@ function ChoirIdentityBlock({ choir, isAllChoirs }) {
 export default function MemberSidebar({ open, onClose }) {
     const { user, role, logout, can } = useAuth();
     const { currentChoir, isAllChoirs } = useChoir();
+    const { t } = useLanguage();
 
     const isAdmin = role === 'admin' || role === 'super-admin';
     const basePath = BASE_PATHS[role] ?? '/member';
-    const NAV = getNav(basePath, role, can);
+    const NAV = getNav(basePath, role, can, t);
 
     const initials = (user?.name ?? '?')
         .split(' ')
@@ -280,7 +290,7 @@ export default function MemberSidebar({ open, onClose }) {
                     <button
                         onClick={onClose}
                         className="rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
-                        aria-label="Close navigation"
+                        aria-label={t('header.close_nav', 'Close navigation')}
                     >
                         <X size={20} />
                     </button>
@@ -292,7 +302,7 @@ export default function MemberSidebar({ open, onClose }) {
                 {isAdmin ? (
                     <ChoirSelector />
                 ) : (
-                    <ChoirIdentityBlock choir={currentChoir} isAllChoirs={false} />
+                    <ChoirIdentityBlock choir={currentChoir} isAllChoirs={false} t={t} />
                 )}
             </div>
 
@@ -335,7 +345,7 @@ export default function MemberSidebar({ open, onClose }) {
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-2.5 text-xs font-bold text-slate-300 transition-all duration-200 hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-400 active:scale-95"
                 >
                     <LogOut size={16} className="shrink-0" />
-                    <span>Sign Out</span>
+                    <span>{t('nav.sign_out', 'Sign Out')}</span>
                 </button>
             </div>
         </div>

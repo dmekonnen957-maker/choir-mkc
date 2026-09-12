@@ -12,7 +12,8 @@ export default function SongCard({
     onLikeChanged,
     onPromptLogin,
 }) {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, hasRole } = useAuth();
+    const canLike = isAuthenticated && hasRole('member');
     const navigate = useNavigate();
 
     const [isLiked, setIsLiked] = useState(Boolean(song.is_liked));
@@ -27,7 +28,7 @@ export default function SongCard({
         e.preventDefault();
         e.stopPropagation();
 
-        if (!isAuthenticated) {
+        if (!canLike) {
             if (onPromptLogin) {
                 onPromptLogin(song);
             } else {
@@ -181,8 +182,8 @@ export default function SongCard({
                                     ? 'bg-rose-50 text-rose-600 border border-rose-200'
                                     : 'bg-slate-50 text-slate-600 hover:bg-rose-50 hover:text-rose-600 border border-slate-200/60'
                             }`}
-                            title={isLiked ? 'Unlike this song' : 'Like this song'}
-                            aria-label={`${likesCount} likes. Click to ${isLiked ? 'unlike' : 'like'}`}
+                            title={canLike ? (isLiked ? 'Unlike this song' : 'Like this song') : 'Login to like this song'}
+                            aria-label={canLike ? `${likesCount} likes. Click to ${isLiked ? 'unlike' : 'like'}` : 'Login to like this song'}
                         >
                             <Heart
                                 size={16}

@@ -64,7 +64,7 @@ class SongResource extends JsonResource
             'likes_count'    => (int) ($this->likes_count ?? $this->likes()->count()),
             'is_liked'       => isset($this->is_liked)
                 ? (bool) $this->is_liked
-                : ($request && ($request->user('sanctum') || $request->user())
+                : ($request && (($request->user('sanctum') ?? $request->user())?->isApprovedMember())
                     ? $this->likes()->where('user_id', ($request->user('sanctum') ?? $request->user())->id)->exists()
                     : false),
             // Lyrics: return null for public when not allowed

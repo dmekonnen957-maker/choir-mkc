@@ -85,6 +85,10 @@ function applyTheme(theme) {
 export function ThemeProvider({ children }) {
     const [theme, setTheme] = useState(DEFAULT_THEME);
     const [loading, setLoading] = useState(true);
+    const [isDarkMode, setIsDarkMode] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return window.localStorage.getItem('member_dark_mode') === 'true';
+    });
 
     const computeTheme = useCallback((primary, secondary) => {
         const validPrimary = isValidHex(primary) ? primary : DEFAULT_THEME.primary;
@@ -128,6 +132,18 @@ export function ThemeProvider({ children }) {
         applyGlobalTheme();
     }, [applyGlobalTheme]);
 
+    const toggleDarkMode = useCallback(() => {
+        setIsDarkMode((current) => {
+            const next = !current;
+            window.localStorage.setItem('member_dark_mode', String(next));
+            return next;
+        });
+    }, []);
+
+    useEffect(() => {
+        document.documentElement.dataset.colorMode = isDarkMode ? 'dark' : 'light';
+    }, [isDarkMode]);
+
     useEffect(() => {
         const root = document.documentElement;
         root.style.setProperty('--theme-primary', DEFAULT_THEME.primary);
@@ -150,6 +166,8 @@ export function ThemeProvider({ children }) {
                 applyGlobalTheme,
                 resetTheme,
                 computeTheme,
+                isDarkMode,
+                toggleDarkMode,
             }}
         >
             {children}

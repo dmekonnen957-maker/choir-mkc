@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../axios';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import Input from '../../components/ui/Input';
 import PasswordInput from '../../components/ui/PasswordInput';
 import Button from '../../components/ui/Button';
@@ -43,10 +44,8 @@ const NOTIFICATION_LABELS = {
 };
 
 const LANGUAGES = [
-    { code: 'en', label: 'English (US)' },
-    { code: 'am', label: 'አማርኛ (Amharic)' },
-    { code: 'om', label: 'Afaan Oromoo (Oromo)' },
-    { code: 'ti', label: 'ትግርኛ (Tigrinya)' },
+    { code: 'en', label: '🇬🇧 English' },
+    { code: 'am', label: '🇪🇹 አማርኛ (Amharic)' },
 ];
 
 const TIMEZONES = [
@@ -73,6 +72,7 @@ function initials(name) {
 
 export default function MemberSettings() {
     const { refreshUser, logout } = useAuth();
+    const { t, language, setLanguage } = useLanguage();
     const [data, setData] = useState(null);
     const [activeTab, setActiveTab] = useState('profile');
 
@@ -84,7 +84,7 @@ export default function MemberSettings() {
         phone: '',
         role_title: '',
         bio: '',
-        language: 'en',
+        language: language || 'en',
         timezone: 'Africa/Addis_Ababa',
     });
 
@@ -122,13 +122,13 @@ export default function MemberSettings() {
                     phone: d.member?.phone ?? d.user?.phone ?? '',
                     role_title: d.member?.role_title ?? '',
                     bio: d.member?.bio ?? '',
-                    language: d.user?.language ?? 'en',
+                    language: language || d.user?.language || 'en',
                     timezone: d.user?.timezone ?? 'Africa/Addis_Ababa',
                 });
                 setPrefs(d.notification_preferences ?? {});
                 setErrors({});
             })
-            .catch(() => setAlert({ variant: 'error', message: 'Could not load account settings.' }))
+            .catch(() => setAlert({ variant: 'error', message: t('settings.load_error', 'Could not load account settings.') }))
             .finally(() => setLoading(false));
     };
 
@@ -137,8 +137,12 @@ export default function MemberSettings() {
     }, []);
 
     const update = (field) => (e) => {
-        setForm((prev) => ({ ...prev, [field]: e.target.value }));
+        const val = e.target.value;
+        setForm((prev) => ({ ...prev, [field]: val }));
         setErrors((prev) => ({ ...prev, [field]: undefined }));
+        if (field === 'language') {
+            setLanguage(val);
+        }
     };
 
     const togglePref = (key) => (e) => {
@@ -305,9 +309,11 @@ export default function MemberSettings() {
         <div className="space-y-6">
             {/* Page Header */}
             <div>
-                <h1 className="text-2xl font-bold tracking-tight text-ink-900">Account & Settings</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-ink-900">
+                    {t('settings.title', 'Account & Preferences')}
+                </h1>
                 <p className="mt-1 text-sm text-ink-500">
-                    Manage your personal profile, contact information, security preferences, and account actions.
+                    {t('settings.subtitle', 'Manage your personal profile, contact information, security preferences, and account actions.')}
                 </p>
             </div>
 
@@ -325,7 +331,7 @@ export default function MemberSettings() {
                     }`}
                 >
                     <UserIcon size={16} />
-                    <span>Personal Info & Profile</span>
+                    <span>{t('settings.tab_profile', 'Personal Info')}</span>
                 </button>
 
                 <button
@@ -338,7 +344,7 @@ export default function MemberSettings() {
                     }`}
                 >
                     <Mail size={16} />
-                    <span>Contact Details</span>
+                    <span>{t('settings.tab_contact', 'Contact Details')}</span>
                 </button>
 
                 <button
@@ -351,7 +357,7 @@ export default function MemberSettings() {
                     }`}
                 >
                     <Shield size={16} />
-                    <span>Security & Authentication</span>
+                    <span>{t('settings.tab_security', 'Security')}</span>
                 </button>
 
                 <button
@@ -364,7 +370,7 @@ export default function MemberSettings() {
                     }`}
                 >
                     <Globe size={16} />
-                    <span>Preferences & Notifications</span>
+                    <span>{t('settings.tab_preferences', 'Preferences')}</span>
                 </button>
 
                 <button
@@ -377,7 +383,7 @@ export default function MemberSettings() {
                     }`}
                 >
                     <AlertTriangle size={16} />
-                    <span>Account Actions</span>
+                    <span>{t('settings.tab_deactivate', 'Deactivate')}</span>
                 </button>
             </div>
 
@@ -834,9 +840,11 @@ export default function MemberSettings() {
                                 <div className="flex items-center gap-2 border-b border-blue-100 pb-4">
                                     <Globe className="h-5 w-5 text-blue-600" />
                                     <div>
-                                        <h2 className="text-lg font-semibold text-ink-900">Region & Language</h2>
+                                        <h2 className="text-lg font-semibold text-ink-900">
+                                            {t('settings.region_language', 'Region & Language')}
+                                        </h2>
                                         <p className="text-xs text-ink-500">
-                                            Customize your preferred display language and timezone region.
+                                            {t('settings.region_desc', 'Customize your preferred display language and timezone region.')}
                                         </p>
                                     </div>
                                 </div>
@@ -844,7 +852,7 @@ export default function MemberSettings() {
                                 <div className="mt-5 space-y-4">
                                     <div>
                                         <label className="block text-sm font-medium text-ink-700 mb-1.5">
-                                            Preferred Language
+                                            {t('settings.preferred_language', 'Preferred Language')}
                                         </label>
                                         <select
                                             value={form.language}
@@ -861,7 +869,7 @@ export default function MemberSettings() {
 
                                     <div>
                                         <label className="block text-sm font-medium text-ink-700 mb-1.5">
-                                            Timezone Region
+                                            {t('settings.timezone', 'Timezone')}
                                         </label>
                                         <select
                                             value={form.timezone}
@@ -878,7 +886,7 @@ export default function MemberSettings() {
 
                                     <div className="flex justify-end pt-2">
                                         <Button type="submit" loading={savingProfile}>
-                                            Save Regional Preferences
+                                            {t('settings.save_preferences', 'Save Preferences')}
                                         </Button>
                                     </div>
                                 </div>

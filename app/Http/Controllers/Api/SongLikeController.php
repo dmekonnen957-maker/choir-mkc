@@ -53,7 +53,8 @@ class SongLikeController extends ApiController
 
     public function status(Request $request, Song $song): JsonResponse
     {
-        $userId = $request->user('sanctum')?->id;
+        $user = $request->user('sanctum');
+        $userId = $user?->isApprovedMember() ? $user->id : null;
         $isLiked = $userId ? $song->likes()->where('user_id', $userId)->exists() : false;
         $likesCount = $song->likes()->count();
 

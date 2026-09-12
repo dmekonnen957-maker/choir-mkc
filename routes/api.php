@@ -209,8 +209,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/notifications', [NotificationController::class, 'index']);
     });
 
-    // Song Engagement (Likes) - authenticated users
-    Route::post('/songs/{song}/like', [SongLikeController::class, 'like']);
-    Route::delete('/songs/{song}/like', [SongLikeController::class, 'unlike']);
-    Route::get('/member/liked-songs', [SongLikeController::class, 'myLikedSongs']);
+    // Song Engagement (Likes) - approved members only
+    Route::middleware('member')->group(function () {
+        Route::post('/songs/{song}/like', [SongLikeController::class, 'like']);
+        Route::delete('/songs/{song}/like', [SongLikeController::class, 'unlike']);
+        Route::get('/member/liked-songs', [SongLikeController::class, 'myLikedSongs']);
+    });
 });

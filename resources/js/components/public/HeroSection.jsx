@@ -36,21 +36,19 @@ export default function HeroSection() {
     }, []);
 
     return (
-        <section className="relative min-h-[100svh] overflow-hidden bg-slate-950 text-white" aria-label="Yeka M.K.C choir hero">
-            <div className="absolute inset-0 bg-black/50">
-                {HERO_IMAGES.map((image, index) => (
-                    <img
-                        key={image.src}
-                        src={image.src}
-                        alt={image.alt}
-                        aria-hidden={index !== currentIndex}
-                        className={`absolute inset-0 h-full w-full object-cover transition-opacity ease-in-out ${index === currentIndex ? 'opacity-100' : 'opacity-0'}`}
-                        style={{ transitionDuration: `${FADE_TIME}ms` }}
-                    />
-                ))}
-                <div className="absolute inset-0 bg-black/50" />
-                <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/70" />
-            </div>
+        <section className="relative min-h-[100svh] overflow-hidden rounded-[32px] bg-slate-950 text-white" aria-label="Yeka M.K.C choir hero">
+            {HERO_IMAGES.map((image, index) => (
+                <div
+                    key={image.src}
+                    aria-hidden={index !== currentIndex}
+                    className={`absolute inset-0 bg-cover bg-center transition-opacity ease-in-out ${index === currentIndex ? 'opacity-100' : 'opacity-0'}`}
+                    style={{ backgroundImage: `url(${image.src})`, transitionDuration: `${FADE_TIME}ms` }}
+                >
+                    <span className="sr-only">{image.alt}</span>
+                    <div className="absolute inset-0 bg-black/50" />
+                </div>
+            ))}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/70" />
 
             <div className="relative z-10 flex min-h-[100svh] items-center justify-center px-6 py-24 text-center sm:px-10">
                 <div className="max-w-4xl">
@@ -59,7 +57,7 @@ export default function HeroSection() {
                         Yeka Meserete Kristos
                     </h1>
                     <p className="mx-auto mt-5 max-w-2xl text-sm font-medium leading-7 tracking-[0.03em] text-white sm:text-lg">
-                        Discover Ethiopian choir songs, worship music, and performances united by faith and community.
+                        Discover  choir songs, worship music, and performances united by faith and community.
                     </p>
                     <p className="mx-auto mt-4 max-w-2xl text-[11px] font-semibold uppercase leading-6 tracking-[0.16em] text-white/90 sm:text-xs">
                         {HERO_VERSE}
@@ -68,8 +66,8 @@ export default function HeroSection() {
                         <Link to="/songs" className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-600">
                             <Music2 size={17} /> DISCOVER SONGS <ArrowRight size={16} />
                         </Link>
-                        <Link to="/performances" className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/20">
-                            View Performances <ArrowRight size={16} />
+                        <Link to="/choirs" className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/20">
+                            EXPLORE CHOIR <ArrowRight size={16} />
                         </Link>
                     </div>
                 </div>

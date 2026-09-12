@@ -13,6 +13,7 @@ import {
 import { api } from '../../axios';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import StatCard from '../../components/member/StatCard';
 import EmptyState from '../../components/member/EmptyState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -40,6 +41,7 @@ function formatTime(value) {
 export default function MemberDashboard() {
     const { user, primaryChoir } = useAuth();
     const { theme } = useTheme();
+    const { t } = useLanguage();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -71,7 +73,7 @@ export default function MemberDashboard() {
     }
 
     if (error) {
-        return <EmptyState icon={Church} title="Could not load dashboard" message={error} />;
+        return <EmptyState icon={Church} title={t('dashboard.load_error', 'Could not load dashboard')} message={error} />;
     }
 
     if (!data?.has_choir) {
@@ -82,18 +84,18 @@ export default function MemberDashboard() {
                         <Logo size="lg" />
                         <div>
                             <h1 className="text-2xl font-bold tracking-tight text-ink-900">YKA M.K.C CHOIR</h1>
-                            <p className="text-sm text-ink-500">Member Portal</p>
+                            <p className="text-sm text-ink-500">{t('dashboard.portal', 'Member Portal')}</p>
                         </div>
                     </div>
                     <h1 className="text-2xl font-bold text-ink-900">
-                        Welcome back, {user?.name}
+                        {t('dashboard.welcome_back', { name: user?.name || '' })}
                     </h1>
-                    <p className="mt-1 text-ink-500">You are not assigned to a choir yet.</p>
+                    <p className="mt-1 text-ink-500">{t('dashboard.not_assigned_choir', 'You are not assigned to a choir yet.')}</p>
                 </div>
                 <EmptyState
                     icon={Church}
-                    title="No choir assigned"
-                    message="Once an administrator assigns you to a choir, your schedule, performances and attendance will appear here."
+                    title={t('choir.not_assigned_title', 'No choir assigned')}
+                    message={t('dashboard.no_choir_message', 'Once an administrator assigns you to a choir, your schedule, performances and attendance will appear here.')}
                 />
             </div>
         );
@@ -111,12 +113,12 @@ export default function MemberDashboard() {
                     <Logo size="lg" />
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-ink-900">YKA M.K.C CHOIR</h1>
-                        <p className="text-sm text-ink-500">Member Portal</p>
+                        <p className="text-sm text-ink-500">{t('dashboard.portal', 'Member Portal')}</p>
                     </div>
                 </div>
                 <div>
                     <h1 className="text-2xl font-bold text-ink-900">
-                        Welcome back, {user?.name}
+                        {t('dashboard.welcome_back', { name: user?.name || '' })}
                     </h1>
                     <p className="mt-1 flex items-center gap-2 text-ink-500">
                         <Church size={16} style={{ color: 'var(--theme-primary)' }} />
@@ -128,39 +130,39 @@ export default function MemberDashboard() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <StatCard
                     icon={CalendarDays}
-                    label="Upcoming Performances"
+                    label={t('dashboard.upcoming_performances', 'Upcoming Performances')}
                     value={stats.upcoming_performances}
-                    hint="Scheduled ahead"
+                    hint={t('dashboard.scheduled_ahead', 'Scheduled ahead')}
                 />
                 <StatCard
                     icon={CalendarClock}
-                    label="Upcoming Rehearsals"
+                    label={t('dashboard.upcoming_rehearsals', 'Upcoming Rehearsals')}
                     value={stats.upcoming_rehearsals}
-                    hint="Scheduled ahead"
+                    hint={t('dashboard.scheduled_ahead', 'Scheduled ahead')}
                     accent="sky"
                 />
                 <StatCard
                     icon={CheckCircle2}
-                    label="Attendance"
+                    label={t('dashboard.attendance', 'Attendance')}
                     value={attendance.present}
                     hint={
                         attendance.has_records
-                            ? `${attendance.absent} absent · ${attendance.late} late`
-                            : 'No records yet'
+                            ? t('dashboard.attendance_hint', { absent: attendance.absent, late: attendance.late })
+                            : t('dashboard.no_records_yet', 'No records yet')
                     }
                     accent="indigo"
                 />
                 <StatCard
                     icon={ListMusic}
-                    label="My Performances"
+                    label={t('dashboard.my_performances', 'My Performances')}
                     value={stats.my_performances}
-                    hint="You are scheduled"
+                    hint={t('dashboard.scheduled_count', 'You are scheduled')}
                 />
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <section style={cardStyle} className="rounded-2xl bg-canvas p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold text-ink-900">Upcoming Performance</h2>
+                    <h2 className="text-lg font-semibold text-ink-900">{t('dashboard.upcoming_performance', 'Upcoming Performance')}</h2>
                     {next_performance ? (
                         <div className="mt-4 space-y-3">
                             <p className="text-base font-semibold text-ink-800">
@@ -180,7 +182,7 @@ export default function MemberDashboard() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <MapPin size={15} style={{ color: 'var(--theme-primary)' }} />
-                                    {next_performance.venue || next_performance.location || 'TBD'}
+                                    {next_performance.venue || next_performance.location || t('common.tbd', 'TBD')}
                                 </div>
                             </dl>
                             <Link
@@ -188,16 +190,16 @@ export default function MemberDashboard() {
                                 className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
                                 style={{ color: 'var(--theme-primary)' }}
                             >
-                                View Performance <ArrowRight size={16} />
+                                {t('dashboard.view_performance', 'View Performance')} <ArrowRight size={16} />
                             </Link>
                         </div>
                     ) : (
-                        <p className="mt-4 text-sm text-ink-500">No upcoming performances.</p>
+                        <p className="mt-4 text-sm text-ink-500">{t('dashboard.no_upcoming_performances', 'No upcoming performances.')}</p>
                     )}
                 </section>
 
                 <section style={cardStyle} className="rounded-2xl bg-canvas p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold text-ink-900">Next Rehearsal</h2>
+                    <h2 className="text-lg font-semibold text-ink-900">{t('dashboard.next_rehearsal', 'Next Rehearsal')}</h2>
                     {next_rehearsal ? (
                         <div className="mt-4 space-y-1.5 text-sm text-ink-600">
                             <p className="text-base font-semibold text-ink-800">
@@ -213,17 +215,17 @@ export default function MemberDashboard() {
                             </div>
                             <div className="flex items-center gap-2">
                                 <MapPin size={15} style={{ color: 'var(--theme-primary)' }} />
-                                {next_rehearsal.location || 'TBD'}
+                                {next_rehearsal.location || t('common.tbd', 'TBD')}
                             </div>
                         </div>
                     ) : (
-                        <p className="mt-4 text-sm text-ink-500">No upcoming rehearsals.</p>
+                        <p className="mt-4 text-sm text-ink-500">{t('dashboard.no_upcoming_rehearsals', 'No upcoming rehearsals.')}</p>
                     )}
                 </section>
             </div>
 
             <section style={cardStyle} className="rounded-2xl bg-canvas p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-ink-900">My Performances</h2>
+                <h2 className="text-lg font-semibold text-ink-900">{t('dashboard.my_performances', 'My Performances')}</h2>
                 {my_performances && my_performances.length > 0 ? (
                     <ul className="mt-4 divide-y" style={{ borderColor: 'var(--theme-border)' }}>
                         {my_performances.map((p) => (
@@ -239,13 +241,13 @@ export default function MemberDashboard() {
                                     className="text-sm font-medium hover:underline"
                                     style={{ color: 'var(--theme-primary)' }}
                                 >
-                                    View
+                                    {t('common.view', 'View')}
                                 </Link>
                             </li>
                         ))}
                     </ul>
                 ) : (
-                    <p className="mt-4 text-sm text-ink-500">No performance participation yet.</p>
+                    <p className="mt-4 text-sm text-ink-500">{t('dashboard.no_performance_participation', 'No performance participation yet.')}</p>
                 )}
             </section>
         </div>

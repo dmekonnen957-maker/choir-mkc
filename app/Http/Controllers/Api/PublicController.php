@@ -97,7 +97,8 @@ class PublicController extends ApiController
 
     public function allSongs(Request $request): \Illuminate\Http\JsonResponse
     {
-        $userId = $request->user('sanctum')?->id ?? $request->user()?->id;
+        $user = $request->user('sanctum') ?? $request->user();
+        $userId = $user?->isApprovedMember() ? $user->id : null;
 
         $q = Song::query()
             ->where('is_published', true)
@@ -166,7 +167,8 @@ class PublicController extends ApiController
             abort(404);
         }
 
-        $userId = $request->user('sanctum')?->id ?? $request->user()?->id;
+        $user = $request->user('sanctum') ?? $request->user();
+        $userId = $user?->isApprovedMember() ? $user->id : null;
         $song->loadCount('likes');
 
         if ($userId) {

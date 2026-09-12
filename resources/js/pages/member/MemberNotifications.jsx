@@ -4,8 +4,10 @@ import { api } from '../../axios';
 import EmptyState from '../../components/member/EmptyState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Alert from '../../components/ui/Alert';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function MemberNotifications({ apiPath = '/member/notifications' }) {
+    const { t } = useLanguage();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -18,14 +20,14 @@ export default function MemberNotifications({ apiPath = '/member/notifications' 
             .catch((err) => {
                 if (active) {
                     setItems([]);
-                    setError(err.message || 'Unable to load notifications.');
+                    setError(err.message || t('notifications.load_error', 'Unable to load notifications.'));
                 }
             })
             .finally(() => active && setLoading(false));
         return () => {
             active = false;
         };
-    }, [apiPath]);
+    }, [apiPath, t]);
 
     if (loading) {
         return (
@@ -37,15 +39,15 @@ export default function MemberNotifications({ apiPath = '/member/notifications' 
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-ink-900">Notifications</h1>
+            <h1 className="text-2xl font-bold text-ink-900">{t('notifications.title', 'Notifications')}</h1>
 
             {error && <Alert variant="error" title={error} />}
 
             {!error && items.length === 0 ? (
                 <EmptyState
                     icon={Bell}
-                    title="No notifications yet"
-                    message="You'll see choir announcements and updates here."
+                    title={t('notifications.empty_title', 'No notifications yet')}
+                    message={t('notifications.empty_desc', "You'll see choir announcements and updates here.")}
                 />
             ) : (
                 <ul className="space-y-3">

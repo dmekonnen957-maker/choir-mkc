@@ -64,6 +64,17 @@ class SongLikeTest extends TestCase
         return $user;
     }
 
+    private function createTeamLeader(): User
+    {
+        $user = User::factory()->create([
+            'status' => User::STATUS_APPROVED,
+            'role' => 'team_leader',
+        ]);
+        $user->assignRole('team_leader');
+
+        return $user;
+    }
+
     public function test_public_user_can_view_song_likes_count_and_unliked_state(): void
     {
         $song = $this->createSong();
@@ -82,6 +93,19 @@ class SongLikeTest extends TestCase
         $response = $this->postJson("/api/songs/{$song->id}/like");
 
         $response->assertStatus(401);
+    }
+
+    public function test_non_member_cannot_like_song(): void
+    {
+        $leader = $this->createTeamLeader();
+        $song = $this->createSong();
+
+        Sanctum::actingAs($leader, ['*']);
+
+        $this->postJson("/api/songs/{$song->id}/like")
+            ->assertStatus(403);
+
+        $this->assertDatabaseCount('song_likes', 0);
     }
 
     public function test_authenticated_member_can_like_and_unlike_song(): void
@@ -119,6 +143,27 @@ class SongLikeTest extends TestCase
             'song_id' => $song->id,
             'user_id' => $member->id,
         ]);
+    }
+
+    public function test_member_can_like_song_from_another_choir(): void
+    {
+        $memberChoir = Choir::first();
+        $otherChoir = Choir::create([
+            'name' => 'Other Test Choir',
+            'slug' => 'other-test-choir',
+            'status' => 'active',
+            'is_public' => true,
+        ]);
+        $otherChoirSong = $this->createSong(['choir_id' => $otherChoir->id]);
+        $member = $this->createMember();
+        $member->choirs()->attach($memberChoir->id);
+
+        Sanctum::actingAs($member, ['*']);
+
+        $this->postJson("/api/songs/{$otherChoirSong->id}/like")
+            ->assertStatus(200)
+            ->assertJsonPath('data.likes_count', 1)
+            ->assertJsonPath('data.is_liked', true);
     }
 
     public function test_member_can_fetch_their_liked_songs(): void

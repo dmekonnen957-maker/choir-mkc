@@ -534,13 +534,21 @@ class MemberController extends ApiController
         $search         = trim($request->input('search', ''));
         $songsPage      = max(1, (int) $request->input('songs_page', 1));
         $submissionsPage = max(1, (int) $request->input('submissions_page', 1));
+        $memberId       = $user->isApprovedMember() ? $user->id : null;
 
         // ── Approved choir songs (library) ────────────────────────────────
         $songsQuery = $choir->songs()
             ->with('choir')
+            ->withCount('likes')
             ->where('status', 'approved')
             ->where('is_published', true)
             ->orderBy('title');
+
+        if ($memberId) {
+            $songsQuery->withExists(['likes as is_liked' => function ($q) use ($memberId) {
+                $q->where('user_id', $memberId);
+            }]);
+        }
 
         if ($search !== '') {
             $songsQuery->where(function ($q) use ($search) {
@@ -568,6 +576,8 @@ class MemberController extends ApiController
                 : null,
             'is_published' => $s->is_published,
             'status'       => $s->status,
+            'likes_count'  => (int) $s->likes_count,
+            'is_liked'     => (bool) ($s->is_liked ?? false),
             'choir'        => ['id' => $choir->id, 'name' => $choir->name],
             'created_at'   => $s->created_at,
         ]);
@@ -575,7 +585,14 @@ class MemberController extends ApiController
         // ── Member's own submissions ───────────────────────────────────────
         $submissionsQuery = Song::where('created_by', $user->id)
             ->with('choir')
+            ->withCount('likes')
             ->latest();
+
+        if ($memberId) {
+            $submissionsQuery->withExists(['likes as is_liked' => function ($q) use ($memberId) {
+                $q->where('user_id', $memberId);
+            }]);
+        }
 
         if ($search !== '') {
             $submissionsQuery->where(function ($q) use ($search) {
@@ -604,6 +621,8 @@ class MemberController extends ApiController
             'is_published'     => $s->is_published,
             'status'           => $s->status,
             'rejection_reason' => $s->rejection_reason,
+            'likes_count'      => (int) $s->likes_count,
+            'is_liked'         => (bool) ($s->is_liked ?? false),
             'choir'            => $s->choir ? ['id' => $s->choir->id, 'name' => $s->choir->name] : null,
             'created_at'       => $s->created_at,
         ]);

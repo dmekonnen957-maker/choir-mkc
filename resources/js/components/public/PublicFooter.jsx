@@ -18,7 +18,7 @@ export default function PublicFooter() {
                             </span>
                         </div>
                         <p className="text-sm text-slate-400 max-w-sm leading-relaxed">
-                            Discover Ethiopian choir songs, performances, melodies, and sacred worship music from Yeka Meserete Kristos Church worship ministries.
+                            Discover  choir songs, performances, melodies, and sacred worship music from Yeka Meserete Kristos Church worship ministries.
                         </p>
                     </div>
 

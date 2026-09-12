@@ -14,12 +14,7 @@ import EmptyState from '../../components/member/EmptyState';
 import MemberPerformanceCard from '../../components/member/MemberPerformanceCard';
 import PerformanceDetailModal from '../../components/member/PerformanceDetailModal';
 import MemberSongLyricsModal from '../../components/member/MemberSongLyricsModal';
-
-const FILTERS = [
-    { id: 'upcoming', label: 'Upcoming' },
-    { id: 'past', label: 'Past' },
-    { id: 'all', label: 'All' },
-];
+import { useLanguage } from '../../context/LanguageContext';
 
 function formatDisplayDate(dateStr) {
     if (!dateStr) return '';
@@ -43,10 +38,17 @@ function formatTime(value) {
 }
 
 export default function MemberPerformancesPage({ apiPath = '/member/performances' }) {
+    const { t } = useLanguage();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [filter, setFilter] = useState('upcoming');
+
+    const filters = [
+        { id: 'upcoming', label: t('performances.filter_upcoming', 'Upcoming') },
+        { id: 'past', label: t('performances.filter_past', 'Past') },
+        { id: 'all', label: t('performances.filter_all', 'All') },
+    ];
 
     // Detail modal state
     const [selectedPerformance, setSelectedPerformance] = useState(null);
@@ -59,9 +61,9 @@ export default function MemberPerformancesPage({ apiPath = '/member/performances
         setError(null);
         api.get(apiPath)
             .then((res) => setData(res.data.data))
-            .catch((err) => setError(err.message || 'Unable to load performances. Please try again.'))
+            .catch((err) => setError(err.message || t('performances.load_error', 'Unable to load performances. Please try again.')))
             .finally(() => setLoading(false));
-    }, [apiPath]);
+    }, [apiPath, t]);
 
     useEffect(() => {
         load();
@@ -110,14 +112,14 @@ export default function MemberPerformancesPage({ apiPath = '/member/performances
     if (error) {
         return (
             <div className="space-y-4">
-                <Alert variant="error" title="Unable to load performances.">
+                <Alert variant="error" title={t('performances.load_error', 'Unable to load performances. Please try again.')}>
                     <p>{error}</p>
                     <button
                         type="button"
                         onClick={load}
                         className="mt-3 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
                     >
-                        Try Again
+                        {t('common.try_again', 'Try Again')}
                     </button>
                 </Alert>
             </div>
@@ -133,9 +135,11 @@ export default function MemberPerformancesPage({ apiPath = '/member/performances
                         <CalendarDays size={22} />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Performances</h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                            {t('performances.title', 'Performances')}
+                        </h1>
                         <p className="text-sm text-slate-500">
-                            View upcoming performances, prepare your songs, and stay connected with your choir schedule.
+                            {t('performances.subtitle', 'View upcoming performances, prepare your songs, and stay connected with your choir schedule.')}
                         </p>
                     </div>
                 </div>
@@ -148,8 +152,8 @@ export default function MemberPerformancesPage({ apiPath = '/member/performances
             {!hasChoir ? (
                 <EmptyState
                     icon={Music2}
-                    title="No choir assigned"
-                    message="Once you're assigned to a choir, your performances and schedule will appear here."
+                    title={t('dashboard.not_assigned_choir', 'You are not assigned to a choir yet.')}
+                    message={t('dashboard.no_choir_message', 'Once an administrator assigns you to a choir, your schedule, performances and attendance will appear here.')}
                 />
             ) : (
                 <>
@@ -158,39 +162,45 @@ export default function MemberPerformancesPage({ apiPath = '/member/performances
                         <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/60 to-white p-4 shadow-sm">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold uppercase tracking-wider text-blue-600">
-                                    Upcoming
+                                    {t('performances.card_upcoming', 'Upcoming')}
                                 </span>
                                 <Sparkles size={16} className="text-blue-500" />
                             </div>
                             <p className="mt-2 text-3xl font-black text-slate-900">{stats.upcoming}</p>
-                            <span className="text-xs text-slate-400">Scheduled ahead</span>
+                            <span className="text-xs text-slate-400">
+                                {t('performances.card_scheduled_ahead', 'Scheduled ahead')}
+                            </span>
                         </div>
                         <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/60 to-white p-4 shadow-sm">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold uppercase tracking-wider text-blue-600">
-                                    This Month
+                                    {t('performances.card_this_month', 'This Month')}
                                 </span>
                                 <CalendarClock size={16} className="text-blue-500" />
                             </div>
                             <p className="mt-2 text-3xl font-black text-slate-900">{stats.this_month}</p>
-                            <span className="text-xs text-slate-400">Performances in {new Date().toLocaleDateString(undefined, { month: 'long' })}</span>
+                            <span className="text-xs text-slate-400">
+                                {t('performances.card_in_month', 'Performances in this month')}
+                            </span>
                         </div>
                         <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/60 to-white p-4 shadow-sm">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold uppercase tracking-wider text-blue-600">
-                                    Completed
+                                    {t('performances.card_completed', 'Completed')}
                                 </span>
                                 <CheckCircle2 size={16} className="text-blue-500" />
                             </div>
                             <p className="mt-2 text-3xl font-black text-slate-900">{stats.completed}</p>
-                            <span className="text-xs text-slate-400">Past performances</span>
+                            <span className="text-xs text-slate-400">
+                                {t('performances.card_past', 'Past performances')}
+                            </span>
                         </div>
                     </div>
 
                     {/* Filters */}
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
                         <div className="flex flex-wrap items-center gap-1.5">
-                            {FILTERS.map((f) => (
+                            {filters.map((f) => (
                                 <button
                                     key={f.id}
                                     type="button"
@@ -206,7 +216,9 @@ export default function MemberPerformancesPage({ apiPath = '/member/performances
                             ))}
                         </div>
                         <span className="px-2 text-xs font-semibold text-slate-400">
-                            {filtered.length} {filtered.length === 1 ? 'performance' : 'performances'}
+                            {filtered.length === 1
+                                ? t('performances.count_single', '{count} performance', { count: filtered.length })
+                                : t('performances.count_plural', '{count} performances', { count: filtered.length })}
                         </span>
                     </div>
 
@@ -216,7 +228,7 @@ export default function MemberPerformancesPage({ apiPath = '/member/performances
                             {filter !== 'past' && nextPerformance && (
                                 <section className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-600 to-indigo-600 p-6 text-white shadow-lg">
                                     <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-200">
-                                        Upcoming Performance
+                                        {t('dashboard.upcoming_performance', 'Upcoming Performance')}
                                     </p>
                                     <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
                                         {nextPerformance.title}
@@ -232,7 +244,7 @@ export default function MemberPerformancesPage({ apiPath = '/member/performances
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <MapPin size={16} className="text-blue-200" />
-                                            {nextPerformance.venue || nextPerformance.location || 'TBD'}
+                                            {nextPerformance.venue || nextPerformance.location || t('common.tbd', 'TBD')}
                                         </div>
                                         <div className="flex items-center gap-2 font-semibold">
                                             <Music2 size={16} className="text-blue-200" />
@@ -244,7 +256,7 @@ export default function MemberPerformancesPage({ apiPath = '/member/performances
                                         onClick={() => openDetails(nextPerformance)}
                                         className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-blue-700 shadow-md transition hover:bg-blue-50 active:scale-95"
                                     >
-                                        View Details
+                                        {t('common.view_details', 'View Details')}
                                     </button>
                                 </section>
                             )}
@@ -255,17 +267,17 @@ export default function MemberPerformancesPage({ apiPath = '/member/performances
                                     icon={CalendarDays}
                                     title={
                                         filter === 'upcoming'
-                                            ? 'No upcoming performances'
+                                            ? t('performances.empty_upcoming', 'No upcoming performances')
                                             : filter === 'past'
-                                              ? 'No past performances'
-                                              : 'No performances found'
+                                              ? t('performances.empty_past', 'No past performances')
+                                              : t('performances.empty_none', 'No performances found')
                                     }
                                     message={
                                         filter === 'upcoming'
-                                            ? "Your choir's upcoming performances will appear here."
+                                            ? t('performances.empty_upcoming_desc', "Your choir's upcoming performances will appear here.")
                                             : filter === 'past'
-                                              ? "Your choir's past performances will appear here."
-                                              : 'No performances are scheduled for your choir yet.'
+                                              ? t('performances.empty_past_desc', "Your choir's past performances will appear here.")
+                                              : t('performances.empty_none_desc', 'No performances are scheduled for your choir yet.')
                                     }
                                 />
                             ) : (

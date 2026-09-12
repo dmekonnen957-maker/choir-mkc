@@ -356,14 +356,14 @@ export default function AdminSongFormPage({ mode = 'create', embedded = false, o
                 <Card className="space-y-6">
                     <Section
                         title="Lyrics"
-                        hint="Optional. Use [Chord] notation, e.g. [C]Amazing grace. Line breaks are preserved and chords transpose automatically."
+                        hint="Optional. Use [Chord] notation, e.g. [C] የሱስ ስም. Line breaks are preserved and chords transpose automatically."
                     >
                         <div>
                             <textarea
                                 rows={10}
-                                className="w-full rounded-xl border border-blue-100 bg-canvas px-3 py-2 font-mono text-sm text-ink-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                                className="w-full rounded-xl border border-blue-100 bg-canvas px-3 py-2 text-sm text-ink-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 [font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation_Mono','Courier_New',monospace,'Noto_Sans_Ethiopic','Nyala','Abyssinica_SIL',serif]"
                                 value={form.lyrics}
-                                placeholder={'[C]Amazing grace how sweet the sound\n[F]That saved a wretch like me'}
+                                placeholder={'[C] የሱስ ስም\n[G] ከስሞች ሁሉ በላይ'}
                                 onChange={(e) => update('lyrics', e.target.value)}
                             />
                             {errors.lyrics?.[0] && (

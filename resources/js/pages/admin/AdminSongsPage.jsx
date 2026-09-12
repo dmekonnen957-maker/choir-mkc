@@ -223,7 +223,7 @@ export default function AdminSongsPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="flex h-full min-h-0 flex-col gap-6">
             {/* Header */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -422,7 +422,8 @@ export default function AdminSongsPage() {
 
             {/* Songs Grid */}
             {sortedSongs.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
                     <Music className="mx-auto h-10 w-10 text-slate-300 mb-2" />
                     <p className="font-bold text-slate-800">
                         {statusTab === 'pending' ? 'No pending song submissions' : 'No songs found'}
@@ -433,8 +434,10 @@ export default function AdminSongsPage() {
                             : 'Adjust your search query or filters to see music records.'}
                     </p>
                 </div>
+                </div>
             ) : (
-                <div className="grid grid-cols-1 gap-4">
+                <div className="min-h-0 flex-1 overflow-y-auto pb-4">
+                    <div className="grid grid-cols-1 gap-4">
                     {sortedSongs.map((s) => {
                         const isPending = s.status === 'pending';
                         const isApproved = s.status === 'approved';
@@ -576,6 +579,7 @@ export default function AdminSongsPage() {
                             </div>
                         );
                     })}
+                </div>
                 </div>
             )}
 

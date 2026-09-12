@@ -16,6 +16,7 @@ import {
     Upload,
     Image,
     Sparkles,
+    Heart,
 } from 'lucide-react';
 import { api } from '../../axios';
 import Alert from '../../components/ui/Alert';
@@ -24,12 +25,15 @@ import MemberSongLyricsModal from '../../components/member/MemberSongLyricsModal
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import { likeSong, unlikeSong } from '../../lib/publicApi';
+import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 const KEYS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'Db', 'Eb', 'Gb', 'Ab', 'Bb'];
 const SCALES = [
-    { value: 'major', label: 'Major' },
-    { value: 'minor', label: 'Minor' },
-    { value: 'ethiopian', label: 'Ethiopian / Traditional' },
+    { value: 'major', labelKey: 'songs.scale_major', label: 'Major' },
+    { value: 'minor', labelKey: 'songs.scale_minor', label: 'Minor' },
+    { value: 'ethiopian', labelKey: 'songs.scale_ethiopian', label: 'Ethiopian / Traditional' },
 ];
 
 /* ─────────────────────── Mini Audio Player ─────────────────────── */
@@ -57,6 +61,7 @@ function MiniAudioPlayer({ audioUrl, onClose }) {
 
 /* ─────────────────────── Song Card ─────────────────────── */
 function SongCard({ song, onPlay, onLyrics, isSubmission = false }) {
+    const { t } = useLanguage();
     const isPending = song.status === 'pending';
     const isApproved = song.status === 'approved';
     const isRejected = song.status === 'rejected';
@@ -67,21 +72,21 @@ function SongCard({ song, onPlay, onLyrics, isSubmission = false }) {
             {isSubmission && (
                 <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Submission Status
+                        {t('songs.submission_status', 'Submission Status')}
                     </span>
                     {isPending && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700 border border-amber-200">
-                            <Clock size={12} className="animate-spin" /> Pending Review
+                            <Clock size={12} className="animate-spin" /> {t('status.pending_review', 'Pending Review')}
                         </span>
                     )}
                     {isApproved && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
-                            <CheckCircle2 size={12} /> Approved
+                            <CheckCircle2 size={12} /> {t('status.approved', 'Approved')}
                         </span>
                     )}
                     {isRejected && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-700 border border-rose-200">
-                            <XCircle size={12} /> Rejected
+                            <XCircle size={12} /> {t('status.rejected', 'Rejected')}
                         </span>
                     )}
                 </div>
@@ -91,7 +96,7 @@ function SongCard({ song, onPlay, onLyrics, isSubmission = false }) {
             {isSubmission && isRejected && song.rejection_reason && (
                 <div className="mb-3 rounded-xl bg-rose-50/80 p-2.5 border border-rose-100 text-xs text-rose-800">
                     <p className="font-bold mb-0.5 flex items-center gap-1">
-                        <AlertCircle size={13} /> Admin Feedback:
+                        <AlertCircle size={13} /> {t('songs.admin_feedback', 'Admin Feedback:')}
                     </p>
                     <p className="text-[11px] leading-relaxed">{song.rejection_reason}</p>
                 </div>
@@ -113,7 +118,7 @@ function SongCard({ song, onPlay, onLyrics, isSubmission = false }) {
                     )}
                     {song.original_key && (
                         <span className="mt-1.5 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-                            Key: {song.original_key}
+                            {t('songs.key_label', { key: song.original_key })}
                         </span>
                     )}
                 </div>
@@ -123,12 +128,12 @@ function SongCard({ song, onPlay, onLyrics, isSubmission = false }) {
             <div className="mb-3 flex flex-wrap gap-1.5">
                 {song.has_lyrics && (
                     <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-100">
-                        <FileText size={10} /> Lyrics
+                        <FileText size={10} /> {t('common.lyrics', 'Lyrics')}
                     </span>
                 )}
                 {song.has_audio && (
                     <span className="flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 border border-blue-100">
-                        <Play size={10} /> Audio
+                        <Play size={10} /> {t('songs.badge_audio', 'Audio')}
                     </span>
                 )}
                 <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-500 border border-slate-100">
@@ -143,7 +148,7 @@ function SongCard({ song, onPlay, onLyrics, isSubmission = false }) {
                         onClick={() => onLyrics(song)}
                         className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                     >
-                        <FileText size={13} /> Lyrics
+                        <FileText size={13} /> {t('common.lyrics', 'Lyrics')}
                     </button>
                 )}
                 {song.has_audio && (
@@ -151,7 +156,7 @@ function SongCard({ song, onPlay, onLyrics, isSubmission = false }) {
                         onClick={() => onPlay(song)}
                         className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-600 hover:text-white"
                     >
-                        <Play size={13} /> Play
+                        <Play size={13} /> {t('common.play', 'Play')}
                     </button>
                 )}
                 {song.has_audio && (
@@ -160,7 +165,7 @@ function SongCard({ song, onPlay, onLyrics, isSubmission = false }) {
                         download
                         onClick={(e) => e.stopPropagation()}
                         className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
-                        title="Download audio"
+                        title={t('common.download_audio', 'Download audio')}
                     >
                         <Download size={13} />
                     </a>
@@ -171,17 +176,19 @@ function SongCard({ song, onPlay, onLyrics, isSubmission = false }) {
 }
 
 function SongTable({ songs, onPlay, onLyrics, isSubmission = false }) {
+    const { t } = useLanguage();
+
     return (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="overflow-x-auto">
+        <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="h-full overflow-auto pb-24">
                 <table className="w-full min-w-[720px] text-left text-sm">
-                    <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+                    <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
                         <tr>
-                            <th className="px-4 py-3 font-semibold">Song</th>
-                            <th className="px-4 py-3 font-semibold">Key</th>
-                            <th className="px-4 py-3 font-semibold">Status</th>
-                            <th className="px-4 py-3 font-semibold">Available</th>
-                            <th className="px-4 py-3 text-right font-semibold">Actions</th>
+                            <th className="px-4 py-3 font-semibold">{t('songs.col_song', 'Song')}</th>
+                            <th className="px-4 py-3 font-semibold">{t('songs.col_key', 'Key')}</th>
+                            <th className="px-4 py-3 font-semibold">{t('songs.col_status', 'Status')}</th>
+                            <th className="px-4 py-3 font-semibold">{t('songs.col_available', 'Available')}</th>
+                            <th className="px-4 py-3 text-right font-semibold">{t('songs.col_actions', 'Actions')}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -194,7 +201,7 @@ function SongTable({ songs, onPlay, onLyrics, isSubmission = false }) {
                                     </p>
                                     {isSubmission && song.rejection_reason && (
                                         <p className="mt-1 truncate text-xs text-rose-600" title={song.rejection_reason}>
-                                            Feedback: {song.rejection_reason}
+                                            {t('songs.admin_feedback', 'Feedback:')} {song.rejection_reason}
                                         </p>
                                     )}
                                 </td>
@@ -211,27 +218,28 @@ function SongTable({ songs, onPlay, onLyrics, isSubmission = false }) {
                                             {song.status === 'approved' && <CheckCircle2 size={13} />}
                                             {song.status === 'rejected' && <XCircle size={13} />}
                                             {song.status === 'pending' && <Clock size={13} />}
-                                            {song.status || 'Pending'}
+                                            {song.status === 'approved' ? t('status.approved', 'Approved') : (song.status === 'rejected' ? t('status.rejected', 'Rejected') : t('status.pending', 'Pending'))}
                                         </span>
                                     ) : (
-                                        <span className="text-xs font-semibold text-emerald-700">Approved</span>
+                                        <span className="text-xs font-semibold text-emerald-700">{t('status.approved', 'Approved')}</span>
                                     )}
                                 </td>
                                 <td className="px-4 py-3">
                                     <div className="flex items-center gap-2 text-xs">
-                                        {song.has_lyrics && <span className="text-emerald-700">Lyrics</span>}
-                                        {song.has_audio && <span className="text-blue-700">Audio</span>}
+                                        {song.has_lyrics && <span className="text-emerald-700">{t('common.lyrics', 'Lyrics')}</span>}
+                                        {song.has_audio && <span className="text-blue-700">{t('songs.badge_audio', 'Audio')}</span>}
                                         {!song.has_lyrics && !song.has_audio && <span className="text-slate-400">—</span>}
                                     </div>
                                 </td>
                                 <td className="px-4 py-3">
                                     <div className="flex justify-end gap-1.5">
+                                        <SongLikeButton song={song} />
                                         {song.has_lyrics && (
-                                            <button
+                                             <button
                                                 type="button"
                                                 onClick={() => onLyrics(song)}
                                                 className="rounded-lg p-2 text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
-                                                title="View lyrics"
+                                                title={t('common.lyrics', 'Lyrics')}
                                                 aria-label={`View lyrics for ${song.title}`}
                                             >
                                                 <FileText size={16} />
@@ -242,7 +250,7 @@ function SongTable({ songs, onPlay, onLyrics, isSubmission = false }) {
                                                 type="button"
                                                 onClick={() => onPlay(song)}
                                                 className="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800"
-                                                title="Play song"
+                                                title={t('common.play', 'Play')}
                                                 aria-label={`Play ${song.title}`}
                                             >
                                                 <Play size={16} />
@@ -253,7 +261,7 @@ function SongTable({ songs, onPlay, onLyrics, isSubmission = false }) {
                                                 href={song.audio_url}
                                                 download
                                                 className="rounded-lg p-2 text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-700"
-                                                title="Download audio"
+                                                title={t('common.download_audio', 'Download audio')}
                                                 aria-label={`Download ${song.title}`}
                                             >
                                                 <Download size={16} />
@@ -270,8 +278,54 @@ function SongTable({ songs, onPlay, onLyrics, isSubmission = false }) {
     );
 }
 
+function SongLikeButton({ song }) {
+    const { isAuthenticated, hasRole } = useAuth();
+    const canLike = isAuthenticated && hasRole('member');
+    const [liked, setLiked] = useState(Boolean(song.is_liked));
+    const [count, setCount] = useState(Number(song.likes_count || 0));
+    const [saving, setSaving] = useState(false);
+
+    const toggleLike = async () => {
+        if (!canLike || saving) return;
+
+        const previousLiked = liked;
+        const previousCount = count;
+        const nextLiked = !previousLiked;
+        setLiked(nextLiked);
+        setCount(Math.max(0, previousCount + (nextLiked ? 1 : -1)));
+        setSaving(true);
+
+        try {
+            const response = nextLiked ? await likeSong(song.id) : await unlikeSong(song.id);
+            if (response?.likes_count !== undefined) setCount(Number(response.likes_count));
+        } catch {
+            setLiked(previousLiked);
+            setCount(previousCount);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <button
+            type="button"
+            onClick={toggleLike}
+            disabled={!canLike || saving}
+            className={`inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
+                liked ? 'bg-rose-50 text-rose-600' : 'text-slate-500 hover:bg-rose-50 hover:text-rose-600'
+            }`}
+            title={canLike ? (liked ? 'Unlike song' : 'Like song') : 'Members can like songs'}
+            aria-label={`${count} likes${canLike ? `, ${liked ? 'unlike' : 'like'} ${song.title}` : ''}`}
+        >
+            <Heart size={15} className={liked ? 'fill-current' : ''} />
+            <span>{count}</span>
+        </button>
+    );
+}
+
 /* ─────────────────────── Submit Song Modal ─────────────────────── */
 function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, userChoirs = [] }) {
+    const { t } = useLanguage();
     const initialChoirId = defaultChoir?.id || userChoirs?.[0]?.id || '';
     const [form, setForm] = useState({
         choir_id: initialChoirId,
@@ -348,7 +402,7 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, us
             });
 
             resetForm();
-            onSubmitted('Your song was submitted successfully and is now pending administrator review.');
+            onSubmitted(t('songs.submit_success', 'Your song was submitted successfully and is now pending administrator review.'));
             onClose();
         } catch (err) {
             console.error('Song submission error:', err);
@@ -373,15 +427,14 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, us
         : [];
 
     return (
-        <Modal open={open} onClose={onClose} title="Submit Song for Review" size="lg">
+        <Modal open={open} onClose={onClose} title={t('songs.modal_submit_title', 'Submit Song for Review')} size="lg">
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="rounded-xl bg-blue-50/70 p-3 border border-blue-100 text-xs text-blue-800 flex items-start gap-2">
                     <Sparkles size={16} className="text-blue-600 shrink-0 mt-0.5" />
                     <div>
-                        <p className="font-bold">Submission & Approval Process</p>
+                        <p className="font-bold">{t('songs.process_title', 'Submission & Approval Process')}</p>
                         <p className="text-[11px] text-slate-600 mt-0.5">
-                            Submitted songs are saved with status <strong>Pending</strong>.
-                            Administrators review submissions to approve, reject, or request edits. Once approved, the song appears publicly in the worship music library.
+                            {t('songs.process_desc', 'Submitted songs are saved with status Pending. Administrators review submissions to approve, reject, or request edits. Once approved, the song appears publicly in the worship music library.')}
                         </p>
                     </div>
                 </div>
@@ -395,7 +448,7 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, us
                     {choirOptions.length > 1 ? (
                         <div className="sm:col-span-2">
                             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                                Choir <span className="text-rose-500">*</span>
+                                {t('songs.field_choir', 'Choir')} <span className="text-rose-500">*</span>
                             </label>
                             <select
                                 value={form.choir_id}
@@ -403,7 +456,7 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, us
                                 className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                                 required
                             >
-                                <option value="">Select Choir...</option>
+                                <option value="">{t('songs.field_select_choir', 'Select Choir...')}</option>
                                 {choirOptions.map((c) => (
                                     <option key={c.id} value={c.id}>
                                         {c.name}
@@ -416,43 +469,43 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, us
                         </div>
                     ) : choirOptions.length === 1 ? (
                         <div className="sm:col-span-2 rounded-xl bg-slate-50 border border-slate-200 px-3.5 py-2 flex items-center justify-between text-xs text-slate-600">
-                            <span>Submitting for Choir:</span>
+                            <span>{t('songs.submitting_for_choir', 'Submitting for Choir:')}</span>
                             <span className="font-bold text-blue-700">{choirOptions[0].name}</span>
                         </div>
                     ) : null}
                     <div className="sm:col-span-2">
                         <Input
-                            label="Song Title"
+                            label={t('songs.field_title', 'Song Title')}
                             value={form.title}
                             onChange={update('title')}
                             error={errors.title?.[0]}
-                            placeholder="e.g. Halleluya LeAmlak"
+                            placeholder={t('songs.title_placeholder', 'e.g. Halleluya LeAmlak')}
                             maxLength={255}
                             required
                         />
                     </div>
 
                     <Input
-                        label="Artist / Choir"
+                        label={t('songs.field_artist', 'Artist / Choir')}
                         value={form.artist}
                         onChange={update('artist')}
                         error={errors.artist?.[0]}
-                        placeholder="e.g. Yeka MKC Choir"
+                        placeholder={t('songs.artist_placeholder', 'Lead vocalist or original performer')}
                         maxLength={255}
                     />
 
                     <Input
-                        label="Composer / Songwriter"
+                        label={t('songs.field_composer', 'Composer / Songwriter')}
                         value={form.composer}
                         onChange={update('composer')}
                         error={errors.composer?.[0]}
-                        placeholder="e.g. Anonymous / Traditional"
+                        placeholder={t('songs.composer_placeholder', 'Songwriter / Composer name')}
                         maxLength={255}
                     />
 
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                            Original Key <span className="text-rose-500">*</span>
+                            {t('songs.field_key', 'Original Key')} <span className="text-rose-500">*</span>
                         </label>
                         <select
                             value={form.original_key}
@@ -472,7 +525,7 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, us
 
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                            Scale / Mode <span className="text-rose-500">*</span>
+                            {t('songs.field_scale', 'Scale / Mode')} <span className="text-rose-500">*</span>
                         </label>
                         <select
                             value={form.scale}
@@ -481,7 +534,7 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, us
                         >
                             {SCALES.map((s) => (
                                 <option key={s.value} value={s.value}>
-                                    {s.label}
+                                    {s.labelKey ? t(s.labelKey, s.label) : s.label}
                                 </option>
                             ))}
                         </select>
@@ -492,13 +545,13 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, us
 
                     <div className="sm:col-span-2">
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                            Description / Spiritual Context
+                            {t('songs.field_description', 'Description / Spiritual Context')}
                         </label>
                         <textarea
                             rows={2}
                             value={form.description}
                             onChange={update('description')}
-                            placeholder="Brief notes about the occasion or theme of this song..."
+                            placeholder={t('songs.description_placeholder', 'Brief notes about the occasion or theme of this song...')}
                             maxLength={2000}
                             className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                         />
@@ -509,13 +562,13 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, us
 
                     <div className="sm:col-span-2">
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                            Song Lyrics
+                            {t('songs.field_lyrics', 'Song Lyrics')}
                         </label>
                         <textarea
                             rows={5}
                             value={form.lyrics}
                             onChange={update('lyrics')}
-                            placeholder="Enter the full lyrics for this song (stanzas and chorus)..."
+                            placeholder={t('songs.lyrics_placeholder', 'Enter the full lyrics for this song (stanzas and chorus)...')}
                             className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 font-mono placeholder:text-slate-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                         />
                         {errors.lyrics?.[0] && (
@@ -526,7 +579,7 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, us
                     {/* Audio Upload */}
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                            MP3 Audio File (Max 15MB)
+                            {t('songs.field_audio', 'MP3 Audio File (Max 15MB)')}
                         </label>
                         <input
                             type="file"
@@ -542,7 +595,7 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, us
                     {/* Cover Image Upload */}
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                            Cover Image (Max 5MB)
+                            {t('songs.field_cover', 'Cover Image (Max 5MB)')}
                         </label>
                         <input
                             type="file"
@@ -558,11 +611,11 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, us
 
                 <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
                     <Button type="button" variant="ghost" onClick={onClose} disabled={submitting}>
-                        Cancel
+                        {t('common.cancel', 'Cancel')}
                     </Button>
                     <Button type="submit" loading={submitting} className="gap-2">
                         <Upload size={15} />
-                        Submit for Review
+                        {t('songs.btn_submit_review', 'Submit for Review')}
                     </Button>
                 </div>
             </form>
@@ -572,6 +625,7 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, us
 
 /* ─────────────────────── Page ─────────────────────── */
 export default function MemberSongsPage({ apiPath = 'member/songs' }) {
+    const { t } = useLanguage();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -587,16 +641,20 @@ export default function MemberSongsPage({ apiPath = 'member/songs' }) {
         setError(null);
         api.get(`/${apiPath}`)
             .then((res) => setData(res.data?.data ?? res.data))
-            .catch((err) => setError(err.message || 'Unable to load songs.'))
+            .catch((err) => setError(err.message || t('songs.load_error', 'Unable to load songs.')))
             .finally(() => setLoading(false));
-    }, [apiPath]);
+    }, [apiPath, t]);
 
     useEffect(() => {
         load();
     }, [load]);
 
-    const songs = Array.isArray(data?.songs) ? data.songs : [];
-    const mySubmissions = Array.isArray(data?.my_submissions) ? data.my_submissions : [];
+    const songs = Array.isArray(data?.songs)
+        ? data.songs
+        : (Array.isArray(data?.songs?.items) ? data.songs.items : []);
+    const mySubmissions = Array.isArray(data?.my_submissions)
+        ? data.my_submissions
+        : (Array.isArray(data?.my_submissions?.items) ? data.my_submissions.items : []);
 
     const filteredSongs = useMemo(() => {
         const list = activeTab === 'library' ? songs : mySubmissions;
@@ -617,13 +675,17 @@ export default function MemberSongsPage({ apiPath = 'member/songs' }) {
     }), [songs]);
 
     return (
-        <div className="space-y-6">
+        <div className="flex h-full min-h-0 flex-col gap-6">
             {/* Header */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Music Library</h1>
+                    <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+                        {t('songs.library_title', 'Music Library')}
+                    </h1>
                     <p className="mt-0.5 text-sm text-slate-500">
-                        {data?.choir ? `${data.choir.name} songs and submissions` : 'Your choir song library'}
+                        {data?.choir
+                            ? t('songs.library_subtitle', '{choir} songs and submissions', { choir: data.choir.name })
+                            : t('songs.default_subtitle', 'Your choir song library')}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -632,13 +694,13 @@ export default function MemberSongsPage({ apiPath = 'member/songs' }) {
                         className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition active:scale-95"
                     >
                         <Plus size={16} />
-                        Submit Song
+                        {t('songs.submit_song', 'Submit Song')}
                     </button>
                     <button
                         onClick={load}
                         disabled={loading}
                         className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-60"
-                        title="Refresh"
+                        title={t('common.refresh', 'Refresh')}
                     >
                         <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
                     </button>
@@ -664,7 +726,7 @@ export default function MemberSongsPage({ apiPath = 'member/songs' }) {
                             : 'text-slate-600 hover:bg-slate-100'
                     }`}
                 >
-                    Choir Library ({stats.total})
+                    {t('songs.tab_choir_library', 'Choir Library ({count})', { count: stats.total })}
                 </button>
                 <button
                     onClick={() => setActiveTab('my_submissions')}
@@ -674,7 +736,7 @@ export default function MemberSongsPage({ apiPath = 'member/songs' }) {
                             : 'text-slate-600 hover:bg-slate-100'
                     }`}
                 >
-                    My Submissions
+                    {t('songs.tab_my_submissions', 'My Submissions')}
                     {mySubmissions.length > 0 && (
                         <span className={`px-2 py-0.5 rounded-full text-xs ${
                             activeTab === 'my_submissions' ? 'bg-white text-blue-700' : 'bg-slate-200 text-slate-700'
@@ -689,9 +751,9 @@ export default function MemberSongsPage({ apiPath = 'member/songs' }) {
             {activeTab === 'library' && !loading && !error && songs.length > 0 && (
                 <div className="flex flex-wrap gap-3">
                     {[
-                        { label: 'Approved Songs', value: stats.total, color: 'blue' },
-                        { label: 'With Lyrics', value: stats.withLyrics, color: 'emerald' },
-                        { label: 'With Audio', value: stats.withAudio, color: 'indigo' },
+                        { label: t('songs.approved_songs', 'Approved Songs'), value: stats.total, color: 'blue' },
+                        { label: t('songs.with_lyrics', 'With Lyrics'), value: stats.withLyrics, color: 'emerald' },
+                        { label: t('songs.with_audio', 'With Audio'), value: stats.withAudio, color: 'indigo' },
                     ].map(({ label, value, color }) => (
                         <div
                             key={label}
@@ -710,7 +772,11 @@ export default function MemberSongsPage({ apiPath = 'member/songs' }) {
                     <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     <input
                         type="text"
-                        placeholder={`Search ${activeTab === 'library' ? 'songs' : 'my submissions'} by title, artist, or composer…`}
+                        placeholder={
+                            activeTab === 'library'
+                                ? t('songs.search_placeholder_library', 'Search songs by title, artist, or composer…')
+                                : t('songs.search_placeholder_submissions', 'Search my submissions by title, artist, or composer…')
+                        }
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-800 shadow-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder:text-slate-400"
@@ -728,37 +794,43 @@ export default function MemberSongsPage({ apiPath = 'member/songs' }) {
 
             {/* Error */}
             {error && (
-                <Alert variant="error" title="Unable to load songs">
+                <Alert variant="error" title={t('songs.load_error', 'Unable to load songs.')}>
                     <p>{error}</p>
-                    <button onClick={load} className="mt-2 text-sm font-semibold underline">Try Again</button>
+                    <button onClick={load} className="mt-2 text-sm font-semibold underline">{t('common.try_again', 'Try Again')}</button>
                 </Alert>
             )}
 
             {/* Song Table */}
             {loading ? (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <div className="h-44 rounded-2xl bg-slate-100 animate-pulse" />
-                    <div className="h-44 rounded-2xl bg-slate-100 animate-pulse" />
-                    <div className="h-44 rounded-2xl bg-slate-100 animate-pulse" />
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="h-44 rounded-2xl bg-slate-100 animate-pulse" />
+                        <div className="h-44 rounded-2xl bg-slate-100 animate-pulse" />
+                        <div className="h-44 rounded-2xl bg-slate-100 animate-pulse" />
+                    </div>
                 </div>
             ) : filteredSongs.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-12 text-center">
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-12 text-center">
                     <Music2 size={36} className="mx-auto text-slate-300 mb-3" />
                     <p className="text-base font-bold text-slate-800">
-                        {activeTab === 'library' ? 'No songs found in this choir library' : 'No song submissions yet'}
+                        {activeTab === 'library'
+                            ? t('songs.no_songs_found', 'No songs found in this choir library')
+                            : t('songs.no_submissions', 'No song submissions yet')}
                     </p>
                     <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
                         {activeTab === 'library'
-                            ? 'Approved choir songs will appear here once reviewed by the administrator.'
-                            : 'You haven\'t submitted any songs yet. Click below to submit a song for review.'}
+                            ? t('songs.no_songs_found_desc', 'Approved choir songs will appear here once reviewed by the administrator.')
+                            : t('songs.no_submissions_desc', "You haven't submitted any songs yet. Click below to submit a song for review.")}
                     </p>
                     <button
                         onClick={() => setIsSubmitOpen(true)}
                         className="mt-5 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition"
                     >
                         <Plus size={15} />
-                        Submit a Song
+                        {t('songs.submit_a_song', 'Submit a Song')}
                     </button>
+                </div>
                 </div>
             ) : (
                 <SongTable

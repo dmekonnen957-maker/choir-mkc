@@ -31,7 +31,8 @@ function formatScale(scale, scaleMode) {
 
 export default function SongsPage() {
     const [searchParams, setSearchParams] = useSearchParams();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, hasRole } = useAuth();
+    const canLike = isAuthenticated && hasRole('member');
 
     // Query state
     const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
@@ -69,7 +70,7 @@ export default function SongsPage() {
     const loadSongs = useCallback(async () => {
         setLoading(true);
         try {
-            if (onlyLiked && isAuthenticated) {
+            if (onlyLiked && canLike) {
                 const res = await fetchLikedSongs({
                     page,
                     per_page: 100,
@@ -94,11 +95,28 @@ export default function SongsPage() {
         } finally {
             setLoading(false);
         }
-    }, [page, searchQuery, selectedChoir, sortOption, onlyLiked, isAuthenticated]);
+    }, [page, searchQuery, selectedChoir, sortOption, onlyLiked, canLike]);
 
     useEffect(() => {
         loadSongs();
     }, [loadSongs]);
+
+    // This page uses an app-shell layout: only the Songs list scrolls inside
+    // its own container, so the page/body must never scroll while this page is
+    // mounted. Restore global scrolling on unmount.
+    useEffect(() => {
+        const html = document.documentElement;
+        const body = document.body;
+        const prevHtmlOverflow = html.style.overflow;
+        const prevBodyOverflow = body.style.overflow;
+        html.style.overflow = 'hidden';
+        body.style.overflow = 'hidden';
+
+        return () => {
+            html.style.overflow = prevHtmlOverflow;
+            body.style.overflow = prevBodyOverflow;
+        };
+    }, []);
 
     // Handle Audio play/pause
     const handlePlaySong = (song) => {
@@ -139,7 +157,7 @@ export default function SongsPage() {
     };
 
     const handleLikeToggle = async (song) => {
-        if (!isAuthenticated || likingSongId === song.id) return;
+        if (!canLike || likingSongId === song.id) return;
         setLikingSongId(song.id);
         const wasLiked = Boolean(song.is_liked);
         const nextLiked = !wasLiked;
@@ -176,7 +194,7 @@ export default function SongsPage() {
     );
 
     return (
-        <div className="bg-slate-50 min-h-screen text-slate-800 pb-28">
+        <div className="flex h-dvh flex-col overflow-hidden bg-slate-50 text-slate-800">
             {/* Hidden global audio element */}
             <audio
                 ref={audioRef}
@@ -194,7 +212,7 @@ export default function SongsPage() {
             )}
 
             {/* 1. HERO HEADER */}
-            <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 text-white py-14 sm:py-18 border-b border-blue-900/40">
+            <section className="relative shrink-0 overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 text-white py-14 sm:py-18 border-b border-blue-900/40">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.2),transparent_50%)] pointer-events-none" />
                 <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <span className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-blue-300 backdrop-blur-md mb-4">
@@ -210,7 +228,7 @@ export default function SongsPage() {
             </section>
 
             {/* 2. SEARCH & DISCOVERY CONTROLS */}
-            <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 -mt-7 relative z-20">
+            <section className="relative z-20 mx-auto w-full max-w-7xl shrink-0 px-4 sm:px-6 lg:px-8 -mt-7">
                 <div className="rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-xl space-y-4">
                     {/* Top Row: Search Input & Main Controls */}
                     <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
@@ -320,9 +338,9 @@ export default function SongsPage() {
             </section>
 
             {/* 3. SONG CARDS GRID */}
-            <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-10">
+            <main className={`mx-auto flex w-full max-w-7xl min-h-0 flex-1 flex-col px-4 pt-8 sm:px-6 sm:pt-10 lg:px-8 ${playingSong ? 'pb-24' : 'pb-6'}`}>
                 {/* Result count summary */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="mb-6 flex shrink-0 items-center justify-between">
                     <p className="text-sm font-semibold text-slate-500">
                         {loading
                             ? 'Loading songs...'
@@ -336,13 +354,16 @@ export default function SongsPage() {
                 </div>
 
                 {loading ? (
-                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                        {[...Array(8)].map((_, index) => (
-                            <div key={index} className="h-16 animate-pulse border-b border-slate-100 bg-slate-50/70 last:border-b-0" />
-                        ))}
+                    <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <div className="h-full overflow-y-auto">
+                            {[...Array(8)].map((_, index) => (
+                                <div key={index} className="h-16 animate-pulse border-b border-slate-100 bg-slate-50/70 last:border-b-0" />
+                            ))}
+                        </div>
                     </div>
                 ) : songs.length === 0 ? (
-                    <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-16 text-center shadow-sm">
+                    <div className="min-h-0 flex-1 overflow-y-auto">
+                        <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-16 text-center shadow-sm">
                         <Music2 size={48} className="mx-auto text-slate-300 mb-3" />
                         <h3 className="text-lg font-bold text-slate-900">No songs match your criteria</h3>
                         <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
@@ -359,10 +380,11 @@ export default function SongsPage() {
                                 Clear All Filters
                             </button>
                         )}
+                        </div>
                     </div>
                 ) : (
-                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                        <div className="max-h-[80vh] overflow-y-auto [scrollbar-color:#94a3b8_#f8fafc] [scrollbar-width:thin]">
+                    <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <div className="h-full overflow-y-auto pb-16 [scrollbar-color:#94a3b8_#f8fafc] [scrollbar-width:thin]">
                             <div className="sticky top-0 z-10 hidden grid-cols-[minmax(0,1.5fr)_minmax(140px,1fr)_minmax(140px,0.8fr)_auto] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 sm:grid">
                                 <span>Song</span>
                                 <span>Created by Choir</span>
@@ -382,7 +404,7 @@ export default function SongsPage() {
                                     <span className="hidden text-sm capitalize text-slate-600 sm:block">{formatScale(song.scale, song.scale_mode)}</span>
                                     <div className="flex items-center justify-between gap-3 sm:justify-end">
                                         <span className="text-xs font-semibold text-slate-500 sm:hidden">{song.likes_count || 0} likes</span>
-                                        <button type="button" onClick={() => handleLikeToggle(song)} disabled={!isAuthenticated || likingSongId === song.id} className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${song.is_liked ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-600 hover:bg-rose-50 hover:text-rose-600'}`} aria-label={isAuthenticated ? `${song.is_liked ? 'Unlike' : 'Like'} ${song.title}` : 'Sign in to like songs'}>
+                                        <button type="button" onClick={() => handleLikeToggle(song)} disabled={!canLike || likingSongId === song.id} className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${song.is_liked ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-600 hover:bg-rose-50 hover:text-rose-600'}`} aria-label={canLike ? `${song.is_liked ? 'Unlike' : 'Like'} ${song.title}` : 'Login to like this song'} title={canLike ? undefined : 'Login to like this song'}>
                                             <Heart size={14} className={song.is_liked ? 'fill-current' : ''} />
                                             <span className="hidden sm:inline">{song.likes_count || 0}</span>
                                         </button>
@@ -395,14 +417,13 @@ export default function SongsPage() {
 
                 {/* 4. PAGINATION — Page numbers + Prev / Next */}
                 {pagination.last_page > 1 && (
-                    <div className="mt-12 flex items-center justify-center gap-1.5 flex-wrap">
+                    <div className="flex shrink-0 items-center justify-center gap-1.5 flex-wrap pt-6">
                         {/* Previous */}
                         <button
                             type="button"
                             onClick={() => {
                                 setPage((p) => Math.max(1, p - 1));
-                                window.scrollTo({ top: 240, behavior: 'smooth' });
-                            }}
+                                }}
                             disabled={page <= 1}
                             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
@@ -444,8 +465,7 @@ export default function SongsPage() {
                                         type="button"
                                         onClick={() => {
                                             setPage(p);
-                                            window.scrollTo({ top: 240, behavior: 'smooth' });
-                                        }}
+                                            }}
                                         className={`min-w-[38px] rounded-xl border px-3 py-2.5 text-xs font-bold transition ${
                                             p === current
                                                 ? 'border-blue-600 bg-blue-600 text-white shadow-xs'
@@ -463,8 +483,7 @@ export default function SongsPage() {
                             type="button"
                             onClick={() => {
                                 setPage((p) => Math.min(pagination.last_page, p + 1));
-                                window.scrollTo({ top: 240, behavior: 'smooth' });
-                            }}
+                                }}
                             disabled={page >= pagination.last_page}
                             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
@@ -520,4 +539,5 @@ export default function SongsPage() {
         </div>
     );
 }
+
 

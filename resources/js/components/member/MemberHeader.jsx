@@ -11,17 +11,15 @@ import {
     Info,
     X,
     ExternalLink,
+    Moon,
+    Sun,
 } from 'lucide-react';
 import { api } from '../../axios';
 import { useAuth } from '../../context/AuthContext';
 import { useChoir } from '../../context/ChoirContext';
-
-const ROLE_LABELS = {
-    member: 'Member',
-    team_leader: 'Team Leader',
-    admin: 'Admin',
-    'super-admin': 'Super Admin',
-};
+import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
+import LanguageSelector from './LanguageSelector';
 
 const BASE_PATHS = {
     member: '/member',
@@ -30,20 +28,20 @@ const BASE_PATHS = {
     'super-admin': '/admin',
 };
 
-function formatTimeAgo(dateStr) {
+function formatTimeAgo(dateStr, t) {
     if (!dateStr) return '';
     try {
         const date = new Date(dateStr);
         const now = new Date();
         const diffSec = Math.floor((now - date) / 1000);
-        if (diffSec < 60) return 'Just now';
+        if (diffSec < 60) return t ? t('header.time.just_now') : 'Just now';
         const diffMin = Math.floor(diffSec / 60);
-        if (diffMin < 60) return `${diffMin}m ago`;
+        if (diffMin < 60) return t ? t('header.time.m_ago', { count: diffMin }) : `${diffMin}m ago`;
         const diffHours = Math.floor(diffMin / 60);
-        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffHours < 24) return t ? t('header.time.h_ago', { count: diffHours }) : `${diffHours}h ago`;
         const diffDays = Math.floor(diffHours / 24);
-        if (diffDays < 7) return `${diffDays}d ago`;
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        if (diffDays < 7) return t ? t('header.time.d_ago', { count: diffDays }) : `${diffDays}d ago`;
+        return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     } catch {
         return '';
     }
@@ -52,6 +50,15 @@ function formatTimeAgo(dateStr) {
 export default function MemberHeader({ title, onMenu }) {
     const { user, role } = useAuth();
     const { currentChoir, isAllChoirs } = useChoir();
+    const { isDarkMode, toggleDarkMode } = useTheme();
+    const { t } = useLanguage();
+
+    const roleLabels = {
+        member: t('role.member', 'Member'),
+        team_leader: t('role.team_leader', 'Team Leader'),
+        admin: t('role.admin', 'Admin'),
+        'super-admin': t('role.super_admin', 'Super Admin'),
+    };
 
     const basePath = BASE_PATHS[role] ?? '/member';
     const settingsPath = `${basePath}/settings`;
@@ -71,12 +78,12 @@ export default function MemberHeader({ title, onMenu }) {
         .toUpperCase();
 
     const choirDisplayName = isAllChoirs
-        ? 'All Choirs'
-        : currentChoir?.name ?? 'No Choir';
+        ? t('header.all_choirs', 'All Choirs')
+        : currentChoir?.name ?? t('header.no_choir', 'No Choir');
 
     const choirSubtitle = isAllChoirs
-        ? 'Global Overview'
-        : currentChoir?.choir_type ?? ROLE_LABELS[role] ?? 'Member';
+        ? t('header.global_overview', 'Global Overview')
+        : currentChoir?.choir_type ?? roleLabels[role] ?? t('role.member', 'Member');
 
     // Fetch notifications
     const fetchNotifications = useCallback(async () => {
@@ -152,7 +159,7 @@ export default function MemberHeader({ title, onMenu }) {
                 <button
                     onClick={onMenu}
                     className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition-colors lg:hidden active:scale-95"
-                    aria-label="Open navigation"
+                    aria-label={t('header.open_nav', 'Open navigation')}
                 >
                     <Menu size={20} />
                 </button>
@@ -161,7 +168,20 @@ export default function MemberHeader({ title, onMenu }) {
                 )}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+                {/* 🌐 Compact Language Selector */}
+                <LanguageSelector />
+
+                {/* 🌙 Dark Mode Toggle */}
+                <button
+                    type="button"
+                    onClick={toggleDarkMode}
+                    className="relative rounded-xl border border-slate-200 bg-white p-2 text-slate-600 shadow-xs transition-colors duration-200 hover:bg-slate-50 hover:text-blue-600 member-theme-control"
+                    aria-label={isDarkMode ? t('header.switch_to_light', 'Switch to light mode') : t('header.switch_to_dark', 'Switch to dark mode')}
+                    title={isDarkMode ? t('header.light_mode', 'Light Mode') : t('header.dark_mode', 'Dark Mode')}
+                >
+                    {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
                 {/* 🔔 Notifications Button & Dropdown */}
                 <div className="relative" ref={dropdownRef}>
                     <button
@@ -174,8 +194,8 @@ export default function MemberHeader({ title, onMenu }) {
                                 ? 'border-blue-300 bg-blue-50 text-blue-600'
                                 : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-blue-600'
                         }`}
-                        aria-label="Notifications"
-                        title="Notifications"
+                        aria-label={t('header.notifications', 'Notifications')}
+                        title={t('header.notifications', 'Notifications')}
                     >
                         <Bell size={18} />
                         {unreadCount > 0 && (
@@ -191,10 +211,10 @@ export default function MemberHeader({ title, onMenu }) {
                             {/* Panel Header */}
                             <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-3">
                                 <div className="flex items-center gap-2">
-                                    <h3 className="text-sm font-bold text-slate-900">Notifications</h3>
+                                    <h3 className="text-sm font-bold text-slate-900">{t('header.notifications', 'Notifications')}</h3>
                                     {unreadCount > 0 && (
                                         <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-bold text-blue-700">
-                                            {unreadCount} new
+                                            {t('header.new_count', { count: unreadCount })}
                                         </span>
                                     )}
                                 </div>
@@ -204,7 +224,7 @@ export default function MemberHeader({ title, onMenu }) {
                                         className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors"
                                     >
                                         <CheckCheck size={14} />
-                                        Mark all as read
+                                        {t('header.mark_all_read', 'Mark all as read')}
                                     </button>
                                 )}
                             </div>
@@ -214,8 +234,8 @@ export default function MemberHeader({ title, onMenu }) {
                                 {notifications.length === 0 ? (
                                     <div className="py-12 px-4 text-center text-slate-400">
                                         <Bell size={32} className="mx-auto mb-2 text-slate-300 opacity-60" />
-                                        <p className="text-xs font-bold text-slate-600">No notifications</p>
-                                        <p className="text-[11px] text-slate-400 mt-0.5">You're all caught up with choir updates.</p>
+                                        <p className="text-xs font-bold text-slate-600">{t('header.no_notifications', 'No notifications')}</p>
+                                        <p className="text-[11px] text-slate-400 mt-0.5">{t('header.all_caught_up', "You're all caught up with choir updates.")}</p>
                                     </div>
                                 ) : (
                                     notifications.map((n) => {
@@ -257,7 +277,7 @@ export default function MemberHeader({ title, onMenu }) {
                                                         </p>
                                                     )}
                                                     <p className="text-[10px] text-slate-400 mt-1">
-                                                        {formatTimeAgo(n.created_at)}
+                                                        {formatTimeAgo(n.created_at, t)}
                                                     </p>
                                                 </div>
                                             </div>
@@ -279,8 +299,8 @@ export default function MemberHeader({ title, onMenu }) {
                                 : 'border-slate-200 bg-white hover:bg-slate-50 hover:text-blue-600'
                         }`
                     }
-                    aria-label="Settings"
-                    title="Settings"
+                    aria-label={t('nav.settings', 'Settings')}
+                    title={t('nav.settings', 'Settings')}
                 >
                     <Settings size={18} />
                 </NavLink>

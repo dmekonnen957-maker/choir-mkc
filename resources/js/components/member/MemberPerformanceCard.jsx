@@ -1,11 +1,12 @@
 import { CalendarDays, Clock, MapPin, Music2, ArrowRight, Church } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 const STATUS_CONFIG = {
-    scheduled: { label: 'Upcoming', dot: 'bg-blue-500', bg: 'bg-blue-50 text-blue-700 border-blue-200' },
-    confirmed: { label: 'Confirmed', dot: 'bg-blue-500', bg: 'bg-blue-50 text-blue-700 border-blue-200' },
-    completed: { label: 'Completed', dot: 'bg-slate-400', bg: 'bg-slate-100 text-slate-600 border-slate-200' },
-    cancelled: { label: 'Cancelled', dot: 'bg-red-500', bg: 'bg-red-50 text-red-700 border-red-200' },
-    postponed: { label: 'Postponed', dot: 'bg-amber-500', bg: 'bg-amber-50 text-amber-700 border-amber-200' },
+    scheduled: { key: 'status.upcoming', fallback: 'Upcoming', dot: 'bg-blue-500', bg: 'bg-blue-50 text-blue-700 border-blue-200' },
+    confirmed: { key: 'status.confirmed', fallback: 'Confirmed', dot: 'bg-blue-500', bg: 'bg-blue-50 text-blue-700 border-blue-200' },
+    completed: { key: 'status.completed', fallback: 'Completed', dot: 'bg-slate-400', bg: 'bg-slate-100 text-slate-600 border-slate-200' },
+    cancelled: { key: 'status.cancelled', fallback: 'Cancelled', dot: 'bg-red-500', bg: 'bg-red-50 text-red-700 border-red-200' },
+    postponed: { key: 'status.postponed', fallback: 'Postponed', dot: 'bg-amber-500', bg: 'bg-amber-50 text-amber-700 border-amber-200' },
 };
 
 function formatDateParts(dateStr) {
@@ -45,6 +46,7 @@ function formatTime(value) {
 }
 
 export default function MemberPerformanceCard({ performance, onView }) {
+    const { t } = useLanguage();
     const statusCfg = STATUS_CONFIG[performance.status] || STATUS_CONFIG.scheduled;
     const { day, month } = formatDateParts(performance.date);
     const isToday = performance.date === new Date().toISOString().slice(0, 10);
@@ -83,13 +85,15 @@ export default function MemberPerformanceCard({ performance, onView }) {
                         className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold ${statusCfg.bg}`}
                     >
                         <span className={`h-1.5 w-1.5 rounded-full ${statusCfg.dot}`} />
-                        {statusCfg.label}
+                        {t(statusCfg.key, statusCfg.fallback)}
                     </span>
 
                     {performance.song_count > 0 && (
                         <span className="hidden items-center gap-1 text-xs font-semibold text-slate-400 sm:inline-flex">
                             <Music2 size={13} />
-                            {performance.song_count} {performance.song_count === 1 ? 'song' : 'songs'}
+                            {performance.song_count === 1
+                                ? t('performances.song_count', '{count} song', { count: performance.song_count })
+                                : t('performances.songs_count', '{count} songs', { count: performance.song_count })}
                         </span>
                     )}
                 </div>
@@ -119,17 +123,19 @@ export default function MemberPerformanceCard({ performance, onView }) {
                     </div>
                     <div className="flex items-center gap-2">
                         <MapPin size={15} className="shrink-0 text-slate-400" />
-                        <span className="truncate">{performance.venue || performance.location || 'TBD'}</span>
+                        <span className="truncate">{performance.venue || performance.location || t('common.tbd', 'TBD')}</span>
                     </div>
                 </div>
 
                 <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
                     {isUpcoming ? (
                         <span className="text-xs font-bold uppercase tracking-wide text-emerald-600">
-                            Upcoming
+                            {t('performances.card_upcoming', 'Upcoming')}
                         </span>
                     ) : (
-                        <span className="text-xs text-slate-400">Completed</span>
+                        <span className="text-xs text-slate-400">
+                            {t('performances.card_completed', 'Completed')}
+                        </span>
                     )}
 
                     <button
@@ -140,7 +146,7 @@ export default function MemberPerformanceCard({ performance, onView }) {
                         }}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-95"
                     >
-                        View Performance
+                        {t('dashboard.view_performance', 'View Performance')}
                         <ArrowRight size={14} />
                     </button>
                 </div>

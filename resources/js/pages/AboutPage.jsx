@@ -37,11 +37,57 @@ export default function AboutPage() {
                         <div className="max-w-2xl text-center sm:text-left">
                             <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Pastoral Message</p>
                             <h2 id="pastor-heading" className="mt-2 text-2xl font-black text-slate-900 sm:text-3xl">
-                                Pastor Name
+                                Pastor Kashune anbo
                             </h2>
                             <p className="mt-1 text-sm font-semibold text-slate-500">Pastor</p>
                             <p className="mt-5 text-base leading-7 text-slate-600">
                                 Add a short message from the pastor here. This space can introduce the church, welcome visitors, and share a word about the choir ministry.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <section className="border-t border-slate-200 pt-10 sm:pt-12" aria-labelledby="pastor-heading-2">
+                    <div className="flex flex-col items-center gap-7 sm:flex-row sm:items-center sm:gap-10">
+                        <div className="h-40 w-40 shrink-0 overflow-hidden rounded-full border border-blue-100 bg-slate-100 ring-8 ring-slate-50">
+                            <img
+                                src="/images/p6.jpg"
+                                alt="Pastor 2"
+                                className="h-full w-full object-cover"
+                            />
+                        </div>
+
+                        <div className="max-w-2xl text-center sm:text-left">
+                            <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Pastoral Message</p>
+                            <h2 id="pastor-heading-2" className="mt-2 text-2xl font-black text-slate-900 sm:text-3xl">
+                                Pastor 2
+                            </h2>
+                            <p className="mt-1 text-sm font-semibold text-slate-500">Pastor</p>
+                            <p className="mt-5 text-base leading-7 text-slate-600">
+                                Add a short message from this pastor here. This space can introduce the church, welcome visitors, and share a word about the choir ministry.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <section className="border-t border-slate-200 pt-10 sm:pt-12" aria-labelledby="pastor-heading-3">
+                    <div className="flex flex-col items-center gap-7 sm:flex-row sm:items-center sm:gap-10">
+                        <div className="h-40 w-40 shrink-0 overflow-hidden rounded-full border border-blue-100 bg-slate-100 ring-8 ring-slate-50">
+                            <img
+                                src="/images/p7.jpg"
+                                alt="Pastor 3"
+                                className="h-full w-full object-cover"
+                            />
+                        </div>
+
+                        <div className="max-w-2xl text-center sm:text-left">
+                            <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Pastoral Message</p>
+                            <h2 id="pastor-heading-3" className="mt-2 text-2xl font-black text-slate-900 sm:text-3xl">
+                                Pastor 3
+                            </h2>
+                            <p className="mt-1 text-sm font-semibold text-slate-500">Pastor</p>
+                            <p className="mt-5 text-base leading-7 text-slate-600">
+                                Add a short message from this pastor here. This space can introduce the church, welcome visitors, and share a word about the choir ministry.
                             </p>
                         </div>
                     </div>

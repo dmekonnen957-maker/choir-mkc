@@ -14,20 +14,21 @@ import {
 import Modal from '../ui/Modal';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import Alert from '../ui/Alert';
+import { useLanguage } from '../../context/LanguageContext';
 
 const STATUS_CONFIG = {
-    scheduled: { label: 'Upcoming', dot: 'bg-blue-500', bg: 'bg-blue-50 text-blue-700 border-blue-200' },
-    confirmed: { label: 'Confirmed', dot: 'bg-blue-500', bg: 'bg-blue-50 text-blue-700 border-blue-200' },
-    completed: { label: 'Completed', dot: 'bg-slate-400', bg: 'bg-slate-100 text-slate-600 border-slate-200' },
-    cancelled: { label: 'Cancelled', dot: 'bg-red-500', bg: 'bg-red-50 text-red-700 border-red-200' },
-    postponed: { label: 'Postponed', dot: 'bg-amber-500', bg: 'bg-amber-50 text-amber-700 border-amber-200' },
+    scheduled: { key: 'status.upcoming', fallback: 'Upcoming', dot: 'bg-blue-500', bg: 'bg-blue-50 text-blue-700 border-blue-200' },
+    confirmed: { key: 'status.confirmed', fallback: 'Confirmed', dot: 'bg-blue-500', bg: 'bg-blue-50 text-blue-700 border-blue-200' },
+    completed: { key: 'status.completed', fallback: 'Completed', dot: 'bg-slate-400', bg: 'bg-slate-100 text-slate-600 border-slate-200' },
+    cancelled: { key: 'status.cancelled', fallback: 'Cancelled', dot: 'bg-red-500', bg: 'bg-red-50 text-red-700 border-red-200' },
+    postponed: { key: 'status.postponed', fallback: 'Postponed', dot: 'bg-amber-500', bg: 'bg-amber-50 text-amber-700 border-amber-200' },
 };
 
 const PARTICIPATION_CONFIG = {
-    participated: { label: 'Participated', dot: 'bg-emerald-500', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: CheckCircle2 },
-    absent: { label: 'Not Participated', dot: 'bg-red-500', bg: 'bg-red-50 text-red-700 border-red-200', icon: UserX },
-    excused: { label: 'Excused', dot: 'bg-amber-500', bg: 'bg-amber-50 text-amber-700 border-amber-200', icon: UserCheck },
-    late: { label: 'Late', dot: 'bg-amber-500', bg: 'bg-amber-50 text-amber-700 border-amber-200', icon: UserCheck },
+    participated: { key: 'status.participated', fallback: 'Participated', dot: 'bg-emerald-500', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: CheckCircle2 },
+    absent: { key: 'status.not_participated', fallback: 'Not Participated', dot: 'bg-red-500', bg: 'bg-red-50 text-red-700 border-red-200', icon: UserX },
+    excused: { key: 'status.excused', fallback: 'Excused', dot: 'bg-amber-500', bg: 'bg-amber-50 text-amber-700 border-amber-200', icon: UserCheck },
+    late: { key: 'status.late', fallback: 'Late', dot: 'bg-amber-500', bg: 'bg-amber-50 text-amber-700 border-amber-200', icon: UserCheck },
 };
 
 function formatDisplayDate(dateStr) {
@@ -56,6 +57,7 @@ function formatTime(value) {
 }
 
 export default function PerformanceDetailModal({ performance, songs, isLoading, onClose, onViewSongLyrics }) {
+    const { t } = useLanguage();
     if (!performance) return null;
 
     const statusCfg = STATUS_CONFIG[performance.status] || STATUS_CONFIG.scheduled;
@@ -76,7 +78,7 @@ export default function PerformanceDetailModal({ performance, songs, isLoading, 
                                 className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold ${statusCfg.bg}`}
                             >
                                 <span className={`h-1.5 w-1.5 rounded-full ${statusCfg.dot}`} />
-                                {statusCfg.label}
+                                {t(statusCfg.key, statusCfg.fallback)}
                             </span>
                         </div>
                     </div>
@@ -93,7 +95,7 @@ export default function PerformanceDetailModal({ performance, songs, isLoading, 
                         </div>
                         <div className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
                             <MapPin size={16} className="shrink-0 text-blue-600" />
-                            {[performance.venue, performance.location].filter(Boolean).join(' · ') || 'TBD'}
+                            {[performance.venue, performance.location].filter(Boolean).join(' · ') || t('common.tbd', 'TBD')}
                         </div>
                         {performance.choir?.name && (
                             <div className="flex items-center gap-2 text-sm font-semibold text-blue-700 sm:col-span-2">
@@ -113,27 +115,27 @@ export default function PerformanceDetailModal({ performance, songs, isLoading, 
                 {/* Participation */}
                 <div className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
                     <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">
-                        Your Participation
+                        {t('performances.modal_participation', 'Your Participation Status')}
                     </h3>
                     {partCfg ? (
                         <div
                             className={`mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold ${partCfg.bg}`}
                         >
                             <partCfg.icon size={14} />
-                            {partCfg.label}
+                            {t(partCfg.key, partCfg.fallback)}
                         </div>
                     ) : (
                         <span className="mt-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-500">
                             <HelpCircle size={14} />
-                            Not Yet Confirmed
+                            {t('status.pending', 'Pending')}
                         </span>
                     )}
                     <p className="mt-2 text-xs text-slate-400">
                         {part.expected === true
-                            ? 'You are expected to participate in this performance.'
+                            ? t('dashboard.scheduled_count', 'You are scheduled')
                             : part.expected === false
-                              ? "You are not marked as expected for this performance."
-                              : 'Your participation will be confirmed closer to the date.'}
+                              ? t('status.not_participated', 'Not Participated')
+                              : t('status.pending', 'Pending')}
                     </p>
                 </div>
 
@@ -141,12 +143,14 @@ export default function PerformanceDetailModal({ performance, songs, isLoading, 
                 <div className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
                     <div className="flex items-center justify-between border-b border-blue-100 pb-3">
                         <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">
-                            Songs to Prepare
+                            {t('performances.modal_songs', 'Songs to Prepare')}
                         </h3>
                         {songs?.length > 0 && (
                             <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-600">
                                 <Music2 size={13} />
-                                {songs.length} {songs.length === 1 ? 'song' : 'songs'}
+                                {songs.length === 1
+                                    ? t('performances.song_count', '{count} song', { count: songs.length })
+                                    : t('performances.songs_count', '{count} songs', { count: songs.length })}
                             </span>
                         )}
                     </div>
@@ -179,7 +183,7 @@ export default function PerformanceDetailModal({ performance, songs, isLoading, 
                                         className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 active:scale-95"
                                     >
                                         <BookOpen size={14} className="text-blue-600" />
-                                        View Lyrics
+                                        {t('common.lyrics', 'Lyrics')}
                                     </button>
                                 </li>
                             ))}
@@ -188,7 +192,7 @@ export default function PerformanceDetailModal({ performance, songs, isLoading, 
                         <div className="mt-3 flex flex-col items-center justify-center rounded-xl border border-dashed border-blue-200 bg-blue-50/30 py-8 text-center">
                             <Music2 size={28} className="text-blue-300" />
                             <p className="mt-2 text-sm font-semibold text-slate-600">
-                                No songs have been assigned to this performance yet.
+                                {t('performances.modal_no_songs', 'No specific songs listed yet.')}
                             </p>
                         </div>
                     )}

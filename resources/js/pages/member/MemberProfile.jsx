@@ -2,17 +2,18 @@ import { useEffect, useState } from 'react';
 import { User as UserIcon, Church, ShieldCheck, Phone } from 'lucide-react';
 import { api } from '../../axios';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import Input from '../../components/ui/Input';
 import PasswordInput from '../../components/ui/PasswordInput';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
-const ROLE_LABELS = {
-    member: 'Member',
-    team_leader: 'Team Leader',
-    admin: 'Admin',
-    'super-admin': 'Super Admin',
+const ROLE_KEYS = {
+    member: { key: 'role.member', fallback: 'Member' },
+    team_leader: { key: 'role.team_leader', fallback: 'Team Leader' },
+    admin: { key: 'role.admin', fallback: 'Admin' },
+    'super-admin': { key: 'role.super_admin', fallback: 'Super Admin' },
 };
 
 function asset(path) {
@@ -31,6 +32,7 @@ function initials(name) {
 
 export default function MemberProfile({ apiPath = '/member/profile' }) {
     const { user, primaryChoir, role, refreshUser } = useAuth();
+    const { t } = useLanguage();
     const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', password_confirmation: '' });
     const [member, setMember] = useState(null);
     const [errors, setErrors] = useState({});
@@ -56,7 +58,7 @@ export default function MemberProfile({ apiPath = '/member/profile' }) {
                 if (active) {
                     setAlert({
                         variant: 'error',
-                        message: err.message || 'Unable to load your profile.',
+                        message: err.message || t('profile.load_error', 'Unable to load your profile.'),
                     });
                 }
             })
@@ -64,7 +66,7 @@ export default function MemberProfile({ apiPath = '/member/profile' }) {
         return () => {
             active = false;
         };
-    }, [apiPath]);
+    }, [apiPath, t]);
 
     const update = (field) => (e) => {
         setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -87,7 +89,7 @@ export default function MemberProfile({ apiPath = '/member/profile' }) {
             }
             await api.put(apiPath, payload);
             await refreshUser();
-            setAlert({ variant: 'success', message: 'Profile updated successfully.' });
+            setAlert({ variant: 'success', message: t('profile.update_success', 'Profile updated successfully.') });
             setForm((prev) => ({ ...prev, password: '', password_confirmation: '' }));
         } catch (err) {
             if (err.errors) setErrors(err.errors);
@@ -106,11 +108,12 @@ export default function MemberProfile({ apiPath = '/member/profile' }) {
     }
 
     const photoUrl = asset(member?.photo_path);
-    const roleLabel = ROLE_LABELS[role] ?? 'Member';
+    const roleCfg = ROLE_KEYS[role] || ROLE_KEYS.member;
+    const roleLabel = t(roleCfg.key, roleCfg.fallback);
 
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold text-ink-900">My Profile</h1>
+            <h1 className="text-2xl font-bold text-ink-900">{t('profile.title', 'My Profile')}</h1>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 <div className="rounded-2xl border border-blue-100 bg-canvas p-6 text-center shadow-sm">
@@ -128,12 +131,12 @@ export default function MemberProfile({ apiPath = '/member/profile' }) {
                         <div className="flex items-center gap-2 rounded-xl bg-surface px-3 py-2 text-ink-600">
                             <Church size={16} className="text-blue-500" />
                             <span className="truncate">
-                                {primaryChoir ? primaryChoir.name : 'No choir assigned'}
+                                {primaryChoir ? primaryChoir.name : t('choir.not_assigned_title', 'No choir assigned')}
                             </span>
                         </div>
                         <div className="flex items-center gap-2 rounded-xl bg-surface px-3 py-2 text-ink-600">
                             <ShieldCheck size={16} className="text-blue-500" />
-                            <span>{roleLabel} (read-only)</span>
+                            <span>{roleLabel} ({t('common.read_only', 'read-only')})</span>
                         </div>
                         {member?.phone && (
                             <div className="flex items-center gap-2 rounded-xl bg-surface px-3 py-2 text-ink-600">
@@ -156,14 +159,14 @@ export default function MemberProfile({ apiPath = '/member/profile' }) {
 
                     <div className="space-y-4">
                         <Input
-                            label="Full name"
+                            label={t('profile.full_name', 'Full name')}
                             value={form.name}
                             onChange={update('name')}
                             error={errors.name?.[0]}
                             required
                         />
                         <Input
-                            label="Email"
+                            label={t('profile.email', 'Email')}
                             type="email"
                             value={form.email}
                             onChange={update('email')}
@@ -171,27 +174,27 @@ export default function MemberProfile({ apiPath = '/member/profile' }) {
                             required
                         />
                         <Input
-                            label="Phone"
+                            label={t('profile.phone', 'Phone')}
                             value={form.phone}
                             onChange={update('phone')}
                             error={errors.phone?.[0]}
-                            placeholder="Optional"
+                            placeholder={t('common.optional', 'Optional')}
                         />
 
                         <div className="border-t border-blue-100 pt-4">
                             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400">
-                                Change password (optional)
+                                {t('profile.change_password', 'Change password (optional)')}
                             </p>
                             <div className="space-y-3">
                                 <PasswordInput
-                                    label="New password"
+                                    label={t('profile.new_password', 'New password')}
                                     value={form.password}
                                     onChange={update('password')}
                                     error={errors.password?.[0]}
-                                    placeholder="Leave blank to keep current"
+                                    placeholder={t('profile.leave_blank', 'Leave blank to keep current')}
                                 />
                                 <PasswordInput
-                                    label="Confirm new password"
+                                    label={t('profile.confirm_password', 'Confirm new password')}
                                     value={form.password_confirmation}
                                     onChange={update('password_confirmation')}
                                     error={errors.password_confirmation?.[0]}
@@ -201,7 +204,7 @@ export default function MemberProfile({ apiPath = '/member/profile' }) {
 
                         <div className="flex items-center justify-end gap-2 pt-2">
                             <Button type="submit" loading={saving}>
-                                Save changes
+                                {t('profile.save_changes', 'Save changes')}
                             </Button>
                         </div>
                     </div>
