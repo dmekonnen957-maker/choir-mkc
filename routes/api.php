@@ -27,36 +27,10 @@ use App\Http\Controllers\Api\SongCategoryController;
 use App\Http\Controllers\Api\SongController;
 use App\Http\Controllers\Api\SongFileController;
 use App\Http\Controllers\Api\SongHistoryController;
+use App\Http\Controllers\Api\SongLikeController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\VoiceSectionController;
 use Illuminate\Support\Facades\Route;
-
-Route::get('/_debug_guard', function (\Illuminate\Http\Request $request) {
-    $out = [];
-    try {
-        $user = \Illuminate\Support\Facades\Auth::guard('sanctum')->user();
-        $out['authenticated_user'] = $user ? $user->email : null;
-        if ($user) {
-            $out['policy_for_role'] = get_class(\Illuminate\Support\Facades\Gate::getPolicyFor(\Spatie\Permission\Models\Role::class));
-            $inspect = \Illuminate\Support\Facades\Gate::inspect('viewAny', \Spatie\Permission\Models\Role::class);
-            $out['inspect_allowed'] = $inspect->allowed();
-            $out['inspect_message'] = $inspect->message();
-            $out['model_api'] = \Spatie\Permission\Guard::getModelForGuard('api');
-            $out['user_roles'] = $user->getRoleNames();
-            $out['hasAnyRole_admin'] = $user->hasAnyRole(['super-admin','admin']);
-            $out['hasAnyRole_admin_api'] = $user->hasAnyRole(['super-admin','admin'], 'api');
-            $out['can_users_view'] = $user->can('users.view');
-            $out['can_roles_view'] = $user->can('roles.view');
-            $out['can_roles_view_api'] = $user->can('roles.view', 'api');
-            $out['default_guard'] = config('auth.defaults.guard');
-            $out['user_guard'] = $user->guard_name ?? 'n/a';
-        }
-    } catch (\Throwable $e) {
-        $out['error'] = $e->getMessage();
-        $out['trace'] = array_slice(explode("\n", $e->getTraceAsString()), 0, 12);
-    }
-    return response()->json($out);
-});
 
 /*
 | Multi-choir, token-authenticated API.
@@ -82,6 +56,7 @@ Route::prefix('public')->group(function () {
     Route::get('/choirs/{choir}/songs/{song}', [PublicController::class, 'song']);
     Route::get('/songs', [PublicController::class, 'allSongs']);
     Route::get('/songs/{song}', [PublicController::class, 'publicSongDetail']);
+    Route::get('/songs/{song}/likes', [SongLikeController::class, 'status']);
     Route::get('/performances', [PublicController::class, 'allPerformances']);
     Route::get('/performances/{performance}', [PublicController::class, 'publicPerformanceDetail']);
     Route::get('/gallery', [PublicController::class, 'allGallery']);
@@ -110,12 +85,14 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/{choir}/rehearsals/{rehearsal}/songs', [RehearsalController::class, 'attachSong']);
             Route::delete('/{choir}/rehearsals/{rehearsal}/songs/{song}', [RehearsalController::class, 'detachSong']);
 
-            Route::apiResource('/{choir}/attendance-sessions', AttendanceController::class);
-            Route::get('/{choir}/attendance-sessions/{attendanceSession}/records', [AttendanceController::class, 'recordsIndex']);
-            Route::post('/{choir}/attendance-sessions/{attendanceSession}/records', [AttendanceController::class, 'recordsStore']);
-            Route::get('/{choir}/attendance-sessions/{attendanceSession}/records/{record}', [AttendanceController::class, 'recordsShow']);
-            Route::match(['PUT', 'PATCH'], '/{choir}/attendance-sessions/{attendanceSession}/records/{record}', [AttendanceController::class, 'recordsUpdate']);
-            Route::delete('/{choir}/attendance-sessions/{attendanceSession}/records/{record}', [AttendanceController::class, 'recordsDestroy']);
+            Route::middleware('attendance.manager')->group(function () {
+                Route::apiResource('/{choir}/attendance-sessions', AttendanceController::class);
+                Route::get('/{choir}/attendance-sessions/{attendanceSession}/records', [AttendanceController::class, 'recordsIndex']);
+                Route::post('/{choir}/attendance-sessions/{attendanceSession}/records', [AttendanceController::class, 'recordsStore']);
+                Route::get('/{choir}/attendance-sessions/{attendanceSession}/records/{record}', [AttendanceController::class, 'recordsShow']);
+                Route::match(['PUT', 'PATCH'], '/{choir}/attendance-sessions/{attendanceSession}/records/{record}', [AttendanceController::class, 'recordsUpdate']);
+                Route::delete('/{choir}/attendance-sessions/{attendanceSession}/records/{record}', [AttendanceController::class, 'recordsDestroy']);
+            });
 
             Route::apiResource('/{choir}/performances', PerformanceController::class);
             Route::apiResource('/{choir}/performances/{performance}/members', PerformanceMemberController::class);
@@ -127,7 +104,7 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
-    Route::middleware(['role:admin,api'])->prefix('admin')->scopeBindings()->group(function () {
+    Route::middleware('admin')->prefix('admin')->scopeBindings()->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'overview']);
         Route::get('/dashboard/{choir}', [DashboardController::class, 'choirOverview']);
         Route::post('/users/{user}/approve', [UserController::class, 'approve']);
@@ -148,7 +125,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/notifications', [NotificationController::class, 'store']);
         Route::get('/reports', [ReportController::class, 'index']);
         Route::get('/reports/{report}', [ReportController::class, 'show']);
+        Route::get('/reports-export', [ReportController::class, 'export']);
         Route::apiResource('songs', SongController::class);
+        Route::get('songs-stats', [SongController::class, 'stats']);
         Route::post('songs/{song}/approve', [SongController::class, 'approve']);
         Route::post('songs/{song}/reject', [SongController::class, 'reject']);
         Route::get('songs/{song}/audio', [SongController::class, 'audio'])->name('admin.songs.audio');
@@ -159,7 +138,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Attendance Management routes (accessible to admins, team leaders with choir authorization)
-    Route::prefix('attendance')->group(function () {
+    Route::middleware('attendance.manager')->prefix('attendance')->group(function () {
         Route::get('/choirs', [AttendanceController::class, 'choirs']);
         Route::get('/events', [AttendanceController::class, 'events']);
         Route::get('/sessions', [AttendanceController::class, 'sessions']);
@@ -217,11 +196,21 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/photos/{galleryItem}/file', [MemberChoirHistoryController::class, 'photo'])->name('photo');
     });
 
-    // Team Leader area
-    Route::middleware(['auth:sanctum'])->prefix('team-leader')->group(function () {
+    // Team Leader area. Admins retain access for support and platform-wide management.
+    Route::middleware(['auth:sanctum', 'role:admin|team_leader,api'])->prefix('team-leader')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'teamLeaderDashboard']);
         Route::get('/calendar', [CalendarController::class, 'teamLeaderCalendar']);
+        Route::get('/choir', [MemberController::class, 'choir']);
+        Route::get('/profile', [MemberController::class, 'profile']);
+        Route::match(['PUT', 'PATCH'], '/profile', [MemberController::class, 'updateProfile']);
+        Route::get('/performances', [MemberController::class, 'performances']);
         Route::get('/songs', [MemberController::class, 'songs']);
         Route::post('/songs', [MemberController::class, 'submitSong']);
+        Route::get('/notifications', [NotificationController::class, 'index']);
     });
+
+    // Song Engagement (Likes) - authenticated users
+    Route::post('/songs/{song}/like', [SongLikeController::class, 'like']);
+    Route::delete('/songs/{song}/like', [SongLikeController::class, 'unlike']);
+    Route::get('/member/liked-songs', [SongLikeController::class, 'myLikedSongs']);
 });

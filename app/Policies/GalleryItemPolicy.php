@@ -9,7 +9,7 @@ class GalleryItemPolicy
 {
     public function before(User $user, $ability): ?bool
     {
-        if ($user->hasAnyRole(['super-admin', 'admin'])) {
+        if ($user->isGlobalAdmin()) {
             return true;
         }
         return null;
@@ -43,11 +43,11 @@ class GalleryItemPolicy
 
     public function update(User $user, GalleryItem $item): bool
     {
-        return $user->can('gallery.manage');
+        return $this->assigned($user, $item) && $user->can('gallery.manage');
     }
 
     public function delete(User $user, GalleryItem $item): bool
     {
-        return $user->can('gallery.manage');
+        return $this->assigned($user, $item) && $user->can('gallery.manage');
     }
 }

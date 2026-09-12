@@ -10,11 +10,7 @@ const Logo = ({ size = 'md', className = '' }) => {
   const { width, height } = sizes[size];
 
   return (
-    <a
-      href="/"
-      className={`skip-link-focus-ring outline-none focus-visible:outline-focusRing ${className}`}
-      aria-label="YKA M.K.C CHOIR - Home"
-    >
+    <span className={`inline-flex skip-link-focus-ring outline-none ${className}`}>
       <img
         src="/images/logo.png"
         alt="YKA M.K.C CHOIR Logo"
@@ -23,7 +19,7 @@ const Logo = ({ size = 'md', className = '' }) => {
         className="block object-contain"
         loading="lazy"
       />
-    </a>
+    </span>
   );
 };
 

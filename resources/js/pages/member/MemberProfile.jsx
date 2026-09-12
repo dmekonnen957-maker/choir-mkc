@@ -29,7 +29,7 @@ function initials(name) {
         .toUpperCase();
 }
 
-export default function MemberProfile() {
+export default function MemberProfile({ apiPath = '/member/profile' }) {
     const { user, primaryChoir, role, refreshUser } = useAuth();
     const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', password_confirmation: '' });
     const [member, setMember] = useState(null);
@@ -41,7 +41,7 @@ export default function MemberProfile() {
     useEffect(() => {
         let active = true;
         api
-            .get('/member/profile')
+            .get(apiPath)
             .then((res) => {
                 const d = res.data.data;
                 setMember(d.member);
@@ -52,12 +52,19 @@ export default function MemberProfile() {
                     phone: d.member?.phone ?? '',
                 }));
             })
-            .catch(() => {})
+            .catch((err) => {
+                if (active) {
+                    setAlert({
+                        variant: 'error',
+                        message: err.message || 'Unable to load your profile.',
+                    });
+                }
+            })
             .finally(() => active && setLoading(false));
         return () => {
             active = false;
         };
-    }, []);
+    }, [apiPath]);
 
     const update = (field) => (e) => {
         setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -78,7 +85,7 @@ export default function MemberProfile() {
                 payload.password = form.password;
                 payload.password_confirmation = form.password_confirmation;
             }
-            await api.put('/member/profile', payload);
+            await api.put(apiPath, payload);
             await refreshUser();
             setAlert({ variant: 'success', message: 'Profile updated successfully.' });
             setForm((prev) => ({ ...prev, password: '', password_confirmation: '' }));

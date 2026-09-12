@@ -9,7 +9,7 @@ class ChoirPolicy
 {
     public function before(User $user, $ability): ?bool
     {
-        if ($user->hasAnyRole(['super-admin', 'admin'])) {
+        if ($user->isGlobalAdmin()) {
             return true;
         }
         return null;
@@ -38,11 +38,19 @@ class ChoirPolicy
 
     public function update(User $user, Choir $choir): bool
     {
-        return $user->can('choirs.update');
+        return $user->can('choirs.update') && $this->assigned($user, $choir);
     }
 
     public function delete(User $user, Choir $choir): bool
     {
-        return $user->can('choirs.delete');
+        return $user->can('choirs.delete') && $this->assigned($user, $choir);
+    }
+
+    private function assigned(User $user, Choir $choir): bool
+    {
+        return $user->choirs()
+            ->where('choirs.id', $choir->id)
+            ->wherePivot('status', 'active')
+            ->exists();
     }
 }

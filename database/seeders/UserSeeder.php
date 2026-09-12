@@ -11,18 +11,31 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Only the administrative account required to access the system.
-        // Test/dev member accounts are intentionally NOT created here.
+        // Administrative account
         $admin = User::firstOrCreate(
             ['email' => 'admin@choirmkc.com'],
             [
-                'name' => 'Administrator',
-                'phone' => '0911000001',
-                'password' => Hash::make('password'),
-                'role' => 'admin',
-                'status' => 'approved',
-                'approved_at' => now(),
-                'email_verified_at' => now(),
+                'name'               => 'Administrator',
+                'phone'              => '0911000001',
+                'password'           => Hash::make('password'),
+                'role'               => 'admin',
+                'status'             => 'approved',
+                'approved_at'        => now(),
+                'email_verified_at'  => now(),
+            ]
+        );
+
+        // Super-admin account (full platform access)
+        $superAdmin = User::firstOrCreate(
+            ['email' => 'superadmin@choirmkc.com'],
+            [
+                'name'               => 'Super Administrator',
+                'phone'              => '0911000000',
+                'password'           => Hash::make('password'),
+                'role'               => 'super-admin',
+                'status'             => 'approved',
+                'approved_at'        => now(),
+                'email_verified_at'  => now(),
             ]
         );
 
@@ -32,9 +45,9 @@ class UserSeeder extends Seeder
                 ['choir_id' => $choir->id, 'user_id' => $admin->id],
                 [
                     'is_primary_leader' => true,
-                    'status' => 'active',
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'status'            => 'active',
+                    'created_at'        => now(),
+                    'updated_at'        => now(),
                 ]
             );
         }

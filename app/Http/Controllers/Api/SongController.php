@@ -19,7 +19,9 @@ class SongController extends ApiController
     {
         $this->authorize('viewAny', Song::class);
 
-        $q = Song::query()->with(['choir:id,name', 'creator:id,name', 'approver:id,name']);
+        $q = Song::query()
+            ->with(['choir:id,name', 'creator:id,name', 'approver:id,name'])
+            ->withCount('likes');
 
         if ($choir) {
             $q->where('choir_id', $choir->id);
@@ -36,12 +38,45 @@ class SongController extends ApiController
         }
 
         if ($request->filled('search')) {
-            $q->where('title', 'like', '%' . $request->input('search') . '%');
+            $search = $request->input('search');
+            $q->where(function ($sub) use ($search) {
+                $sub->where('title', 'like', '%' . $search . '%')
+                    ->orWhere('artist', 'like', '%' . $search . '%')
+                    ->orWhere('composer', 'like', '%' . $search . '%');
+            });
         }
 
-        $q->latest();
+        $sort = $request->input('sort');
+        if ($sort === 'most_liked' || $sort === 'likes') {
+            $q->orderBy('likes_count', 'desc')->latest();
+        } elseif ($sort === 'oldest') {
+            $q->oldest();
+        } else {
+            $q->latest();
+        }
 
         return $this->paginate($q, SongResource::class);
+    }
+
+    public function stats(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('viewAny', Song::class);
+
+        $totalSongs = Song::count();
+        $totalLikes = \App\Models\SongLike::count();
+        $mostLikedSong = Song::withCount('likes')->orderBy('likes_count', 'desc')->first(['id', 'title']);
+        $avgLikes = $totalSongs > 0 ? round($totalLikes / $totalSongs, 1) : 0;
+
+        return $this->ok([
+            'total_songs' => $totalSongs,
+            'total_likes' => $totalLikes,
+            'most_liked_song' => $mostLikedSong ? [
+                'id' => $mostLikedSong->id,
+                'title' => $mostLikedSong->title,
+                'likes_count' => $mostLikedSong->likes_count,
+            ] : null,
+            'avg_likes_per_song' => $avgLikes,
+        ]);
     }
 
     public function store(StoreSongRequest $request, ?Choir $choir = null)
@@ -54,7 +89,7 @@ class SongController extends ApiController
         $user = $request->user();
 
         $isAdmin = $user->hasRole(['admin', 'super-admin'], 'api')
-            || $user->hasAnyRole(['admin', 'super-admin'])
+            || $user->isGlobalAdmin()
             || in_array($user->role, ['admin', 'super-admin']);
 
         $song = new Song();

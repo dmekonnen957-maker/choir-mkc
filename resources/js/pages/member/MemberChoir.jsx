@@ -18,7 +18,7 @@ function initials(name) {
         .toUpperCase();
 }
 
-export default function MemberChoir() {
+export default function MemberChoir({ apiPath = '/member/choir' }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -27,14 +27,14 @@ export default function MemberChoir() {
     useEffect(() => {
         let active = true;
         api
-            .get('/member/choir')
+            .get(apiPath)
             .then((res) => active && setData(res.data.data))
             .catch((err) => active && setError(err.message))
             .finally(() => active && setLoading(false));
         return () => {
             active = false;
         };
-    }, []);
+    }, [apiPath]);
 
     if (loading) {
         return (

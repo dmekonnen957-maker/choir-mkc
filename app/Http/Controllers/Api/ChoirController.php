@@ -14,7 +14,8 @@ class ChoirController extends ApiController
     {
         $this->authorize('viewAny', Choir::class);
 
-        if ($request->user()->can('choirs.view.all')) {
+        if ($request->user()->isGlobalAdmin()
+            || $request->user()->can('choirs.view.all')) {
             $q = Choir::query();
         } else {
             $q = $request->user()->choirs();

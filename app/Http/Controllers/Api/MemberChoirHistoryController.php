@@ -21,7 +21,7 @@ class MemberChoirHistoryController extends ApiController
 
     private function canView(User $user, Choir $choir): bool
     {
-        return $user->hasAnyRole(['super-admin', 'admin'])
+        return $user->isGlobalAdmin()
             || $user->can('choirs.view.all')
             || $user->can('gallery.view.all')
             || $user->choirs()->where('choirs.id', $choir->id)->wherePivot('status', 'active')->exists();
@@ -29,7 +29,7 @@ class MemberChoirHistoryController extends ApiController
 
     private function canManage(User $user): bool
     {
-        return $user->hasAnyRole(['super-admin', 'admin']) || $user->can('gallery.manage');
+        return $user->isGlobalAdmin() || $user->can('gallery.manage');
     }
 
     private function authorizedChoir(Request $request, bool $manage = false): Choir
@@ -37,6 +37,18 @@ class MemberChoirHistoryController extends ApiController
         $user = $request->user();
 
         abort_unless($user && $user->isApproved(), 403, 'Your account is not approved to access choir history.');
+
+        // Global admins can view any choir even if they are not members of one.
+        if ($user->isGlobalAdmin()) {
+            $choir = $this->choirFor($user) ?? Choir::first();
+            abort_unless($choir, 404, 'No choir has been created yet.');
+
+            if ($manage) {
+                abort_unless($this->canManage($user), 403, 'You do not have permission to manage choir history.');
+            }
+
+            return $choir;
+        }
 
         $choir = $this->choirFor($user);
         abort_unless($choir && $this->canView($user, $choir), 403, 'You are not authorized to view this choir history.');

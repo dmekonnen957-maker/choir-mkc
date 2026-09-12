@@ -34,7 +34,7 @@ class AttendanceController extends ApiController
             return false;
         }
 
-        if ($user->hasAnyRole(['super-admin', 'admin'])) {
+        if ($user->isGlobalAdmin()) {
             return true;
         }
 
@@ -52,7 +52,7 @@ class AttendanceController extends ApiController
             return false;
         }
 
-        if ($user->hasAnyRole(['super-admin', 'admin'])) {
+        if ($user->isGlobalAdmin()) {
             return true;
         }
 
@@ -70,6 +70,33 @@ class AttendanceController extends ApiController
             || $user->can('rehearsals.manage');
     }
 
+    private function scheduledEvent(AttendanceSession $session): Performance|Rehearsal|null
+    {
+        if ($session->performance_id) {
+            $performance = $session->performance;
+            return $performance
+                && (int) $performance->choir_id === (int) $session->choir_id
+                && $performance->date
+                && $session->session_date
+                && $performance->date->toDateString() === $session->session_date->toDateString()
+                ? $performance
+                : null;
+        }
+
+        if ($session->rehearsal_id) {
+            $rehearsal = $session->rehearsal;
+            return $rehearsal
+                && (int) $rehearsal->choir_id === (int) $session->choir_id
+                && $rehearsal->date
+                && $session->session_date
+                && $rehearsal->date->toDateString() === $session->session_date->toDateString()
+                ? $rehearsal
+                : null;
+        }
+
+        return null;
+    }
+
     /**
      * Return only choirs the authenticated user may use for attendance.
      */
@@ -77,7 +104,7 @@ class AttendanceController extends ApiController
     {
         $user = $request->user();
 
-        if ($user->hasAnyRole(['super-admin', 'admin'])) {
+        if ($user->isGlobalAdmin()) {
             $choirs = Choir::active()->orderBy('name')->get(['id', 'name']);
         } else {
             $assignedIds = $user->choirs()
@@ -169,7 +196,7 @@ class AttendanceController extends ApiController
 
         if (! $choirId) {
             // If user is admin, allow fetching first choir or all choirs
-            $choir = $user->hasAnyRole(['super-admin', 'admin'])
+            $choir = $user->isGlobalAdmin()
                 ? Choir::first()
                 : $user->choirs()->first();
 
@@ -238,7 +265,7 @@ class AttendanceController extends ApiController
         $choirId = $request->query('choir_id');
 
         if (! $choirId) {
-            $choir = $user->hasAnyRole(['super-admin', 'admin'])
+            $choir = $user->isGlobalAdmin()
                 ? Choir::first()
                 : $user->choirs()->first();
 
@@ -255,7 +282,10 @@ class AttendanceController extends ApiController
         }
 
         $query = AttendanceSession::where('choir_id', $choir->id)
-            ->with(['performance', 'rehearsal', 'creator', 'records'])
+              ->where(function ($query) {
+                 $query->whereNotNull('performance_id')->orWhereNotNull('rehearsal_id');
+              })
+              ->with(['performance', 'rehearsal', 'creator', 'records'])
             ->orderByDesc('session_date')
             ->orderByDesc('id');
 
@@ -298,13 +328,9 @@ class AttendanceController extends ApiController
     {
         $validator = Validator::make($request->all(), [
             'choir_id' => ['required', 'exists:choirs,id'],
-            'event_type' => ['nullable', 'string', 'in:performance,rehearsal,service,other'],
-            'performance_id' => ['nullable', 'exists:performances,id'],
-            'rehearsal_id' => ['nullable', 'exists:rehearsals,id'],
-            'session_date' => ['nullable', 'date'],
-            'title' => ['nullable', 'string', 'max:255'],
-            'start_time' => ['nullable'],
-            'end_time' => ['nullable'],
+            'event_type' => ['nullable', 'string', 'in:performance,rehearsal'],
+            'performance_id' => ['required_if:event_type,performance', 'nullable', 'exists:performances,id'],
+            'rehearsal_id' => ['required_if:event_type,rehearsal', 'nullable', 'exists:rehearsals,id'],
             'late_threshold_minutes' => ['nullable', 'integer', 'min:0', 'max:240'],
         ]);
 
@@ -319,42 +345,35 @@ class AttendanceController extends ApiController
             return $this->error('You do not have permission to manage attendance for this choir.', null, 403);
         }
 
-        $eventType = $request->input('event_type', 'performance');
+        $eventType = $request->input('event_type')
+            ?? ($request->filled('performance_id') ? 'performance' : ($request->filled('rehearsal_id') ? 'rehearsal' : null));
         $performanceId = $request->input('performance_id');
         $rehearsalId = $request->input('rehearsal_id');
-        $sessionDate = $request->input('session_date');
-        $startTime = $request->input('start_time');
-        $endTime = $request->input('end_time');
-        $title = $request->input('title');
+        $event = null;
 
-        if ($performanceId) {
+        if (! $eventType) {
+            return $this->error('Select a scheduled rehearsal or performance before taking attendance.', null, 422);
+        }
+
+        if ($eventType === 'performance') {
             $performance = Performance::findOrFail($performanceId);
-            $sessionDate = $sessionDate ?? $performance->date?->format('Y-m-d') ?? now()->toDateString();
-            $startTime = $startTime ?? $performance->start_time;
-            $endTime = $endTime ?? $performance->end_time;
-            $title = $title ?? $performance->title;
-            $eventType = 'performance';
+            if ((int) $performance->choir_id !== (int) $choir->id || ! $performance->date) {
+                return $this->error('The selected performance does not belong to this choir or has no scheduled date.', null, 422);
+            }
+            $event = $performance;
 
             $session = AttendanceSession::where('choir_id', $choir->id)
                 ->where('performance_id', $performanceId)
                 ->first();
-        } elseif ($rehearsalId) {
+        } else {
             $rehearsal = Rehearsal::findOrFail($rehearsalId);
-            $sessionDate = $sessionDate ?? $rehearsal->date?->format('Y-m-d') ?? now()->toDateString();
-            $startTime = $startTime ?? $rehearsal->start_time;
-            $endTime = $endTime ?? $rehearsal->end_time;
-            $title = $title ?? $rehearsal->title;
-            $eventType = 'rehearsal';
+            if ((int) $rehearsal->choir_id !== (int) $choir->id || ! $rehearsal->date) {
+                return $this->error('The selected rehearsal does not belong to this choir or has no scheduled date.', null, 422);
+            }
+            $event = $rehearsal;
 
             $session = AttendanceSession::where('choir_id', $choir->id)
                 ->where('rehearsal_id', $rehearsalId)
-                ->first();
-        } else {
-            $sessionDate = $sessionDate ?? now()->toDateString();
-            $session = AttendanceSession::where('choir_id', $choir->id)
-                ->where('session_date', $sessionDate)
-                ->whereNull('performance_id')
-                ->whereNull('rehearsal_id')
                 ->first();
         }
 
@@ -364,14 +383,23 @@ class AttendanceController extends ApiController
                 'performance_id' => $performanceId,
                 'rehearsal_id' => $rehearsalId,
                 'event_type' => $eventType,
-                'title' => $title ?? 'General Attendance',
-                'session_date' => $sessionDate,
-                'start_time' => $startTime,
-                'end_time' => $endTime,
+                'title' => $event->title,
+                'session_date' => $event->date,
+                'start_time' => $event->start_time,
+                'end_time' => $event->end_time,
                 'status' => 'open',
                 'late_threshold_minutes' => $request->input('late_threshold_minutes', 15),
                 'created_by' => $user->id,
             ]);
+        } elseif ($this->scheduledEvent($session) === null) {
+            return $this->error('This attendance session is not linked to a valid scheduled choir event.', null, 422);
+        } else {
+            $session->event_type = $eventType;
+            $session->title = $event->title;
+            $session->session_date = $event->date;
+            $session->start_time = $event->start_time;
+            $session->end_time = $event->end_time;
+            $session->save();
         }
 
         return $this->showSession($request, $session);
@@ -388,6 +416,10 @@ class AttendanceController extends ApiController
 
         if (! $this->canViewChoir($user, $choir)) {
             return $this->error('You are not authorized to view this choir attendance.', null, 403);
+        }
+
+        if ($this->scheduledEvent($attendanceSession) === null) {
+            return $this->error('Attendance must be linked to a scheduled rehearsal or performance.', null, 422);
         }
 
         $attendanceSession->load(['choir', 'performance', 'rehearsal', 'creator']);
@@ -465,6 +497,10 @@ class AttendanceController extends ApiController
             return $this->error('You do not have permission to modify this attendance session.', null, 403);
         }
 
+        if ($this->scheduledEvent($attendanceSession) === null) {
+            return $this->error('Attendance is available only for scheduled performances and rehearsals.', null, 422);
+        }
+
         $attendanceSession->status = $request->status;
         if ($request->has('late_threshold_minutes')) {
             $attendanceSession->late_threshold_minutes = $request->late_threshold_minutes;
@@ -502,6 +538,10 @@ class AttendanceController extends ApiController
 
         if (! $this->canManageChoir($user, $choir)) {
             return $this->error('You do not have permission to check in members for this choir.', null, 403);
+        }
+
+        if ($this->scheduledEvent($session) === null) {
+            return $this->error('Attendance is available only for scheduled performances and rehearsals.', null, 422);
         }
 
         if ($session->isClosed()) {
@@ -590,6 +630,10 @@ class AttendanceController extends ApiController
             return $this->error('You do not have permission to check out members for this choir.', null, 403);
         }
 
+        if ($this->scheduledEvent($session) === null) {
+            return $this->error('Attendance is available only for scheduled performances and rehearsals.', null, 422);
+        }
+
         $record = AttendanceRecord::where('attendance_session_id', $session->id)
             ->where('member_id', $request->member_id)
             ->first();
@@ -641,6 +685,10 @@ class AttendanceController extends ApiController
 
         if (! $this->canManageChoir($user, $choir)) {
             return $this->error('You do not have permission to mark attendance for this choir.', null, 403);
+        }
+
+        if ($this->scheduledEvent($session) === null) {
+            return $this->error('Attendance is available only for scheduled performances and rehearsals.', null, 422);
         }
 
         // Validate member belongs to choir
@@ -730,6 +778,10 @@ class AttendanceController extends ApiController
             return $this->error('You do not have permission to manage attendance for this choir.', null, 403);
         }
 
+        if ($this->scheduledEvent($session) === null) {
+            return $this->error('Attendance is available only for scheduled performances and rehearsals.', null, 422);
+        }
+
         $action = $request->action;
         $activeMembers = $this->currentMembers($choir)->get();
         $now = Carbon::now();
@@ -791,7 +843,7 @@ class AttendanceController extends ApiController
         $choirId = $request->query('choir_id');
 
         if (! $choirId) {
-            $choir = $user->hasAnyRole(['super-admin', 'admin'])
+            $choir = $user->isGlobalAdmin()
                 ? Choir::first()
                 : $user->choirs()->first();
 
@@ -807,7 +859,11 @@ class AttendanceController extends ApiController
             return $this->error('You are not authorized to view this choir attendance.', null, 403);
         }
 
-        $totalSessions = AttendanceSession::where('choir_id', $choir->id)->count();
+        $totalSessions = AttendanceSession::where('choir_id', $choir->id)
+            ->where(function ($query) {
+                $query->whereNotNull('performance_id')->orWhereNotNull('rehearsal_id');
+            })
+            ->count();
 
         $members = $this->currentMembers($choir)
             ->with(['voiceSection', 'attendanceRecords' => fn ($q) => $q->where('choir_id', $choir->id)])

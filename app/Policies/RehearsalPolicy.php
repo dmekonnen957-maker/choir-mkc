@@ -9,7 +9,7 @@ class RehearsalPolicy
 {
     public function before(User $user, $ability): ?bool
     {
-        if ($user->hasRole(['super-admin', 'admin'], 'api') || $user->hasAnyRole(['super-admin', 'admin'])) {
+        if ($user->isGlobalAdmin()) {
             return true;
         }
         return null;
@@ -57,11 +57,13 @@ class RehearsalPolicy
 
     public function update(User $user, Rehearsal $rehearsal): bool
     {
-        return $this->hasPerm($user, ['rehearsals.update', 'rehearsals.edit', 'rehearsals.manage']);
+        return $this->assigned($user, $rehearsal)
+            && $this->hasPerm($user, ['rehearsals.update', 'rehearsals.edit', 'rehearsals.manage']);
     }
 
     public function delete(User $user, Rehearsal $rehearsal): bool
     {
-        return $this->hasPerm($user, ['rehearsals.delete', 'rehearsals.manage']);
+        return $this->assigned($user, $rehearsal)
+            && $this->hasPerm($user, ['rehearsals.delete', 'rehearsals.manage']);
     }
 }

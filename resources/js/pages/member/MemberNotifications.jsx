@@ -3,22 +3,29 @@ import { Bell } from 'lucide-react';
 import { api } from '../../axios';
 import EmptyState from '../../components/member/EmptyState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import Alert from '../../components/ui/Alert';
 
-export default function MemberNotifications() {
+export default function MemberNotifications({ apiPath = '/member/notifications' }) {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         let active = true;
         api
-            .get('/member/notifications')
-            .then((res) => active && setItems(res.data.data.notifications))
-            .catch(() => active && setItems([]))
+            .get(apiPath)
+            .then((res) => active && setItems(res.data.data.notifications || res.data.data.items || []))
+            .catch((err) => {
+                if (active) {
+                    setItems([]);
+                    setError(err.message || 'Unable to load notifications.');
+                }
+            })
             .finally(() => active && setLoading(false));
         return () => {
             active = false;
         };
-    }, []);
+    }, [apiPath]);
 
     if (loading) {
         return (
@@ -32,7 +39,9 @@ export default function MemberNotifications() {
         <div className="space-y-6">
             <h1 className="text-2xl font-bold text-ink-900">Notifications</h1>
 
-            {items.length === 0 ? (
+            {error && <Alert variant="error" title={error} />}
+
+            {!error && items.length === 0 ? (
                 <EmptyState
                     icon={Bell}
                     title="No notifications yet"

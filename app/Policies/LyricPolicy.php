@@ -9,7 +9,7 @@ class LyricPolicy
 {
     public function before(User $user, $ability): ?bool
     {
-        if ($user->hasRole(['super-admin', 'admin'], 'api') || $user->hasAnyRole(['super-admin', 'admin'])) {
+        if ($user->isGlobalAdmin()) {
             return true;
         }
         return null;

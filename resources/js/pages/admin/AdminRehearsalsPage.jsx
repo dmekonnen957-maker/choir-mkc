@@ -694,8 +694,8 @@ export default function AdminRehearsalsPage() {
                 } else if (items.length > 0) {
                     setSelectedChoirId(items[0].id.toString());
                 }
-            } catch {
-                setError('Failed to load choirs.');
+            } catch (err) {
+                setError(err.message || 'Failed to load choirs.');
             }
         };
 
@@ -749,7 +749,7 @@ export default function AdminRehearsalsPage() {
                 setRehearsals(enriched);
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to load rehearsals.');
+            setError(err.message || 'Failed to load rehearsals.');
         } finally {
             setLoading(false);
         }
@@ -779,7 +779,7 @@ export default function AdminRehearsalsPage() {
             showToast('success', `"${reh.title}" deleted successfully.`);
             fetchRehearsals();
         } catch (err) {
-            showToast('error', err.response?.data?.message || 'Failed to delete rehearsal.');
+            showToast('error', err.message || 'Failed to delete rehearsal.');
         } finally {
             setDeleting(false);
         }

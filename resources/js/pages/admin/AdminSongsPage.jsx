@@ -22,6 +22,11 @@ import {
     User,
     FileText,
     Sparkles,
+    Heart,
+    TrendingUp,
+    BarChart2,
+    ArrowUpDown,
+    ExternalLink,
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -29,6 +34,7 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Alert from '../../components/ui/Alert';
 import Modal from '../../components/ui/Modal';
 import AdminSongFormPage from './AdminSongFormPage';
+import { fetchAdminSongStats } from '../../lib/publicApi';
 
 export default function AdminSongsPage() {
     const { can } = useAuth();
@@ -39,9 +45,11 @@ export default function AdminSongsPage() {
     const [error, setError] = useState('');
     const [songs, setSongs] = useState([]);
     const [choirs, setChoirs] = useState([]);
+    const [stats, setStats] = useState(null);
     const [search, setSearch] = useState('');
     const [choirId, setChoirId] = useState('');
     const [statusTab, setStatusTab] = useState('all'); // 'all' | 'pending' | 'approved' | 'rejected'
+    const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'most_liked' | 'oldest' | 'title'
 
     const [toDelete, setToDelete] = useState(null);
     const [toReject, setToReject] = useState(null);
@@ -67,10 +75,15 @@ export default function AdminSongsPage() {
     const load = () => {
         setLoading(true);
         setError('');
-        Promise.all([api.get('/admin/songs'), api.get('/admin/choirs')])
-            .then(([songsRes, choirsRes]) => {
+        Promise.all([
+            api.get('/admin/songs'),
+            api.get('/admin/choirs'),
+            fetchAdminSongStats().catch(() => null),
+        ])
+            .then(([songsRes, choirsRes, statsData]) => {
                 setSongs(songsRes.data?.data?.items ?? []);
                 setChoirs(choirsRes.data?.data?.items ?? []);
+                if (statsData) setStats(statsData);
             })
             .catch(() => setError('Unable to load songs.'))
             .finally(() => setLoading(false));
@@ -84,6 +97,19 @@ export default function AdminSongsPage() {
         if (choirId && String(s.choir_id) !== String(choirId)) return false;
         if (statusTab !== 'all' && s.status !== statusTab) return false;
         return true;
+    });
+
+    const sortedSongs = [...filtered].sort((a, b) => {
+        if (sortBy === 'most_liked') {
+            return (b.likes_count || 0) - (a.likes_count || 0);
+        }
+        if (sortBy === 'oldest') {
+            return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+        }
+        if (sortBy === 'title') {
+            return (a.title || '').localeCompare(b.title || '');
+        }
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
     });
 
     const pendingCount = songs.filter((s) => s.status === 'pending').length;
@@ -202,7 +228,7 @@ export default function AdminSongsPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-ink-900">Music Library & Review</h1>
-                    <p className="text-sm text-ink-500">Review member submissions, approve songs, and manage choir music</p>
+                    <p className="text-sm text-ink-500">Review member submissions, approve songs, and monitor audience engagement</p>
                 </div>
                 {can('songs.create') && (
                     <button
@@ -213,6 +239,63 @@ export default function AdminSongsPage() {
                         <Plus className="h-4 w-4" /> Add Song
                     </button>
                 )}
+            </div>
+
+            {/* Engagement Statistics Dashboard Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Songs</span>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                            <Music size={16} />
+                        </div>
+                    </div>
+                    <p className="mt-2 text-2xl font-extrabold text-slate-900">
+                        {stats?.total_songs ?? songs.length}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">In catalog</p>
+                </div>
+
+                <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50/40 to-white p-4 shadow-xs">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold uppercase tracking-wider text-rose-500">Total Likes</span>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
+                            <Heart size={16} className="fill-rose-500 text-rose-500" />
+                        </div>
+                    </div>
+                    <p className="mt-2 text-2xl font-extrabold text-slate-900">
+                        {stats?.total_likes ?? 0}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Audience appreciations</p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Most Liked Song</span>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                            <TrendingUp size={16} />
+                        </div>
+                    </div>
+                    <p className="mt-2 text-sm font-bold text-slate-900 truncate">
+                        {stats?.most_liked_song?.title || 'No likes yet'}
+                    </p>
+                    <p className="text-[11px] text-indigo-600 font-semibold mt-0.5">
+                        {stats?.most_liked_song ? `♥ ${stats.most_liked_song.likes_count} likes` : '—'}
+                    </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Avg Likes / Song</span>
+                        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                            <BarChart2 size={16} />
+                        </div>
+                    </div>
+                    <p className="mt-2 text-2xl font-extrabold text-slate-900">
+                        {stats?.avg_likes_per_song ?? 0}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Per published title</p>
+                </div>
             </div>
 
             {/* Toast & Error */}
@@ -300,7 +383,7 @@ export default function AdminSongsPage() {
                 </button>
             </div>
 
-            {/* Filters */}
+            {/* Filters and Sorting Bar */}
             <div className="flex flex-wrap gap-3">
                 <div className="relative flex-1 min-w-[220px]">
                     <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
@@ -314,7 +397,7 @@ export default function AdminSongsPage() {
                 <select
                     value={choirId}
                     onChange={(e) => setChoirId(e.target.value)}
-                    className="min-w-[190px] rounded-xl border border-slate-200 bg-white py-2 pl-3 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-medium"
+                    className="min-w-[170px] rounded-xl border border-slate-200 bg-white py-2 pl-3 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-medium text-slate-700"
                 >
                     <option value="">All Choirs</option>
                     {choirs.map((c) => (
@@ -323,10 +406,22 @@ export default function AdminSongsPage() {
                         </option>
                     ))}
                 </select>
+                <div className="flex items-center gap-1.5">
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="min-w-[160px] rounded-xl border border-slate-200 bg-white py-2 pl-3 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-medium text-slate-700"
+                    >
+                        <option value="newest">Sort: Newest First</option>
+                        <option value="most_liked">Sort: Most Liked ♥</option>
+                        <option value="oldest">Sort: Oldest First</option>
+                        <option value="title">Sort: Title (A-Z)</option>
+                    </select>
+                </div>
             </div>
 
             {/* Songs Grid */}
-            {filtered.length === 0 ? (
+            {sortedSongs.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
                     <Music className="mx-auto h-10 w-10 text-slate-300 mb-2" />
                     <p className="font-bold text-slate-800">
@@ -340,7 +435,7 @@ export default function AdminSongsPage() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-4">
-                    {filtered.map((s) => {
+                    {sortedSongs.map((s) => {
                         const isPending = s.status === 'pending';
                         const isApproved = s.status === 'approved';
                         const isRejected = s.status === 'rejected';
@@ -390,6 +485,12 @@ export default function AdminSongsPage() {
                                                 {s.artist && <span>Artist: <strong className="text-slate-700">{s.artist}</strong></span>}
                                                 <span>Choir: <strong className="text-slate-700">{s.choir?.name || '—'}</strong></span>
                                                 {s.original_key && <span>Key: <strong>{s.original_key}</strong></span>}
+                                                {s.likes_count !== undefined && (
+                                                    <span className="inline-flex items-center gap-1 text-rose-600 font-semibold">
+                                                        <Heart size={11} className="fill-rose-500 text-rose-500" />
+                                                        {s.likes_count} {s.likes_count === 1 ? 'like' : 'likes'}
+                                                    </span>
+                                                )}
                                                 {s.creator && (
                                                     <span className="flex items-center gap-1 text-blue-700 font-medium">
                                                         <User size={12} /> Submitted by {s.creator.name}

@@ -9,7 +9,7 @@ class AnnouncementPolicy
 {
     public function before(User $user, $ability): ?bool
     {
-        if ($user->hasAnyRole(['super-admin', 'admin'])) {
+        if ($user->isGlobalAdmin()) {
             return true;
         }
         return null;
@@ -46,11 +46,11 @@ class AnnouncementPolicy
 
     public function update(User $user, Announcement $announcement): bool
     {
-        return $user->can('announcements.manage');
+        return $this->assigned($user, $announcement) && $user->can('announcements.manage');
     }
 
     public function delete(User $user, Announcement $announcement): bool
     {
-        return $user->can('announcements.manage');
+        return $this->assigned($user, $announcement) && $user->can('announcements.manage');
     }
 }

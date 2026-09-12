@@ -14,7 +14,7 @@ class ContactController extends ApiController
     {
         $user = $request->user();
 
-        if ($user->hasAnyRole(['super-admin', 'admin'])) {
+        if ($user->isGlobalAdmin()) {
             return true;
         }
 

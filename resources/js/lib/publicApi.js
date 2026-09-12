@@ -94,12 +94,12 @@ export async function fetchPaginatedSongs(params = {}) {
         const data = res.data?.data;
         return {
             items: Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []),
-            pagination: data?.pagination || { current_page: 1, last_page: 1, per_page: 16, total: 0 }
+            pagination: data?.pagination || { current_page: 1, last_page: 1, per_page: 100, total: 0 }
         };
     } catch {
         return {
             items: [],
-            pagination: { current_page: 1, last_page: 1, per_page: 16, total: 0 }
+            pagination: { current_page: 1, last_page: 1, per_page: 100, total: 0 }
         };
     }
 }
@@ -133,6 +133,35 @@ export async function fetchPublicSong(id, transpose = 0) {
     const res = await api.get(`/public/songs/${id}`, {
         params: transpose ? { transpose } : {},
     });
+    return res.data?.data ?? null;
+}
+
+export async function likeSong(songId) {
+    const res = await api.post(`/songs/${songId}/like`);
+    return res.data?.data ?? null;
+}
+
+export async function unlikeSong(songId) {
+    const res = await api.delete(`/songs/${songId}/like`);
+    return res.data?.data ?? null;
+}
+
+export async function fetchSongLikesStatus(songId) {
+    const res = await api.get(`/public/songs/${songId}/likes`);
+    return res.data?.data ?? null;
+}
+
+export async function fetchLikedSongs(params = {}) {
+    const res = await api.get('/member/liked-songs', { params });
+    const data = res.data?.data;
+    return {
+        items: Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []),
+        pagination: data?.pagination || { current_page: 1, last_page: 1, per_page: 16, total: 0 }
+    };
+}
+
+export async function fetchAdminSongStats() {
+    const res = await api.get('/admin/songs-stats');
     return res.data?.data ?? null;
 }
 

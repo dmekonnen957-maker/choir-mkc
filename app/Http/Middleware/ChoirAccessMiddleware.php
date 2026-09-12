@@ -29,7 +29,7 @@ class ChoirAccessMiddleware
         $choir = $request->route('choir');
 
         if ($choir) {
-            $hasGlobalAccess = $user->hasAnyRole(['super-admin', 'admin'])
+            $hasGlobalAccess = $user->isGlobalAdmin()
                 || $user->can('choirs.view.all');
 
             $isAssigned = $user->choirs()

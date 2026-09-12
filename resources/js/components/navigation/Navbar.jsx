@@ -22,7 +22,6 @@ function navClass({ isActive }) {
 }
 
 export default function Navbar() {
-    const [scrolled, setScrolled] = useState(false);
     const [open, setOpen] = useState(false);
     const { isAuthenticated, role } = useAuth();
     const location = useLocation();
@@ -34,26 +33,13 @@ export default function Navbar() {
             : '/member/dashboard';
 
     useEffect(() => {
-        const onScroll = () => setScrolled(window.scrollY > 8);
-        onScroll();
-        window.addEventListener('scroll', onScroll, { passive: true });
-        return () => window.removeEventListener('scroll', onScroll);
-    }, []);
-
-    useEffect(() => {
         setOpen(false);
     }, [location.pathname]);
 
     return (
-        <header
-            className={`sticky top-0 z-50 transition-all duration-300 ${
-                scrolled
-                    ? 'border-b border-blue-100 bg-white/90 shadow-sm backdrop-blur'
-                    : 'border-b border-transparent bg-white/0'
-            }`}
-        >
+        <header className="sticky top-0 z-50 border-b border-blue-100 bg-white/90 shadow-sm backdrop-blur-md">
             <nav
-                className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8"
+                className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4"
                 aria-label="Primary"
             >
                 <Link

@@ -6,7 +6,6 @@ import Logo from '../../components/Logo';
 
 const NAV_ITEMS = [
     { label: 'Home', to: '/' },
-    { label: 'Choirs', to: '/choirs' },
     { label: 'Songs', to: '/songs' },
     { label: 'Performances', to: '/performances' },
     { label: 'About', to: '/about' },
@@ -22,7 +21,6 @@ function navClass({ isActive }) {
 }
 
 export default function PublicHeader() {
-    const [scrolled, setScrolled] = useState(false);
     const [open, setOpen] = useState(false);
     const { isAuthenticated, role } = useAuth();
     const location = useLocation();
@@ -35,25 +33,13 @@ export default function PublicHeader() {
                 : '/member/dashboard';
 
     useEffect(() => {
-        const onScroll = () => setScrolled(window.scrollY > 8);
-        onScroll();
-        window.addEventListener('scroll', onScroll, { passive: true });
-        return () => window.removeEventListener('scroll', onScroll);
-    }, []);
-
-    useEffect(() => {
         setOpen(false);
     }, [location.pathname]);
 
     return (
-        <header
-            className={`sticky top-0 z-50 transition-all duration-300 ${scrolled
-                    ? 'border-b border-slate-200/70 bg-white/85 shadow-sm backdrop-blur-md'
-                    : 'border-b border-transparent bg-white/0'
-                }`}
-        >
+        <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 shadow-sm backdrop-blur-md">
             <nav
-                className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8"
+                className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4"
                 aria-label="Primary"
             >
                 <Link to="/" className="flex items-center gap-2.5 rounded-lg focus-visible:outline-blue-600">

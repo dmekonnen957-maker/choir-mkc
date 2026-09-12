@@ -68,6 +68,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
         return $this->status === self::STATUS_REJECTED;
     }
 
+    public function isGlobalAdmin(): bool
+    {
+        $legacyRole = strtolower(trim((string) $this->getAttribute('role')));
+
+        return in_array($legacyRole, ['admin', 'super-admin'], true)
+            || $this->hasAnyRole(['admin', 'super-admin'], 'api');
+    }
+
     public function getNotificationPreferencesAttribute($value): array
     {
         $defaults = self::DEFAULT_NOTIFICATION_PREFERENCES;
@@ -165,5 +173,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AuditLog::class, 'user_id');
+    }
+
+    public function songLikes(): HasMany
+    {
+        return $this->hasMany(SongLike::class);
+    }
+
+    public function likedSongs(): BelongsToMany
+    {
+        return $this->belongsToMany(Song::class, 'song_likes')->withTimestamps();
     }
 }

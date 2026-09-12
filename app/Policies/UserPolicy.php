@@ -9,7 +9,7 @@ class UserPolicy
 {
     public function before(User $user, $ability): ?bool
     {
-        if ($user->hasAnyRole(['super-admin', 'admin'])) {
+        if ($user->isGlobalAdmin()) {
             return true;
         }
         return null;

@@ -1,198 +1,97 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { ArrowRight, ChevronLeft, ChevronRight, Music2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Play, ArrowRight } from 'lucide-react';
-import CoverImage from './CoverImage';
 
-const DEFAULT_SLIDES = [
-    {
-        id: 1,
-        title: "YKA M.K.C CHOIR IS SO MUCH MORE THAN JUST A CHOIR",
-        subtitle: "United in Voice. Connected in Faith.",
-        ctaText: "EXPLORE OUR CHOIRS",
-        ctaLink: "/choirs",
-        badge: "YKA M.K.C Ministry",
-        image: "/images/p1.jpg",
-    },
-    {
-        id: 2,
-        title: "DISCOVER SONGS & WORSHIP MUSIC",
-        subtitle: "Listen to our collection, access lyrics, and sing along.",
-        ctaText: "DISCOVER SONGS",
-        ctaLink: "/songs",
-        badge: "Music & Media",
-        image: "/images/p2.jpg",
-    },
-    {
-        id: 3,
-        title: "UPCOMING PERFORMANCES & EVENTS",
-        subtitle: "Join us in our weekly gatherings and seasonal concerts.",
-        ctaText: "VIEW PERFORMANCES",
-        ctaLink: "/performances",
-        badge: "Live Worship",
-        image: "/images/p3.jpg",
-    },
+const HERO_IMAGES = [
+    { src: '/images/p1.jpg', alt: 'Yeka M.K.C choir performing indoors' },
+    { src: '/images/p2.jpg', alt: 'Yeka M.K.C choir rehearsing outdoors' },
+    { src: '/images/p3.jpg', alt: 'Yeka M.K.C choir community gathering' },
 ];
 
-export default function HeroSection({ featuredChoir = null, choirs = [] }) {
+const DISPLAY_TIME = 3000;
+const FADE_TIME = 1000;
+const HERO_VERSE = 'LET EVERYTHING THAT HAS BREATH PRAISE THE LORD. PRAISE THE LORD! - PSALM 150:6';
+
+export default function HeroSection() {
     const [currentIndex, setCurrentIndex] = useState(0);
 
-    // Merge backend choir data or fallback slides
-    const slides = choirs.length > 0
-        ? choirs.map((choir, idx) => ({
-            id: choir.id || idx,
-            title: choir.name ? `${choir.name.toUpperCase()} AT YKA M.K.C` : DEFAULT_SLIDES[idx % 3].title,
-            subtitle: choir.description || DEFAULT_SLIDES[idx % 3].subtitle,
-            ctaText: "EXPLORE CHOIR",
-            ctaLink: `/choirs/${choir.id || ''}`,
-            badge: "Worship Team",
-            image: choir.logo_path || choir.cover_path || DEFAULT_SLIDES[idx % DEFAULT_SLIDES.length].image,
-        }))
-        : DEFAULT_SLIDES;
+    const nextSlide = useCallback(() => {
+        setCurrentIndex((index) => (index + 1) % HERO_IMAGES.length);
+    }, []);
 
-    const handleNext = useCallback(() => {
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % slides.length);
-    }, [slides.length]);
+    const previousSlide = useCallback(() => {
+        setCurrentIndex((index) => (index - 1 + HERO_IMAGES.length) % HERO_IMAGES.length);
+    }, []);
 
-    const handlePrev = useCallback(() => {
-        setCurrentIndex((prevIndex) => (prevIndex - 1 + slides.length) % slides.length);
-    }, [slides.length]);
-
-    // Auto-scroll carousel every 6 seconds
     useEffect(() => {
-        const timer = setInterval(() => {
-            handleNext();
-        }, 6000);
-        return () => clearInterval(timer);
-    }, [handleNext]);
+        const timer = window.setTimeout(nextSlide, DISPLAY_TIME + FADE_TIME);
+        return () => window.clearTimeout(timer);
+    }, [currentIndex, nextSlide]);
 
-    // Preload slide images to ensure seamless transition
     useEffect(() => {
-        slides.forEach((s) => {
-            if (s.image) {
-                const img = new Image();
-                img.src = s.image;
-            }
+        HERO_IMAGES.forEach(({ src }) => {
+            const image = new Image();
+            image.src = src;
         });
-    }, [slides]);
-
-    const getSlideIndex = (offset) => {
-        return (currentIndex + offset + slides.length) % slides.length;
-    };
-
-    const prevSlide = slides[getSlideIndex(-1)];
-    const currentSlide = slides[currentIndex];
-    const nextSlide = slides[getSlideIndex(1)];
+    }, []);
 
     return (
-        <section className="relative overflow-hidden bg-slate-50/60 py-8 lg:py-12">
-            {/* Main Carousel Wrapper */}
-            <div className="relative mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-                <div className="relative flex items-center justify-center gap-4 lg:gap-6">
+        <section className="relative min-h-[100svh] overflow-hidden bg-slate-950 text-white" aria-label="Yeka M.K.C choir hero">
+            <div className="absolute inset-0 bg-black/50">
+                {HERO_IMAGES.map((image, index) => (
+                    <img
+                        key={image.src}
+                        src={image.src}
+                        alt={image.alt}
+                        aria-hidden={index !== currentIndex}
+                        className={`absolute inset-0 h-full w-full object-cover transition-opacity ease-in-out ${index === currentIndex ? 'opacity-100' : 'opacity-0'}`}
+                        style={{ transitionDuration: `${FADE_TIME}ms` }}
+                    />
+                ))}
+                <div className="absolute inset-0 bg-black/50" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/70" />
+            </div>
 
-                    {/* Left Peek Preview Card */}
-                    <div
-                        onClick={handlePrev}
-                        className="hidden md:block w-1/12 lg:w-1/6 shrink-0 cursor-pointer overflow-hidden rounded-[2.5rem] opacity-40 transition-all duration-500 hover:opacity-70 h-[380px] lg:h-[480px] relative shadow-md"
-                    >
-                        <CoverImage
-                            src={prevSlide.image || featuredChoir?.logo_path}
-                            label={prevSlide.title}
-                            className="h-full w-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-slate-900/40" />
+            <div className="relative z-10 flex min-h-[100svh] items-center justify-center px-6 py-24 text-center sm:px-10">
+                <div className="max-w-4xl">
+                    <p className="text-xs font-bold uppercase tracking-[0.25em] text-white sm:text-sm">Yeka M.K.C Ministry</p>
+                    <h1 className="mt-5 text-4xl font-black uppercase tracking-[0.02em] text-white sm:text-6xl lg:text-7xl">
+                        Yeka Meserete Kristos
+                    </h1>
+                    <p className="mx-auto mt-5 max-w-2xl text-sm font-medium leading-7 tracking-[0.03em] text-white sm:text-lg">
+                        Discover Ethiopian choir songs, worship music, and performances united by faith and community.
+                    </p>
+                    <p className="mx-auto mt-4 max-w-2xl text-[11px] font-semibold uppercase leading-6 tracking-[0.16em] text-white/90 sm:text-xs">
+                        {HERO_VERSE}
+                    </p>
+                    <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                        <Link to="/songs" className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-600">
+                            <Music2 size={17} /> DISCOVER SONGS <ArrowRight size={16} />
+                        </Link>
+                        <Link to="/performances" className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/20">
+                            View Performances <ArrowRight size={16} />
+                        </Link>
                     </div>
-
-                    {/* Center Featured Slide */}
-                    <div className="relative w-full lg:w-4/6 shrink-0 overflow-hidden rounded-[2.5rem] shadow-2xl h-[420px] sm:h-[480px] lg:h-[520px] bg-slate-900">
-                        {/* Slide Background Image */}
-                        <div className="absolute inset-0">
-                            <CoverImage
-                                src={currentSlide.image || featuredChoir?.logo_path}
-                                label={currentSlide.title}
-                                className="h-full w-full object-cover transition-transform duration-700 ease-out hover:scale-105"
-                            />
-                            {/* Dark Overlay Gradient */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-black/20" />
-                        </div>
-
-                        {/* Content Overlay */}
-                        <div className="relative z-10 flex h-full flex-col items-center justify-center p-6 text-center sm:p-10 lg:p-14">
-                            <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-blue-600/30 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-blue-300 backdrop-blur-md border border-blue-400/30">
-                                {currentSlide.badge}
-                            </span>
-
-                            <h1 className="max-w-3xl text-2xl font-black uppercase tracking-tight text-white sm:text-4xl lg:text-5xl lg:leading-tight">
-                                {currentSlide.title}
-                            </h1>
-
-                            <p className="mt-3 max-w-xl text-sm font-medium text-slate-200 sm:text-base lg:text-lg">
-                                {currentSlide.subtitle}
-                            </p>
-
-                            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-                                <Link
-                                    to={currentSlide.ctaLink}
-                                    className="inline-flex items-center gap-2 rounded-full bg-cyan-500 px-8 py-3.5 text-xs font-black uppercase tracking-wider text-slate-950 shadow-lg shadow-cyan-500/30 transition-all duration-200 hover:bg-cyan-400 hover:scale-105 active:scale-95"
-                                >
-                                    <Play size={16} className="fill-current" />
-                                    {currentSlide.ctaText}
-                                </Link>
-                                <Link
-                                    to="/songs"
-                                    className="inline-flex items-center gap-2 rounded-full bg-white/10 px-6 py-3.5 text-xs font-black uppercase tracking-wider text-white backdrop-blur-md border border-white/20 transition-all duration-200 hover:bg-white/20"
-                                >
-                                    Discover Songs
-                                    <ArrowRight size={16} />
-                                </Link>
-                            </div>
-
-                            {/* Carousel Indicators */}
-                            <div className="absolute bottom-6 flex items-center justify-center gap-2.5">
-                                {slides.map((_, idx) => (
-                                    <button
-                                        key={idx}
-                                        onClick={() => setCurrentIndex(idx)}
-                                        aria-label={`Go to slide ${idx + 1}`}
-                                        className={`h-2.5 rounded-full transition-all duration-300 ${currentIndex === idx
-                                                ? 'w-8 bg-cyan-400'
-                                                : 'w-2.5 bg-white/40 hover:bg-white/70'
-                                            }`}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Navigation Arrows */}
-                        <button
-                            onClick={handlePrev}
-                            aria-label="Previous slide"
-                            className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/30 p-2.5 text-white/80 backdrop-blur-md border border-white/10 transition-colors hover:bg-black/60 hover:text-white"
-                        >
-                            <ChevronLeft size={22} />
-                        </button>
-                        <button
-                            onClick={handleNext}
-                            aria-label="Next slide"
-                            className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/30 p-2.5 text-white/80 backdrop-blur-md border border-white/10 transition-colors hover:bg-black/60 hover:text-white"
-                        >
-                            <ChevronRight size={22} />
-                        </button>
-                    </div>
-
-                    {/* Right Peek Preview Card */}
-                    <div
-                        onClick={handleNext}
-                        className="hidden md:block w-1/12 lg:w-1/6 shrink-0 cursor-pointer overflow-hidden rounded-[2.5rem] opacity-40 transition-all duration-500 hover:opacity-70 h-[380px] lg:h-[480px] relative shadow-md"
-                    >
-                        <CoverImage
-                            src={nextSlide.image || featuredChoir?.logo_path}
-                            label={nextSlide.title}
-                            className="h-full w-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-slate-900/40" />
-                    </div>
-
                 </div>
+            </div>
+
+            <button type="button" onClick={previousSlide} aria-label="Previous hero image" className="absolute left-4 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/20 text-white backdrop-blur-md transition hover:bg-black/45 sm:left-8">
+                <ChevronLeft size={21} />
+            </button>
+            <button type="button" onClick={nextSlide} aria-label="Next hero image" className="absolute right-4 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/20 text-white backdrop-blur-md transition hover:bg-black/45 sm:right-8">
+                <ChevronRight size={21} />
+            </button>
+
+            <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2" aria-label="Hero image selection">
+                {HERO_IMAGES.map((image, index) => (
+                    <button
+                        key={image.src}
+                        type="button"
+                        onClick={() => setCurrentIndex(index)}
+                        aria-label={`Show hero image ${index + 1}`}
+                        className={`h-2 rounded-full transition-all duration-300 ${currentIndex === index ? 'w-8 bg-cyan-300' : 'w-2 bg-white/50 hover:bg-white/80'}`}
+                    />
+                ))}
             </div>
         </section>
     );

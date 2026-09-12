@@ -170,6 +170,106 @@ function SongCard({ song, onPlay, onLyrics, isSubmission = false }) {
     );
 }
 
+function SongTable({ songs, onPlay, onLyrics, isSubmission = false }) {
+    return (
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] text-left text-sm">
+                    <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+                        <tr>
+                            <th className="px-4 py-3 font-semibold">Song</th>
+                            <th className="px-4 py-3 font-semibold">Key</th>
+                            <th className="px-4 py-3 font-semibold">Status</th>
+                            <th className="px-4 py-3 font-semibold">Available</th>
+                            <th className="px-4 py-3 text-right font-semibold">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                        {songs.map((song) => (
+                            <tr key={song.id} className="transition hover:bg-slate-50/80">
+                                <td className="max-w-[280px] px-4 py-3">
+                                    <p className="truncate font-semibold text-slate-900">{song.title}</p>
+                                    <p className="truncate text-xs text-slate-500">
+                                        {song.artist || song.composer || song.choir?.name || 'Choir MKC'}
+                                    </p>
+                                    {isSubmission && song.rejection_reason && (
+                                        <p className="mt-1 truncate text-xs text-rose-600" title={song.rejection_reason}>
+                                            Feedback: {song.rejection_reason}
+                                        </p>
+                                    )}
+                                </td>
+                                <td className="px-4 py-3 text-slate-600">{song.original_key || '—'}</td>
+                                <td className="px-4 py-3">
+                                    {isSubmission ? (
+                                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${
+                                            song.status === 'approved'
+                                                ? 'bg-emerald-50 text-emerald-700'
+                                                : song.status === 'rejected'
+                                                    ? 'bg-rose-50 text-rose-700'
+                                                    : 'bg-amber-50 text-amber-700'
+                                        }`}>
+                                            {song.status === 'approved' && <CheckCircle2 size={13} />}
+                                            {song.status === 'rejected' && <XCircle size={13} />}
+                                            {song.status === 'pending' && <Clock size={13} />}
+                                            {song.status || 'Pending'}
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs font-semibold text-emerald-700">Approved</span>
+                                    )}
+                                </td>
+                                <td className="px-4 py-3">
+                                    <div className="flex items-center gap-2 text-xs">
+                                        {song.has_lyrics && <span className="text-emerald-700">Lyrics</span>}
+                                        {song.has_audio && <span className="text-blue-700">Audio</span>}
+                                        {!song.has_lyrics && !song.has_audio && <span className="text-slate-400">—</span>}
+                                    </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                    <div className="flex justify-end gap-1.5">
+                                        {song.has_lyrics && (
+                                            <button
+                                                type="button"
+                                                onClick={() => onLyrics(song)}
+                                                className="rounded-lg p-2 text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"
+                                                title="View lyrics"
+                                                aria-label={`View lyrics for ${song.title}`}
+                                            >
+                                                <FileText size={16} />
+                                            </button>
+                                        )}
+                                        {song.has_audio && (
+                                            <button
+                                                type="button"
+                                                onClick={() => onPlay(song)}
+                                                className="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-800"
+                                                title="Play song"
+                                                aria-label={`Play ${song.title}`}
+                                            >
+                                                <Play size={16} />
+                                            </button>
+                                        )}
+                                        {song.has_audio && (
+                                            <a
+                                                href={song.audio_url}
+                                                download
+                                                className="rounded-lg p-2 text-slate-500 transition hover:bg-emerald-50 hover:text-emerald-700"
+                                                title="Download audio"
+                                                aria-label={`Download ${song.title}`}
+                                            >
+                                                <Download size={16} />
+                                            </a>
+                                        )}
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
 /* ─────────────────────── Submit Song Modal ─────────────────────── */
 function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, userChoirs = [] }) {
     const initialChoirId = defaultChoir?.id || userChoirs?.[0]?.id || '';
@@ -495,8 +595,8 @@ export default function MemberSongsPage({ apiPath = 'member/songs' }) {
         load();
     }, [load]);
 
-    const songs = data?.songs ?? [];
-    const mySubmissions = data?.my_submissions ?? [];
+    const songs = Array.isArray(data?.songs) ? data.songs : [];
+    const mySubmissions = Array.isArray(data?.my_submissions) ? data.my_submissions : [];
 
     const filteredSongs = useMemo(() => {
         const list = activeTab === 'library' ? songs : mySubmissions;
@@ -634,7 +734,7 @@ export default function MemberSongsPage({ apiPath = 'member/songs' }) {
                 </Alert>
             )}
 
-            {/* Song Grid */}
+            {/* Song Table */}
             {loading ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <div className="h-44 rounded-2xl bg-slate-100 animate-pulse" />
@@ -661,17 +761,12 @@ export default function MemberSongsPage({ apiPath = 'member/songs' }) {
                     </button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {filteredSongs.map((song) => (
-                        <SongCard
-                            key={song.id}
-                            song={song}
-                            onPlay={(s) => setPlayingSong(s)}
-                            onLyrics={(s) => setLyricsSong(s)}
-                            isSubmission={activeTab === 'my_submissions'}
-                        />
-                    ))}
-                </div>
+                <SongTable
+                    songs={filteredSongs}
+                    onPlay={(song) => setPlayingSong(song)}
+                    onLyrics={(song) => setLyricsSong(song)}
+                    isSubmission={activeTab === 'my_submissions'}
+                />
             )}
 
             {/* Mini Player */}

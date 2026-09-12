@@ -44,6 +44,7 @@ class ApiController extends Controller
                 'last_page' => $items->lastPage(),
                 'per_page' => $items->perPage(),
                 'total' => $items->total(),
+                'links' => $data['links'] ?? [],
             ],
         ]);
     }

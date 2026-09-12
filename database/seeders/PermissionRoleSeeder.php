@@ -43,6 +43,8 @@ class PermissionRoleSeeder extends Seeder
         'audit_logs.view',
         // Notifications
         'notifications.view', 'notifications.create', 'notifications.manage',
+        // Settings
+        'settings.manage',
         // Reports
         'reports.view', 'reports.export',
     ];
@@ -74,16 +76,16 @@ class PermissionRoleSeeder extends Seeder
         $make('super-admin', $this->permissions);
         $make('admin', $this->permissions);
         $make('team_leader', [
-            'choirs.view', 'choirs.view.all', 'choirs.update', 'choirs.edit',
-            'members.view', 'members.view.all', 'members.create', 'members.update', 'members.edit', 'members.manage',
-            'songs.view', 'songs.view.all', 'songs.create', 'songs.update', 'songs.edit', 'songs.delete',
-            'lyrics.view', 'lyrics.view.all', 'lyrics.create', 'lyrics.update', 'lyrics.edit', 'lyrics.delete',
-            'rehearsals.view', 'rehearsals.view.all', 'rehearsals.create', 'rehearsals.update', 'rehearsals.edit', 'rehearsals.delete', 'rehearsals.manage',
+            'choirs.view', 'choirs.update', 'choirs.edit',
+            'members.view', 'members.create', 'members.update', 'members.edit', 'members.manage',
+            'songs.view', 'songs.create', 'songs.update', 'songs.edit', 'songs.delete',
+            'lyrics.view', 'lyrics.create', 'lyrics.update', 'lyrics.edit', 'lyrics.delete',
+            'rehearsals.view', 'rehearsals.create', 'rehearsals.update', 'rehearsals.edit', 'rehearsals.delete', 'rehearsals.manage',
             'attendance.view', 'attendance.create', 'attendance.update', 'attendance.edit', 'attendance.manage',
-            'performances.view', 'performances.view.all', 'performances.create', 'performances.update', 'performances.edit', 'performances.delete', 'performances.manage',
+            'performances.view', 'performances.create', 'performances.update', 'performances.edit', 'performances.delete', 'performances.manage',
             'calendar.view', 'calendar.create', 'calendar.update', 'calendar.edit', 'calendar.manage',
-            'announcements.view', 'announcements.view.all', 'announcements.create', 'announcements.update', 'announcements.edit', 'announcements.manage',
-            'gallery.view', 'gallery.view.all', 'gallery.create', 'gallery.update', 'gallery.edit', 'gallery.manage',
+            'announcements.view', 'announcements.create', 'announcements.update', 'announcements.edit', 'announcements.manage',
+            'gallery.view', 'gallery.create', 'gallery.update', 'gallery.edit', 'gallery.manage',
             'notifications.view',
         ]);
         $make('member', [

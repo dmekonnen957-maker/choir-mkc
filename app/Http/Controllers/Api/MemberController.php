@@ -349,11 +349,16 @@ class MemberController extends ApiController
         // Retrieve all attendance records for this member in this choir
         $records = $member->attendanceRecords()
             ->where('choir_id', $choir->id)
+            ->whereHas('attendanceSession', function ($query) {
+                $query->whereIn('event_type', ['performance', 'rehearsal']);
+            })
             ->with(['attendanceSession.performance', 'attendanceSession.rehearsal'])
             ->orderByDesc('created_at')
             ->get();
 
-        $totalChoirSessions = \App\Models\AttendanceSession::where('choir_id', $choir->id)->count();
+        $totalChoirSessions = \App\Models\AttendanceSession::where('choir_id', $choir->id)
+            ->whereIn('event_type', ['performance', 'rehearsal'])
+            ->count();
 
         $presentCount = $records->where('status', 'present')->count();
         $lateCount = $records->where('status', 'late')->count();

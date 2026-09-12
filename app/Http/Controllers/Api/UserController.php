@@ -79,7 +79,7 @@ class UserController extends ApiController
         }
 
         // Assign choir
-        if ($choirId) {
+        if ($choirId && ! in_array($roleName, ['admin', 'super-admin'], true)) {
             $choir = Choir::find($choirId);
 
             if ($choir) {
@@ -151,8 +151,13 @@ class UserController extends ApiController
             app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
         }
 
-        // Handle choir assignment
-        if ($request->has('choir_id')) {
+        // Global administrators do not receive a choir assignment.
+        if ($user->isGlobalAdmin()) {
+            $user->choirs()->detach();
+            Member::where('user_id', $user->id)
+                ->where('status', 'active')
+                ->update(['status' => 'inactive']);
+        } elseif ($request->has('choir_id')) {
             if ($choirId) {
                 $choir = Choir::find($choirId);
                 if ($choir) {
@@ -198,17 +203,32 @@ class UserController extends ApiController
         $codePrefix = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $choir->name ?? 'CHOIR'), 0, 3));
         $memberCode = $codePrefix . '-' . str_pad((string) $user->id, 4, '0', STR_PAD_LEFT);
 
-        Member::updateOrCreate(
-            ['user_id' => $user->id, 'choir_id' => $choir->id],
-            [
-                'member_code' => $memberCode,
-                'first_name' => $firstName,
-                'last_name' => $lastName,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'status' => 'active',
-            ]
-        );
+        $updates = [
+            'member_code' => $memberCode,
+            'first_name'  => $firstName,
+            'last_name'   => $lastName,
+            'email'       => $user->email,
+            'phone'       => $user->phone,
+            'status'      => 'active',
+            'deleted_at'  => null, // restore if soft-deleted
+        ];
+
+        // Use withTrashed so soft-deleted records are restored instead of
+        // creating a duplicate (which would violate the unique choir_id+user_id
+        // constraint in a future migration and cause confusing duplicates).
+        $existing = Member::withTrashed()
+            ->where('user_id', $user->id)
+            ->where('choir_id', $choir->id)
+            ->first();
+
+        if ($existing) {
+            $existing->fill($updates)->save();
+        } else {
+            Member::create(array_merge($updates, [
+                'choir_id' => $choir->id,
+                'user_id'  => $user->id,
+            ]));
+        }
     }
 
     /**

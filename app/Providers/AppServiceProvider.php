@@ -29,6 +29,13 @@ class AppServiceProvider extends ServiceProvider
         // must never show deleted/inactive members).
         User::observe(UserObserver::class);
 
+        Gate::before(function (User $user): ?bool {
+            return $user->role === 'super-admin'
+                || $user->hasRole('super-admin', 'api')
+                ? true
+                : null;
+        });
+
         // Spatie's Role/Permission models live outside App\Models, so policy
         // auto-discovery does not map them. Register them explicitly so that
         // controller authorization (Gate::authorize) resolves to our policies.

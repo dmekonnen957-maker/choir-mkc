@@ -76,6 +76,16 @@ class Song extends Model
         return $this->hasMany(SongFile::class);
     }
 
+    public function likes(): HasMany
+    {
+        return $this->hasMany(SongLike::class);
+    }
+
+    public function likedByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'song_likes')->withTimestamps();
+    }
+
     public function rehearsals(): BelongsToMany
     {
         return $this->belongsToMany(Rehearsal::class, 'rehearsal_songs')

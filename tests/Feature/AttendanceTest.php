@@ -144,8 +144,7 @@ class AttendanceTest extends TestCase
             'session_date' => Carbon::tomorrow()->toDateString(),
         ]);
 
-        $reload->assertStatus(200);
-        $this->assertNotContains($inactiveMember->id, collect($reload->json('data.members'))->pluck('member_id')->all());
+        $reload->assertStatus(422);
     }
 
     /**
@@ -264,6 +263,7 @@ class AttendanceTest extends TestCase
         $pastTime = Carbon::now()->subMinutes(30)->format('H:i:s');
         $session = AttendanceSession::create([
             'choir_id' => $this->choirA->id,
+            'performance_id' => $this->performanceA->id,
             'session_date' => Carbon::today()->toDateString(),
             'start_time' => $pastTime,
             'late_threshold_minutes' => 15,
@@ -288,6 +288,7 @@ class AttendanceTest extends TestCase
 
         $session = AttendanceSession::create([
             'choir_id' => $this->choirA->id,
+            'performance_id' => $this->performanceA->id,
             'session_date' => Carbon::today()->toDateString(),
             'status' => 'open',
         ]);
@@ -316,6 +317,7 @@ class AttendanceTest extends TestCase
     {
         $session = AttendanceSession::create([
             'choir_id' => $this->choirA->id,
+            'performance_id' => $this->performanceA->id,
             'session_date' => Carbon::today()->toDateString(),
             'title' => 'Sunday Service',
             'status' => 'open',
@@ -392,7 +394,7 @@ class AttendanceTest extends TestCase
 
         $session = $this->postJson('/api/attendance/sessions/find-or-create', [
             'choir_id' => $this->choirA->id,
-            'session_date' => Carbon::today()->toDateString(),
+            'performance_id' => $this->performanceA->id,
         ]);
 
         $session->assertOk();
@@ -404,13 +406,52 @@ class AttendanceTest extends TestCase
      */
     public function test_admin_can_access_all_choirs(): void
     {
+        // Legacy data may still attach an admin to one choir. That assignment
+        // must never narrow the admin's global choir scope.
+        $this->admin->syncRoles([]);
+        $this->admin->choirs()->syncWithoutDetaching([
+            $this->choirA->id => ['status' => 'active'],
+        ]);
+
         Sanctum::actingAs($this->admin, ['*']);
+
+        $choirs = $this->getJson('/api/choirs');
+        $choirs->assertStatus(200);
+        $choirs->assertJsonFragment(['id' => $this->choirA->id, 'name' => $this->choirA->name]);
+        $choirs->assertJsonFragment(['id' => $this->choirB->id, 'name' => $this->choirB->name]);
+
+        $memberB = Member::firstOrCreate(
+            ['choir_id' => $this->choirB->id, 'email' => 'admin_scope_member_b@choirmkc.com'],
+            [
+                'first_name' => 'Choir B',
+                'last_name' => 'Member',
+                'member_code' => 'ADMIN-B-001',
+                'status' => 'active',
+            ]
+        );
+        $performanceB = Performance::firstOrCreate(
+            ['choir_id' => $this->choirB->id, 'title' => 'Choir B Admin Scope Performance'],
+            [
+                'date' => Carbon::today()->toDateString(),
+                'start_time' => '10:00:00',
+                'end_time' => '12:00:00',
+                'status' => 'confirmed',
+                'created_by' => $this->admin->id,
+            ]
+        );
 
         $eventsA = $this->getJson("/api/attendance/events?choir_id={$this->choirA->id}");
         $eventsA->assertStatus(200);
 
         $eventsB = $this->getJson("/api/attendance/events?choir_id={$this->choirB->id}");
         $eventsB->assertStatus(200);
+
+        $sessionB = $this->postJson('/api/attendance/sessions/find-or-create', [
+            'choir_id' => $this->choirB->id,
+            'performance_id' => $performanceB->id,
+        ]);
+        $sessionB->assertStatus(200);
+        $this->assertContains($memberB->id, $this->rosterIds($sessionB));
     }
 
     /**
@@ -479,9 +520,7 @@ class AttendanceTest extends TestCase
 
         $roster = $this->postJson('/api/attendance/sessions/find-or-create', [
             'choir_id' => $this->choirA->id,
-            'session_date' => Carbon::today()->addDays(30)->toDateString(),
-            'event_type' => 'service',
-            'title' => 'Auto Member Test',
+            'performance_id' => $this->performanceA->id,
         ]);
 
         $this->assertContains($member->id, $this->rosterIds($roster));
@@ -499,7 +538,7 @@ class AttendanceTest extends TestCase
 
         $date = Carbon::today()->addDays(31)->toDateString();
         $session = AttendanceSession::firstOrCreate(
-            ['choir_id' => $this->choirA->id, 'session_date' => $date, 'event_type' => 'service', 'title' => 'Ghost History Test'],
+            ['choir_id' => $this->choirA->id, 'performance_id' => $this->performanceA->id, 'session_date' => $this->performanceA->date],
             ['status' => 'open', 'created_by' => $this->admin->id]
         );
 
@@ -510,9 +549,7 @@ class AttendanceTest extends TestCase
 
         $before = $this->postJson('/api/attendance/sessions/find-or-create', [
             'choir_id' => $this->choirA->id,
-            'session_date' => $date,
-            'event_type' => 'service',
-            'title' => 'Ghost History Test',
+            'performance_id' => $this->performanceA->id,
         ]);
         $this->assertContains($member->id, $this->rosterIds($before));
 
@@ -521,9 +558,7 @@ class AttendanceTest extends TestCase
 
         $after = $this->postJson('/api/attendance/sessions/find-or-create', [
             'choir_id' => $this->choirA->id,
-            'session_date' => Carbon::today()->addDays(32)->toDateString(),
-            'event_type' => 'service',
-            'title' => 'Ghost History Test',
+            'performance_id' => $this->performanceA->id,
         ]);
         $this->assertNotContains($member->id, $this->rosterIds($after));
 
@@ -552,7 +587,7 @@ class AttendanceTest extends TestCase
 
         $date = Carbon::today()->addDays(33)->toDateString();
         $session = AttendanceSession::firstOrCreate(
-            ['choir_id' => $this->choirA->id, 'session_date' => $date, 'event_type' => 'service', 'title' => 'Doomed User History'],
+            ['choir_id' => $this->choirA->id, 'performance_id' => $this->performanceA->id, 'session_date' => $this->performanceA->date],
             ['status' => 'open', 'created_by' => $this->admin->id]
         );
 
@@ -563,9 +598,7 @@ class AttendanceTest extends TestCase
 
         $before = $this->withHeaders($headers)->postJson('/api/attendance/sessions/find-or-create', [
             'choir_id' => $this->choirA->id,
-            'session_date' => $date,
-            'event_type' => 'service',
-            'title' => 'Doomed User History',
+            'performance_id' => $this->performanceA->id,
         ]);
         $this->assertContains($member->id, $this->rosterIds($before));
 
@@ -575,9 +608,7 @@ class AttendanceTest extends TestCase
 
         $after = $this->withHeaders($headers)->postJson('/api/attendance/sessions/find-or-create', [
             'choir_id' => $this->choirA->id,
-            'session_date' => Carbon::today()->addDays(34)->toDateString(),
-            'event_type' => 'service',
-            'title' => 'Doomed User History',
+            'performance_id' => $this->performanceA->id,
         ]);
         $this->assertNotContains($member->id, $this->rosterIds($after));
 
@@ -600,9 +631,7 @@ class AttendanceTest extends TestCase
 
         $before = $this->withHeaders($headers)->postJson('/api/attendance/sessions/find-or-create', [
             'choir_id' => $this->choirA->id,
-            'session_date' => Carbon::today()->addDays(35)->toDateString(),
-            'event_type' => 'service',
-            'title' => 'Left Choir Test',
+            'performance_id' => $this->performanceA->id,
         ]);
         $this->assertContains($member->id, $this->rosterIds($before));
 
@@ -616,9 +645,7 @@ class AttendanceTest extends TestCase
 
         $after = $this->withHeaders($headers)->postJson('/api/attendance/sessions/find-or-create', [
             'choir_id' => $this->choirA->id,
-            'session_date' => Carbon::today()->addDays(36)->toDateString(),
-            'event_type' => 'service',
-            'title' => 'Left Choir Test',
+            'performance_id' => $this->performanceA->id,
         ]);
         $this->assertNotContains($member->id, $this->rosterIds($after));
     }
@@ -656,11 +683,84 @@ class AttendanceTest extends TestCase
 
         $roster = $this->withHeaders($headers)->postJson('/api/attendance/sessions/find-or-create', [
             'choir_id' => $this->choirA->id,
-            'session_date' => Carbon::today()->addDays(37)->toDateString(),
-            'event_type' => 'service',
-            'title' => 'Fresh Admin User Test',
+            'performance_id' => $this->performanceA->id,
         ]);
 
         $this->assertContains($member->id, $this->rosterIds($roster));
+    }
+
+    public function test_rehearsal_attendance_is_event_linked_and_reused(): void
+    {
+        Sanctum::actingAs($this->admin, ['*']);
+
+        $rehearsal = Rehearsal::create([
+            'choir_id' => $this->choirA->id,
+            'title' => 'Wednesday Sectional Rehearsal',
+            'date' => Carbon::today()->toDateString(),
+            'start_time' => '18:00:00',
+            'end_time' => '20:00:00',
+            'status' => 'scheduled',
+            'created_by' => $this->admin->id,
+        ]);
+
+        $events = $this->getJson("/api/attendance/events?choir_id={$this->choirA->id}");
+        $events->assertOk()->assertJsonFragment([
+            'id' => $rehearsal->id,
+            'type' => 'rehearsal',
+            'title' => $rehearsal->title,
+        ]);
+
+        $first = $this->postJson('/api/attendance/sessions/find-or-create', [
+            'choir_id' => $this->choirA->id,
+            'rehearsal_id' => $rehearsal->id,
+        ])->assertOk();
+
+        $second = $this->postJson('/api/attendance/sessions/find-or-create', [
+            'choir_id' => $this->choirA->id,
+            'event_type' => 'rehearsal',
+            'rehearsal_id' => $rehearsal->id,
+        ])->assertOk();
+
+        $this->assertSame($first->json('data.session.id'), $second->json('data.session.id'));
+        $this->assertSame(1, AttendanceSession::where('rehearsal_id', $rehearsal->id)->count());
+    }
+
+    public function test_arbitrary_date_cannot_create_attendance_session(): void
+    {
+        Sanctum::actingAs($this->admin, ['*']);
+
+        $this->postJson('/api/attendance/sessions/find-or-create', [
+            'choir_id' => $this->choirA->id,
+            'session_date' => Carbon::today()->addDay()->toDateString(),
+        ])->assertStatus(422);
+    }
+
+    public function test_duplicate_member_attendance_updates_one_record(): void
+    {
+        Sanctum::actingAs($this->leaderA, ['*']);
+
+        $session = AttendanceSession::create([
+            'choir_id' => $this->choirA->id,
+            'performance_id' => $this->performanceA->id,
+            'event_type' => 'performance',
+            'title' => $this->performanceA->title,
+            'session_date' => $this->performanceA->date,
+            'start_time' => $this->performanceA->start_time,
+            'end_time' => $this->performanceA->end_time,
+            'status' => 'open',
+        ]);
+
+        $payload = [
+            'attendance_session_id' => $session->id,
+            'member_id' => $this->memberRecordA->id,
+            'status' => 'present',
+        ];
+
+        $this->postJson('/api/attendance/records/mark', $payload)->assertOk();
+        $this->postJson('/api/attendance/records/mark', $payload)->assertOk();
+
+        $this->assertSame(1, AttendanceRecord::where('attendance_session_id', $session->id)
+            ->where('member_id', $this->memberRecordA->id)
+            ->count());
     }
 }

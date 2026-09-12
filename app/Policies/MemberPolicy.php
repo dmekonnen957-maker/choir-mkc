@@ -9,7 +9,7 @@ class MemberPolicy
 {
     public function before(User $user, $ability): ?bool
     {
-        if ($user->hasRole(['super-admin', 'admin'], 'api') || $user->hasAnyRole(['super-admin', 'admin'])) {
+        if ($user->isGlobalAdmin()) {
             return true;
         }
         return null;
@@ -57,11 +57,13 @@ class MemberPolicy
 
     public function update(User $user, Member $member): bool
     {
-        return $this->hasPerm($user, ['members.update', 'members.edit', 'members.manage']);
+        return $this->assigned($user, $member)
+            && $this->hasPerm($user, ['members.update', 'members.edit', 'members.manage']);
     }
 
     public function delete(User $user, Member $member): bool
     {
-        return $this->hasPerm($user, ['members.delete', 'members.manage']);
+        return $this->assigned($user, $member)
+            && $this->hasPerm($user, ['members.delete', 'members.manage']);
     }
 }

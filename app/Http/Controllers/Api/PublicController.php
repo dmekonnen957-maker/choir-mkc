@@ -97,13 +97,30 @@ class PublicController extends ApiController
 
     public function allSongs(Request $request): \Illuminate\Http\JsonResponse
     {
+        $userId = $request->user('sanctum')?->id ?? $request->user()?->id;
+
         $q = Song::query()
             ->where('is_published', true)
             ->where('status', 'approved')
-            ->with(['choir:id,name', 'songCategory']);
+            ->with(['choir:id,name', 'songCategory'])
+            ->withCount('likes');
+
+        if ($userId) {
+            $q->withExists(['likes as is_liked' => function ($sub) use ($userId) {
+                $sub->where('user_id', $userId);
+            }]);
+        }
 
         if ($request->filled('choir_id')) {
             $q->where('choir_id', $request->integer('choir_id'));
+        }
+
+        if ($request->filled('scale') && $request->input('scale') !== 'all') {
+            $scale = $request->input('scale');
+            $q->where(function ($sub) use ($scale) {
+                $sub->where('scale', 'like', '%' . $scale . '%')
+                    ->orWhere('scale_mode', 'like', '%' . $scale . '%');
+            });
         }
 
         if ($request->filled('search')) {
@@ -111,7 +128,10 @@ class PublicController extends ApiController
             $q->where(function ($sub) use ($search) {
                 $sub->where('title', 'like', '%' . $search . '%')
                     ->orWhere('artist', 'like', '%' . $search . '%')
-                    ->orWhere('composer', 'like', '%' . $search . '%');
+                    ->orWhere('composer', 'like', '%' . $search . '%')
+                    ->orWhereHas('choir', function ($c) use ($search) {
+                        $c->where('name', 'like', '%' . $search . '%');
+                    });
             });
         }
 
@@ -126,21 +146,34 @@ class PublicController extends ApiController
             }
         }
 
-        if ($request->input('sort') === 'title') {
+        $sort = $request->input('sort');
+        if ($sort === 'most_liked' || $sort === 'likes' || $sort === 'popular') {
+            $q->orderBy('likes_count', 'desc')->latest();
+        } elseif ($sort === 'title') {
             $q->orderBy('title', 'asc');
-        } elseif ($request->input('sort') === 'oldest') {
+        } elseif ($sort === 'oldest') {
             $q->oldest();
         } else {
             $q->latest();
         }
 
-        return $this->paginate($q, SongResource::class, 16);
+        return $this->paginate($q, SongResource::class, 12);
     }
 
     public function publicSongDetail(Request $request, Song $song): \Illuminate\Http\JsonResponse
     {
         if (!$song->is_published || $song->status !== 'approved') {
             abort(404);
+        }
+
+        $userId = $request->user('sanctum')?->id ?? $request->user()?->id;
+        $song->loadCount('likes');
+
+        if ($userId) {
+            $song->setAttribute(
+                'is_liked',
+                $song->likes()->where('user_id', $userId)->exists()
+            );
         }
 
         // Only load published lyric records when lyrics are publicly allowed
@@ -156,21 +189,35 @@ class PublicController extends ApiController
     public function allPerformances(Request $request): \Illuminate\Http\JsonResponse
     {
         $today = now()->toDateString();
+        $timeframe = $request->input('timeframe', 'upcoming');
 
         $q = Performance::query()
             ->where('is_public', true)
-            ->where('date', '>=', $today)
             ->whereNotIn('status', ['cancelled'])
             ->with([
                 'choir:id,name,description,logo_path',
                 // Select only public-safe columns from songs — deliberately excludes 'lyrics'
-                'songs' => function ($q) {
-                    $q->select(
+                'songs' => function ($sq) {
+                    $sq->select(
                         'songs.id', 'songs.title', 'songs.composer', 'songs.artist',
                         'songs.original_key', 'songs.scale', 'songs.cover_image_path'
-                    );
+                    )->withCount('likes');
                 },
             ]);
+
+        if ($timeframe === 'past') {
+            $q->where('date', '<', $today)
+              ->orderBy('date', 'desc')
+              ->orderBy('start_time', 'desc');
+        } elseif ($timeframe === 'all') {
+            $q->orderBy('date', 'desc')
+              ->orderBy('start_time', 'desc');
+        } else {
+            // Default: upcoming
+            $q->where('date', '>=', $today)
+              ->orderBy('date', 'asc')
+              ->orderBy('start_time', 'asc');
+        }
 
         if ($request->filled('choir_id')) {
             $q->where('choir_id', $request->integer('choir_id'));
@@ -194,9 +241,6 @@ class PublicController extends ApiController
             });
         }
 
-        // Always sort nearest upcoming date first, then earliest start_time
-        $q->orderBy('date', 'asc')->orderBy('start_time', 'asc');
-
         return $this->paginate($q, PerformanceResource::class, 12);
     }
 
@@ -214,7 +258,8 @@ class PublicController extends ApiController
                   ->select(
                       'songs.id', 'songs.title', 'songs.composer', 'songs.artist',
                       'songs.original_key', 'songs.scale', 'songs.cover_image_path'
-                  );
+                  )
+                  ->withCount('likes');
             },
         ])));
     }

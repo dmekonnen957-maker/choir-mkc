@@ -9,7 +9,7 @@ class PerformancePolicy
 {
     public function before(User $user, $ability): ?bool
     {
-        if ($user->hasRole(['super-admin', 'admin'], 'api') || $user->hasAnyRole(['super-admin', 'admin'])) {
+        if ($user->isGlobalAdmin()) {
             return true;
         }
         return null;
@@ -57,11 +57,13 @@ class PerformancePolicy
 
     public function update(User $user, Performance $performance): bool
     {
-        return $this->hasPerm($user, ['performances.update', 'performances.edit', 'performances.manage']);
+        return $this->assigned($user, $performance)
+            && $this->hasPerm($user, ['performances.update', 'performances.edit', 'performances.manage']);
     }
 
     public function delete(User $user, Performance $performance): bool
     {
-        return $this->hasPerm($user, ['performances.delete', 'performances.manage']);
+        return $this->assigned($user, $performance)
+            && $this->hasPerm($user, ['performances.delete', 'performances.manage']);
     }
 }

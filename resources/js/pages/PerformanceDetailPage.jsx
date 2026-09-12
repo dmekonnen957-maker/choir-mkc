@@ -260,35 +260,62 @@ export default function PerformanceDetailPage() {
                                 {songs.map((song, index) => (
                                     <div
                                         key={song.id || index}
-                                        onClick={() => handleOpenSong(song)}
-                                        className="group flex items-center justify-between gap-4 p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-blue-50/50 hover:border-blue-200 transition cursor-pointer"
+                                        className="group flex items-center justify-between gap-4 p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-blue-50/50 hover:border-blue-200 transition"
                                     >
-                                        <div className="flex items-center gap-3.5 min-w-0">
-                                            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                                        <Link
+                                            to={`/songs/${song.id}`}
+                                            className="flex items-center gap-3.5 min-w-0 flex-1"
+                                        >
+                                            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
                                                 {index + 1}
                                             </div>
                                             <div className="min-w-0">
                                                 <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-700 transition-colors truncate">
                                                     {song.title}
                                                 </h3>
-                                                <p className="text-xs text-slate-500 truncate flex items-center gap-2 mt-0.5">
-                                                    {song.artist && <span>Artist: {song.artist}</span>}
+                                                <p className="text-xs text-slate-500 truncate flex flex-wrap items-center gap-2 mt-0.5">
+                                                    {song.composer && <span>By {song.composer}</span>}
+                                                    {song.artist && <span>• {song.artist}</span>}
                                                     {song.original_key && (
                                                         <span className="bg-white px-2 py-0.5 rounded text-[10px] font-semibold text-slate-600 border border-slate-200">
                                                             Key: {song.original_key}
                                                         </span>
                                                     )}
+                                                    {song.scale && (
+                                                        <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-semibold border border-emerald-100">
+                                                            {song.scale}
+                                                        </span>
+                                                    )}
+                                                    {song.likes_count !== undefined && (
+                                                        <span className="text-[11px] text-slate-500 font-medium">
+                                                            ♥ {song.likes_count}
+                                                        </span>
+                                                    )}
                                                 </p>
                                             </div>
-                                        </div>
+                                        </Link>
 
                                         <div className="flex items-center gap-2 shrink-0">
                                             {song.lyrics && (
-                                                <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-blue-600 bg-white px-3 py-1.5 rounded-lg border border-blue-100 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition">
-                                                    <FileText size={13} /> View Lyrics
-                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        handleOpenSong(song);
+                                                    }}
+                                                    className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-xs hover:bg-blue-50 hover:text-blue-700 transition"
+                                                >
+                                                    <FileText size={13} /> Lyrics Preview
+                                                </button>
                                             )}
-                                            <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-1 group-hover:text-blue-600 transition" />
+                                            <Link
+                                                to={`/songs/${song.id}`}
+                                                className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-600 hover:text-white px-3 py-1.5 rounded-lg border border-blue-100 transition"
+                                            >
+                                                Song Details
+                                                <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                                            </Link>
                                         </div>
                                     </div>
                                 ))}

@@ -42,7 +42,7 @@ function formatTime(value) {
     return `${hour12}:${m ?? '00'} ${period}`;
 }
 
-export default function MemberPerformancesPage() {
+export default function MemberPerformancesPage({ apiPath = '/member/performances' }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -57,11 +57,11 @@ export default function MemberPerformancesPage() {
     const load = useCallback(() => {
         setLoading(true);
         setError(null);
-        api.get('/member/performances')
+        api.get(apiPath)
             .then((res) => setData(res.data.data))
-            .catch((err) => setError('Unable to load performances. Please try again.'))
+            .catch((err) => setError(err.message || 'Unable to load performances. Please try again.'))
             .finally(() => setLoading(false));
-    }, []);
+    }, [apiPath]);
 
     useEffect(() => {
         load();

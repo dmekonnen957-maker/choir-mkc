@@ -131,7 +131,7 @@ export default function AdminAttendancePage() {
     const [selectedEventValue, setSelectedEventValue] = useState(
         paramRehearsalId ? `rehearsal-${paramRehearsalId}` : paramPerformanceId ? `performance-${paramPerformanceId}` : ''
     ); // e.g. "performance-5" or "rehearsal-2" or "custom"
-    const [selectedDate, setSelectedDate] = useState(paramDate || new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState(paramDate || '');
 
     // Live session state
     const [currentSession, setCurrentSession] = useState(null);
@@ -149,6 +149,8 @@ export default function AdminAttendancePage() {
     const [sessionError, setSessionError] = useState('');
     const [savingMemberId, setSavingMemberId] = useState(null);
     const [isSyncing, setIsSyncing] = useState(false);
+    const eventsRequestRef = useRef(0);
+    const sessionRequestRef = useRef(0);
 
     // Filter & Search
     const [searchQuery, setSearchQuery] = useState('');
@@ -214,8 +216,10 @@ export default function AdminAttendancePage() {
     // 2. Fetch Events when selected choir changes
     const fetchEvents = useCallback(async (choirId) => {
         if (!choirId) return;
+        const requestId = ++eventsRequestRef.current;
         try {
             const res = await api.get(`/attendance/events?choir_id=${choirId}`);
+            if (requestId !== eventsRequestRef.current) return;
             const eventItems = res.data?.data?.events || [];
             setEvents(eventItems);
 
@@ -248,10 +252,12 @@ export default function AdminAttendancePage() {
                     setSelectedDate(first.date);
                 }
             } else {
-                setSelectedEventValue('custom');
+                setSelectedEventValue('');
+                setSelectedDate('');
             }
         } catch (err) {
-            showToast('error', 'Failed to load choir events');
+            if (requestId !== eventsRequestRef.current) return;
+            showToast('error', err.message || 'Failed to load choir events');
         }
     }, [paramRehearsalId, paramPerformanceId, paramDate]);
 
@@ -271,6 +277,7 @@ export default function AdminAttendancePage() {
     // 3. Load or Initialize Attendance Session
     const loadSession = useCallback(async (isBackground = false) => {
         if (!selectedChoirId) return;
+        const requestId = ++sessionRequestRef.current;
 
         if (!isBackground) {
             setLoadingSession(true);
@@ -282,26 +289,19 @@ export default function AdminAttendancePage() {
         }
 
         try {
-            let payload = {
+            if (!selectedEventValue) return;
+
+            const [type, id] = selectedEventValue.split('-');
+            const payload = {
                 choir_id: parseInt(selectedChoirId, 10),
-                session_date: selectedDate,
+                event_type: type,
+                ...(type === 'performance'
+                    ? { performance_id: parseInt(id, 10) }
+                    : { rehearsal_id: parseInt(id, 10) }),
             };
 
-            if (selectedEventValue && selectedEventValue !== 'custom') {
-                const [type, id] = selectedEventValue.split('-');
-                if (type === 'performance') {
-                    payload.performance_id = parseInt(id, 10);
-                    payload.event_type = 'performance';
-                } else if (type === 'rehearsal') {
-                    payload.rehearsal_id = parseInt(id, 10);
-                    payload.event_type = 'rehearsal';
-                }
-            } else {
-                payload.event_type = 'service';
-                payload.title = 'General Service Attendance';
-            }
-
             const res = await api.post('/attendance/sessions/find-or-create', payload);
+            if (requestId !== sessionRequestRef.current) return;
             const data = res.data?.data;
 
             if (data) {
@@ -310,6 +310,7 @@ export default function AdminAttendancePage() {
                 setMembers(data.members || []);
             }
         } catch (err) {
+            if (requestId !== sessionRequestRef.current) return;
             if (!isBackground) {
                 const message =
                     err.response?.data?.message ||
@@ -349,12 +350,10 @@ export default function AdminAttendancePage() {
     const handleEventChange = (e) => {
         const val = e.target.value;
         setSelectedEventValue(val);
-        if (val !== 'custom') {
-            const [type, id] = val.split('-');
-            const found = events.find((ev) => ev.type === type && ev.id.toString() === id);
-            if (found && found.date) {
-                setSelectedDate(found.date);
-            }
+        const [type, id] = val.split('-');
+        const found = events.find((ev) => ev.type === type && ev.id.toString() === id);
+        if (found && found.date) {
+            setSelectedDate(found.date);
         }
     };
 
@@ -714,18 +713,15 @@ export default function AdminAttendancePage() {
                     </select>
                 </div>
 
-                {/* 3. Date Input & Sync button */}
+                {/* 3. Event date & Sync button */}
                 <div className="sm:col-span-3 flex items-end gap-2">
                     <div className="flex-1">
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                             Date
                         </label>
-                        <input
-                            type="date"
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none"
-                        />
+                        <div className="rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm font-semibold text-slate-800">
+                            {formatDisplayDate(selectedDate) || 'Select an event'}
+                        </div>
                     </div>
                     <button
                         type="button"
@@ -1370,13 +1366,10 @@ export default function AdminAttendancePage() {
 
                                             <button
                                                 onClick={() => {
-                                                    setSelectedDate(item.session_date);
                                                     if (item.performance_id) {
                                                         setSelectedEventValue(`performance-${item.performance_id}`);
                                                     } else if (item.rehearsal_id) {
                                                         setSelectedEventValue(`rehearsal-${item.rehearsal_id}`);
-                                                    } else {
-                                                        setSelectedEventValue('custom');
                                                     }
                                                     setActiveTab('live');
                                                 }}

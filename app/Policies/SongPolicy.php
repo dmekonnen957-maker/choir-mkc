@@ -9,9 +9,7 @@ class SongPolicy
 {
     public function before(User $user, $ability): ?bool
     {
-        if (in_array($user->role, ['admin', 'super-admin'])
-            || $user->hasAnyRole(['super-admin', 'admin'])
-            || $user->hasRole(['super-admin', 'admin'], 'api')) {
+        if ($user->isGlobalAdmin()) {
             return true;
         }
         return null;
@@ -39,7 +37,7 @@ class SongPolicy
 
     public function view(User $user, Song $song): bool
     {
-        if (in_array($user->role, ['admin', 'super-admin']) || $this->hasPerm($user, ['songs.view.all', 'songs.manage'])) {
+        if ($user->isGlobalAdmin() || $this->hasPerm($user, ['songs.view.all', 'songs.manage'])) {
             return true;
         }
 
@@ -65,9 +63,7 @@ class SongPolicy
     {
         // Only Admin and Super-Admin can approve songs.
         // Choir Leaders and Choir Members CANNOT approve songs.
-        $isAdmin = in_array($user->role, ['admin', 'super-admin'])
-            || $user->hasRole(['super-admin', 'admin'], 'api')
-            || $user->hasAnyRole(['super-admin', 'admin']);
+        $isAdmin = $user->isGlobalAdmin();
 
         return $isAdmin && !in_array($user->role, ['member', 'team_leader']);
     }
@@ -76,20 +72,28 @@ class SongPolicy
     {
         // Only Admin and Super-Admin can reject songs.
         // Choir Leaders and Choir Members CANNOT reject songs.
-        $isAdmin = in_array($user->role, ['admin', 'super-admin'])
-            || $user->hasRole(['super-admin', 'admin'], 'api')
-            || $user->hasAnyRole(['super-admin', 'admin']);
+        $isAdmin = $user->isGlobalAdmin();
 
         return $isAdmin && !in_array($user->role, ['member', 'team_leader']);
     }
 
     public function update(User $user, Song $song): bool
     {
-        return $this->hasPerm($user, ['songs.update', 'songs.edit', 'songs.manage']);
+        return $this->assigned($user, $song)
+            && $this->hasPerm($user, ['songs.update', 'songs.edit', 'songs.manage']);
     }
 
     public function delete(User $user, Song $song): bool
     {
-        return $this->hasPerm($user, ['songs.delete', 'songs.manage']);
+        return $this->assigned($user, $song)
+            && $this->hasPerm($user, ['songs.delete', 'songs.manage']);
+    }
+
+    private function assigned(User $user, Song $song): bool
+    {
+        return $user->choirs()
+            ->where('choirs.id', $song->choir_id)
+            ->wherePivot('status', 'active')
+            ->exists();
     }
 }

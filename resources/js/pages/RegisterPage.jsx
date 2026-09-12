@@ -100,10 +100,10 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="relative min-h-screen w-full overflow-x-hidden">
+        <div className="relative min-h-screen w-full overflow-hidden bg-slate-950 text-slate-100">
             {/* Background image */}
             <div
-                className="absolute inset-0 bg-blue-950"
+            className="absolute inset-0"
                 style={{
                     backgroundImage: "url('/images/login-background.jpg')",
                     backgroundSize: 'cover',
@@ -112,25 +112,27 @@ export default function RegisterPage() {
             />
 
             {/* Subtle blue/dark overlay for readability */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-900/50 via-blue-950/45 to-blue-950/60" />
+            <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" />
 
             {/* Minimal decorative glass blur */}
-            <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-blue-400/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -right-16 h-80 w-80 rounded-full bg-blue-300/10 blur-3xl" />
+            <div className="pointer-events-none absolute -left-24 -top-24 h-96 w-96 rounded-full bg-blue-500/10 blur-[120px]" />
+            <div className="pointer-events-none absolute -bottom-24 -right-24 h-[500px] w-[500px] rounded-full bg-blue-400/5 blur-[140px]" />
 
             {/* Back to home */}
             <Link
                 to="/"
-                className="absolute left-4 top-4 z-20 inline-flex items-center gap-1.5 text-sm font-medium text-white/80 transition-colors hover:text-white"
+                className="absolute left-6 top-6 z-20 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/60 backdrop-blur-md transition-all duration-300 hover:border-blue-400/30 hover:bg-white/10 hover:text-white/80"
             >
                 <ArrowLeft size={16} /> Back to home
             </Link>
 
             {/* Content */}
             <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
-                <div className="glass-panel w-full max-w-lg p-7 sm:p-9">
-                    <Logo size="md" className="mb-4" />
-                    <p className="text-lg font-black tracking-wide text-white">YEKA M.K.C CHOIR</p>
+                <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-white/5 p-7 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-9">
+                    <div className="mb-6 flex flex-col items-center justify-center text-center">
+                        <Logo size="md" />
+                        <p className="mt-3 text-lg font-black tracking-wide text-white">YEKA <span className="text-blue-400">M.K.C</span> CHOIR</p>
+                    </div>
 
                     <div className="mb-6 text-center">
                         <h1 className="text-2xl font-semibold text-white">Create an Account</h1>

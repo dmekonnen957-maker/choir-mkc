@@ -1,6 +1,19 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDays, Search, Filter, Sparkles, Clock, MapPin, ChevronRight, Music, Users, ArrowRight } from 'lucide-react';
+import {
+    CalendarDays,
+    Search,
+    Filter,
+    Sparkles,
+    Clock,
+    MapPin,
+    ChevronRight,
+    Music,
+    Users,
+    ArrowRight,
+    History,
+    Calendar,
+} from 'lucide-react';
 import PerformanceCard from '../components/public/PerformanceCard';
 import SectionHeading from '../components/public/SectionHeading';
 import Reveal from '../components/ui/Reveal';
@@ -27,7 +40,7 @@ function FeaturedPerformanceCard({ performance }) {
     if (!performance) return null;
 
     const choir = performance.choir;
-    const choirName = choir?.name || 'YKA M.K.C Choirs and Worship Teams';
+    const choirName = choir?.name || 'YKA M.K.C Choirs';
     const computedStatus = getPerformanceStatus(performance.date, performance.status);
     const isToday = computedStatus === 'today';
     const parsedDate = parseDate(performance.date);
@@ -75,7 +88,7 @@ function FeaturedPerformanceCard({ performance }) {
                     <div>
                         <div className="flex items-center gap-2 mb-3">
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-blue-50 text-blue-700 uppercase tracking-wider">
-                                Next Upcoming Program
+                                Featured Program
                             </span>
                             {weekday && (
                                 <span className="text-xs font-semibold text-slate-500">
@@ -90,7 +103,7 @@ function FeaturedPerformanceCard({ performance }) {
 
                         {choirName && (
                             <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-blue-600">
-                                <Users size={16} />
+                                <span className="text-slate-500 font-normal">By:</span>
                                 <span>{choirName}</span>
                             </p>
                         )}
@@ -147,13 +160,13 @@ function FeaturedPerformanceCard({ performance }) {
                     {/* Actions */}
                     <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between gap-4">
                         <span className="text-xs font-medium text-slate-500 hidden sm:inline">
-                            All are welcome to join us in worship
+                            {performance.songs?.length ? `${performance.songs.length} musical pieces scheduled` : 'Worship presentation'}
                         </span>
                         <Link
                             to={`/performances/${performance.id}`}
                             className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-6 py-3 text-sm font-bold shadow-md transition-all duration-200"
                         >
-                            View Program Details
+                            View Program &amp; Songs
                             <ArrowRight size={16} />
                         </Link>
                     </div>
@@ -164,6 +177,7 @@ function FeaturedPerformanceCard({ performance }) {
 }
 
 export default function PerformancesPage() {
+    const [timeframe, setTimeframe] = useState('upcoming'); // 'upcoming' | 'past'
     const [performances, setPerformances] = useState([]);
     const [choirs, setChoirs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -171,24 +185,43 @@ export default function PerformancesPage() {
     const [selectedChoirId, setSelectedChoirId] = useState('');
     const [selectedType, setSelectedType] = useState('All Program Types');
 
+    // Fetch performances whenever timeframe changes
     useEffect(() => {
+        let isMounted = true;
+        setLoading(true);
+
         Promise.all([
-            fetchAllPerformances().catch(() => []),
+            fetchAllPerformances({ timeframe }).catch(() => []),
             fetchChoirs().catch(() => []),
         ])
             .then(([perfData, choirData]) => {
+                if (!isMounted) return;
                 setPerformances(perfData || []);
                 setChoirs(choirData || []);
             })
-            .finally(() => setLoading(false));
-    }, []);
+            .finally(() => {
+                if (isMounted) setLoading(false);
+            });
 
-    // Filter upcoming performances by search, choir, and program type
+        return () => {
+            isMounted = false;
+        };
+    }, [timeframe]);
+
+    // Filter performances by search, choir, and program type
     const filteredPerformances = useMemo(() => {
         return performances.filter((p) => {
-            const matchesChoir = !selectedChoirId || String(p.choir_id) === String(selectedChoirId) || String(p.choir?.id) === String(selectedChoirId);
-            const matchesType = selectedType === 'All Program Types' || (p.type && p.type.toLowerCase() === selectedType.toLowerCase());
-            const matchesSearch = !searchQuery || 
+            const matchesChoir =
+                !selectedChoirId ||
+                String(p.choir_id) === String(selectedChoirId) ||
+                String(p.choir?.id) === String(selectedChoirId);
+
+            const matchesType =
+                selectedType === 'All Program Types' ||
+                (p.type && p.type.toLowerCase() === selectedType.toLowerCase());
+
+            const matchesSearch =
+                !searchQuery ||
                 (p.title && p.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
                 (p.venue && p.venue.toLowerCase().includes(searchQuery.toLowerCase())) ||
                 (p.location && p.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -199,8 +232,12 @@ export default function PerformancesPage() {
         });
     }, [performances, selectedChoirId, selectedType, searchQuery]);
 
-    const featuredPerformance = filteredPerformances.length > 0 ? filteredPerformances[0] : null;
-    const remainingPerformances = filteredPerformances.length > 1 ? filteredPerformances.slice(1) : [];
+    const featuredPerformance =
+        timeframe === 'upcoming' && filteredPerformances.length > 0 ? filteredPerformances[0] : null;
+    const remainingPerformances =
+        timeframe === 'upcoming' && featuredPerformance
+            ? filteredPerformances.slice(1)
+            : filteredPerformances;
 
     return (
         <div className="bg-slate-50 min-h-screen text-slate-800">
@@ -208,16 +245,42 @@ export default function PerformancesPage() {
             <section className="relative overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-950 text-white py-16 sm:py-20">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.15),transparent_50%)] pointer-events-none" />
                 <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-200 border border-blue-400/30 uppercase tracking-wider mb-4">
+                    <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-200 border border-blue-400/30 uppercase tracking-wider mb-4">
                         <CalendarDays size={14} className="text-blue-300" />
-                        Worship Schedule
+                        Choir Worship Schedule
                     </span>
                     <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
-                        Upcoming Programs &amp; Events
+                        Choir Performances &amp; Programs
                     </h1>
                     <p className="mt-4 max-w-2xl text-base sm:text-lg text-blue-100/90 leading-relaxed font-normal">
-                        Explore our upcoming choir worship programs, concerts, Sunday services, and special seasonal presentations.
+                        Experience Ethiopian choral worship, seasonal musical events, concerts, and Sunday presentations across our community.
                     </p>
+
+                    {/* Clean Timeframe Tabs (Upcoming vs Past) */}
+                    <div className="mt-8 flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setTimeframe('upcoming')}
+                            className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold transition-all shadow-sm ${
+                                timeframe === 'upcoming'
+                                    ? 'bg-white text-blue-900 shadow-md scale-102'
+                                    : 'bg-white/10 text-white hover:bg-white/20 border border-white/15'
+                            }`}
+                        >
+                            <Calendar size={16} /> Upcoming Performances
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setTimeframe('past')}
+                            className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold transition-all shadow-sm ${
+                                timeframe === 'past'
+                                    ? 'bg-white text-blue-900 shadow-md scale-102'
+                                    : 'bg-white/10 text-white hover:bg-white/20 border border-white/15'
+                            }`}
+                        >
+                            <History size={16} /> Past Performances
+                        </button>
+                    </div>
                 </div>
             </section>
 
@@ -260,7 +323,7 @@ export default function PerformancesPage() {
                                 onChange={(e) => setSelectedChoirId(e.target.value)}
                                 className="w-full sm:w-56 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
                             >
-                                <option value="">All Choir Groups</option>
+                                <option value="">Filter by Choir</option>
                                 {choirs.map((c) => (
                                     <option key={c.id} value={c.id}>
                                         {c.name}
@@ -286,14 +349,22 @@ export default function PerformancesPage() {
                 ) : filteredPerformances.length === 0 ? (
                     <div className="py-16 bg-white rounded-3xl border border-slate-100 shadow-sm p-8 text-center max-w-2xl mx-auto">
                         <EmptyState
-                            icon={CalendarDays}
-                            title="NO UPCOMING PROGRAMS"
-                            message="There are currently no upcoming choir performances or worship programs. Please check back soon."
+                            icon={timeframe === 'upcoming' ? CalendarDays : History}
+                            title={
+                                timeframe === 'upcoming'
+                                    ? 'No Upcoming Performances Found'
+                                    : 'No Past Performances Found'
+                            }
+                            message={
+                                timeframe === 'upcoming'
+                                    ? 'There are currently no upcoming choir performances scheduled. Please check back soon or explore past archives.'
+                                    : 'No past performances match your search criteria.'
+                            }
                         />
                     </div>
                 ) : (
                     <div className="space-y-12">
-                        {/* 1. Featured Next Upcoming Performance */}
+                        {/* 1. Featured Next Upcoming Performance (Only in Upcoming tab) */}
                         {featuredPerformance && (
                             <div>
                                 <Reveal>
@@ -302,15 +373,23 @@ export default function PerformancesPage() {
                             </div>
                         )}
 
-                        {/* 2. Remaining Upcoming Programs Grid */}
+                        {/* 2. Grid of Performances */}
                         {remainingPerformances.length > 0 && (
-                            <div className="pt-6">
+                            <div className="pt-2">
                                 <div className="mb-8">
                                     <SectionHeading
                                         align="left"
-                                        eyebrow="More Schedule"
-                                        title={`Upcoming Programs (${remainingPerformances.length})`}
-                                        subtitle="Join us for these upcoming choir worship presentations and events."
+                                        eyebrow={timeframe === 'upcoming' ? 'More Schedule' : 'Archive'}
+                                        title={
+                                            timeframe === 'upcoming'
+                                                ? `Upcoming Programs (${remainingPerformances.length})`
+                                                : `Past Programs (${remainingPerformances.length})`
+                                        }
+                                        subtitle={
+                                            timeframe === 'upcoming'
+                                                ? 'Join us for these upcoming choir worship presentations and events.'
+                                                : 'Archive of choir presentations, concerts, and worship services.'
+                                        }
                                     />
                                 </div>
                                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

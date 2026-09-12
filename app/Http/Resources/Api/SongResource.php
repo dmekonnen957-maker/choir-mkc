@@ -24,12 +24,9 @@ class SongResource extends JsonResource
         }
 
         // Determine whether the caller is authenticated.
-        // Public (unauthenticated) users must not see lyrics when
-        // lyrics_visible_to_public is false, and must never see
-        // internal admin-only fields.
+        // Lyrics are member content and must never be exposed to public visitors.
         $isAuthenticated = $request && $request->user() !== null;
-        $lyricsAllowed   = $isAuthenticated
-            || ($this->lyrics_visible_to_public ?? true);
+        $lyricsAllowed   = $isAuthenticated;
 
         $data = [
             'id'             => $this->id,
@@ -64,11 +61,18 @@ class SongResource extends JsonResource
             'key'            => $key,
             'scale'          => $this->scale,
             'scale_mode'     => $this->scale_mode,
+            'likes_count'    => (int) ($this->likes_count ?? $this->likes()->count()),
+            'is_liked'       => isset($this->is_liked)
+                ? (bool) $this->is_liked
+                : ($request && ($request->user('sanctum') || $request->user())
+                    ? $this->likes()->where('user_id', ($request->user('sanctum') ?? $request->user())->id)->exists()
+                    : false),
             // Lyrics: return null for public when not allowed
             'lyrics'         => $lyricsAllowed ? $this->lyrics : null,
             'display_lyrics' => $lyricsAllowed ? $displayLyrics : null,
             'has_lyrics'     => (bool) $this->lyrics,
-            'lyrics_visible_to_public' => $this->lyrics_visible_to_public ?? true,
+            'has_audio'      => (bool) $this->audio_path,
+            'lyrics_visible_to_public' => false,
             'is_published'   => $this->is_published,
             'status'         => $this->status ?? ($this->is_published ? 'approved' : 'pending'),
             'created_at'     => $this->created_at,

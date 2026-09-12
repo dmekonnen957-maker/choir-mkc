@@ -17,7 +17,6 @@ import {
     UserCheck,
     Shield,
     BarChart3,
-    History,
     ScrollText,
     BookOpen,
 } from 'lucide-react';
@@ -79,9 +78,7 @@ function getAdminNav(can) {
     items.push({
         title: 'Reports',
         items: [
-            { label: 'Choir History', to: '/member/choir-history', icon: BookOpen },
             { label: 'Reports', to: '/admin/reports', icon: BarChart3 },
-            { label: 'Choir History', to: '/admin/choir-history', icon: History },
         ],
     });
 
