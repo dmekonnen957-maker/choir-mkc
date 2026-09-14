@@ -38,8 +38,8 @@ class MemberChoirHistoryController extends ApiController
 
         abort_unless($user && $user->isApproved(), 403, 'Your account is not approved to access choir history.');
 
-        // Global admins can view any choir even if they are not members of one.
-        if ($user->isGlobalAdmin()) {
+        // Global admins or users with choir/gallery permissions can view any choir even if they are not members of one.
+        if ($user->isGlobalAdmin() || $user->can('choirs.view.all') || $user->can('gallery.view.all')) {
             $choir = $this->choirFor($user) ?? Choir::first();
             abort_unless($choir, 404, 'No choir has been created yet.');
 
@@ -50,7 +50,7 @@ class MemberChoirHistoryController extends ApiController
             return $choir;
         }
 
-        $choir = $this->choirFor($user);
+        $choir = $this->choirFor($user) ?? Choir::first();
         abort_unless($choir && $this->canView($user, $choir), 403, 'You are not authorized to view this choir history.');
 
         if ($manage) {

@@ -5,11 +5,21 @@ import CoverImage from '../components/public/CoverImage';
 import Reveal from '../components/ui/Reveal';
 import EmptyState from '../components/public/EmptyState';
 import SongLyricsModal from '../components/public/SongLyricsModal';
-import { fetchPublicPerformance, fetchAllPerformances, formatDate, getPerformanceStatus } from '../lib/publicApi';
+import { fetchPublicPerformance, fetchAllPerformances, formatDate, parseDate, getPerformanceStatus } from '../lib/publicApi';
 import { PerformanceCardSkeleton } from '../components/public/PublicSkeletons';
+import { useLanguage } from '../context/LanguageContext';
+import { programTypeLabel } from '../lib/programTypes';
+
+function localizedDate(dateStr, t) {
+    const d = parseDate(dateStr);
+    if (!d) return formatDate(dateStr);
+    const months = t('common.monthNames');
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
 
 export default function PerformanceDetailPage() {
     const { id } = useParams();
+    const { t } = useLanguage();
     const [performance, setPerformance] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedSong, setSelectedSong] = useState(null);
@@ -68,14 +78,14 @@ export default function PerformanceDetailPage() {
             <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-24">
                 <EmptyState
                     icon={CalendarDays}
-                    title="Program Not Found"
-                    message="This worship program or performance may be private, cancelled, or does not exist."
+                    title={t('perfDetail.notFoundTitle')}
+                    message={t('perfDetail.notFoundMessage')}
                     action={
                         <Link
                             to="/performances"
                             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 text-sm font-semibold text-white transition shadow-sm"
                         >
-                            <ArrowLeft size={16} /> Back to Upcoming Programs
+                            <ArrowLeft size={16} /> {t('perfDetail.backToUpcoming')}
                         </Link>
                     }
                 />
@@ -99,21 +109,21 @@ export default function PerformanceDetailPage() {
                         to="/performances"
                         className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-blue-200 hover:text-white transition mb-6"
                     >
-                        <ArrowLeft size={14} /> Back to Upcoming Programs
+                        <ArrowLeft size={14} /> {t('perfDetail.backToUpcoming')}
                     </Link>
                     
                     <div className="flex flex-wrap items-center gap-3 mb-4">
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/20 text-blue-200 border border-blue-400/30 px-3.5 py-1 text-xs font-bold uppercase tracking-wider">
-                            <Tag size={12} /> {eventType}
+                            <Tag size={12} /> {programTypeLabel(eventType, t)}
                         </span>
                         {computedStatus === 'today' && (
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 px-3.5 py-1 text-xs font-bold uppercase tracking-wider">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Today
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span> {t('common.today')}
                             </span>
                         )}
                         {computedStatus === 'upcoming' && (
                             <span className="inline-flex items-center rounded-full bg-blue-400/20 text-blue-100 border border-blue-300/30 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
-                                Upcoming
+                                {t('perf.status.upcoming')}
                             </span>
                         )}
                     </div>
@@ -137,15 +147,15 @@ export default function PerformanceDetailPage() {
                     <div className="mt-8 grid gap-4 grid-cols-1 sm:grid-cols-3">
                         <div className="bg-white/10 border border-white/15 backdrop-blur-md rounded-2xl p-4">
                             <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-200 mb-1">
-                                <CalendarDays size={14} className="text-blue-300" /> Date
+                                <CalendarDays size={14} className="text-blue-300" /> {t('perf.date')}
                             </p>
-                            <p className="text-base font-bold text-white">{formatDate(performance.date)}</p>
+                            <p className="text-base font-bold text-white">{localizedDate(performance.date, t)}</p>
                         </div>
 
                         {performance.start_time && (
                             <div className="bg-white/10 border border-white/15 backdrop-blur-md rounded-2xl p-4">
                                 <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-200 mb-1">
-                                    <Clock size={14} className="text-blue-300" /> Time
+                                    <Clock size={14} className="text-blue-300" /> {t('perf.time')}
                                 </p>
                                 <p className="text-base font-bold text-white">
                                     {performance.start_time}
@@ -157,7 +167,7 @@ export default function PerformanceDetailPage() {
                         {(performance.venue || performance.location) && (
                             <div className="bg-white/10 border border-white/15 backdrop-blur-md rounded-2xl p-4">
                                 <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-200 mb-1">
-                                    <MapPin size={14} className="text-blue-300" /> Venue / Location
+                                    <MapPin size={14} className="text-blue-300" /> {t('perfDetail.venueLocation')}
                                 </p>
                                 <p className="text-base font-bold text-white truncate">
                                     {performance.venue || performance.location}
@@ -191,7 +201,7 @@ export default function PerformanceDetailPage() {
                     <Reveal>
                         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm">
                             <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 mb-4">
-                                <Info size={20} className="text-blue-600" /> Program Overview
+                                <Info size={20} className="text-blue-600" /> {t('perfDetail.overview')}
                             </h2>
                             <p className="whitespace-pre-line text-slate-600 leading-relaxed text-sm sm:text-base">
                                 {performance.description}
@@ -206,7 +216,7 @@ export default function PerformanceDetailPage() {
                         {performance.organizer && (
                             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
                                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2 mb-2">
-                                    <Users size={14} className="text-blue-600" /> Organized By
+                                    <Users size={14} className="text-blue-600" /> {t('perfDetail.organizedBy')}
                                 </p>
                                 <p className="text-sm font-semibold text-slate-800">{performance.organizer}</p>
                             </div>
@@ -215,7 +225,7 @@ export default function PerformanceDetailPage() {
                         {performance.dress_code && (
                             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
                                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2 mb-2">
-                                    <Sparkles size={14} className="text-blue-600" /> Dress Code
+                                    <Sparkles size={14} className="text-blue-600" /> {t('perfDetail.dressCode')}
                                 </p>
                                 <p className="text-sm font-semibold text-slate-800">{performance.dress_code}</p>
                             </div>
@@ -224,7 +234,7 @@ export default function PerformanceDetailPage() {
                         {performance.special_instructions && (
                             <div className="md:col-span-2 bg-blue-50/60 rounded-2xl p-6 border border-blue-100 shadow-sm">
                                 <p className="text-xs font-bold uppercase tracking-wider text-blue-700 flex items-center gap-2 mb-2">
-                                    <Info size={14} /> Special Instructions
+                                    <Info size={14} /> {t('perfDetail.specialInstructions')}
                                 </p>
                                 <p className="text-sm text-slate-700 leading-relaxed">{performance.special_instructions}</p>
                             </div>
@@ -238,22 +248,22 @@ export default function PerformanceDetailPage() {
                         <div className="flex items-center justify-between border-b border-slate-100 pb-5 mb-6">
                             <div>
                                 <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-                                    <Music size={22} className="text-blue-600" /> Assigned Program Songs
+                                    <Music size={22} className="text-blue-600" /> {t('perfDetail.assignedSongs')}
                                 </h2>
                                 <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                                    Musical pieces scheduled for this worship presentation.
+                                    {t('perfDetail.songsSubtitle')}
                                 </p>
                             </div>
                             <span className="px-3 py-1 bg-blue-50 text-blue-700 font-bold text-xs rounded-full border border-blue-100">
-                                {songs.length} {songs.length === 1 ? 'Song' : 'Songs'}
+                                {songs.length} {songs.length === 1 ? t('perfDetail.songSingle') : t('perfDetail.songPlural')}
                             </span>
                         </div>
 
                         {songs.length === 0 ? (
                             <div className="text-center py-10 bg-slate-50 rounded-2xl border border-slate-100">
                                 <Music size={32} className="mx-auto text-slate-300 mb-2" />
-                                <p className="text-sm font-semibold text-slate-600">No songs currently assigned.</p>
-                                <p className="text-xs text-slate-400 mt-1">The choir leadership will update the setlist before the event.</p>
+                                <p className="text-sm font-semibold text-slate-600">{t('perfDetail.noSongsAssigned')}</p>
+                                <p className="text-xs text-slate-400 mt-1">{t('perfDetail.setlistHint')}</p>
                             </div>
                         ) : (
                             <div className="grid gap-3">
@@ -274,11 +284,11 @@ export default function PerformanceDetailPage() {
                                                     {song.title}
                                                 </h3>
                                                 <p className="text-xs text-slate-500 truncate flex flex-wrap items-center gap-2 mt-0.5">
-                                                    {song.composer && <span>By {song.composer}</span>}
+                                                    {song.composer && <span>{t('perfDetail.bySong', { name: song.composer })}</span>}
                                                     {song.artist && <span>• {song.artist}</span>}
                                                     {song.original_key && (
                                                         <span className="bg-white px-2 py-0.5 rounded text-[10px] font-semibold text-slate-600 border border-slate-200">
-                                                            Key: {song.original_key}
+                                                            {t('song.key')}: {song.original_key}
                                                         </span>
                                                     )}
                                                     {song.scale && (
@@ -306,14 +316,14 @@ export default function PerformanceDetailPage() {
                                                     }}
                                                     className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-xs hover:bg-blue-50 hover:text-blue-700 transition"
                                                 >
-                                                    <FileText size={13} /> Lyrics Preview
+                                                    <FileText size={13} /> {t('perfDetail.lyricsPreview')}
                                                 </button>
                                             )}
                                             <Link
                                                 to={`/songs/${song.id}`}
                                                 className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-600 hover:text-white px-3 py-1.5 rounded-lg border border-blue-100 transition"
                                             >
-                                                Song Details
+                                                {t('perfDetail.songDetails')}
                                                 <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                                             </Link>
                                         </div>

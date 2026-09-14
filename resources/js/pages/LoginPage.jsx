@@ -6,10 +6,13 @@ import Input from '../components/ui/Input';
 import PasswordInput from '../components/ui/PasswordInput';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
+import LanguageSelector from '../components/ui/LanguageSelector';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function LoginPage() {
     const { login } = useAuth();
+    const { t, isAmharic } = useLanguage();
     const navigate = useNavigate();
 
     const [form, setForm] = useState({ email: '', password: '' });
@@ -31,13 +34,17 @@ export default function LoginPage() {
         try {
             const user = await login(form, remember);
             const roles = user?.roles ?? [];
-            const role = user?.role;
+            const roleStr = user?.role || '';
+            const has = (name) => roles.includes(name) || roles.some(r => r.toLowerCase() === name.toLowerCase()) || roleStr.toLowerCase() === name.toLowerCase();
+
             const destination =
-                roles.includes('super-admin') || roles.includes('admin') || role === 'admin' || role === 'super-admin'
+                has('super-admin') || has('admin')
                     ? '/admin/dashboard'
-                    : roles.includes('team_leader') || role === 'team_leader'
+                    : has('team_leader') || has('team-leader')
                         ? '/team-leader/dashboard'
-                        : '/member/dashboard';
+                        : has('musician') || has('musicians') || roles.some(r => r.toLowerCase().includes('music'))
+                            ? '/musician/dashboard'
+                            : '/member/dashboard';
             navigate(destination, { replace: true });
         } catch (err) {
             if (err.errors) {
@@ -46,7 +53,7 @@ export default function LoginPage() {
             const isPending = err.status === 403 && (err.message?.includes('approval') || err.message?.includes('waiting'));
             setAlert({
                 variant: isPending ? 'warning' : 'error',
-                message: err.message || 'Login failed. Please check your credentials.',
+                message: err.message || t('auth.loginFailed'),
                 isPending,
             });
             setSubmitting(false);
@@ -78,8 +85,12 @@ export default function LoginPage() {
                 to="/"
                 className="absolute left-6 top-6 z-20 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/60 backdrop-blur-md transition-all duration-300 hover:border-blue-400/30 hover:bg-white/10 hover:text-white/80"
             >
-                <ArrowLeft size={16} /> Back
+                <ArrowLeft size={16} /> {t('common.back')}
             </Link>
+
+            <div className="absolute right-6 top-6 z-20">
+                <LanguageSelector compact />
+            </div>
 
             {/* Main Form Box */}
             <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
@@ -92,12 +103,18 @@ export default function LoginPage() {
                         <div className="flex flex-col items-center justify-center mb-8">
                             <Logo size="lg" className="mb-3" />
                             <h1 className="text-2xl font-bold text-white tracking-wide">
-                                <span>YEKA</span>{' '}
-                                <span className="text-blue-400">M.K.C</span>{' '}
-                                <span>CHOIR</span>
+                                {isAmharic ? (
+                                    t('brand.choirName')
+                                ) : (
+                                    <>
+                                        <span>{t('brand.choirPrimary')}</span>{' '}
+                                        <span className="text-blue-400">M.K.C</span>{' '}
+                                        <span>{t('brand.choirSuffix')}</span>
+                                    </>
+                                )}
                             </h1>
                             <p className="text-xs text-blue-300/70 font-medium tracking-wider mt-1">
-                                Choirs &amp; Worship Teams
+                                {t('auth.memberTagline')}
                             </p>
                         </div>
 
@@ -111,7 +128,7 @@ export default function LoginPage() {
                         {/* Login Form */}
                         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
                             <Input
-                                label="Email Address"
+                                label={t('auth.emailAddress')}
                                 type="email"
                                 autoComplete="email"
                                 required
@@ -128,7 +145,7 @@ export default function LoginPage() {
                             />
 
                             <PasswordInput
-                                label="Password"
+                                label={t('auth.password')}
                                 autoComplete="current-password"
                                 required
                                 placeholder="••••••••"
@@ -146,13 +163,13 @@ export default function LoginPage() {
                                         onChange={(e) => setRemember(e.target.checked)}
                                         className="h-4 w-4 rounded border-white/20 bg-white/5 text-blue-400/60 focus:ring-blue-400/30 focus:ring-offset-0"
                                     />
-                                    Keep me signed in
+                                    {t('auth.remember')}
                                 </label>
                                 <a
                                     href="#"
                                     className="text-blue-300/50 transition-all duration-300 hover:text-blue-300/80"
                                 >
-                                    Forgot password?
+                                    {t('auth.forgotPassword')}
                                 </a>
                             </div>
 
@@ -162,26 +179,26 @@ export default function LoginPage() {
                                 loading={submitting}
                                 className="w-full bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/20 text-white/90 py-3.5 font-light shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 transition-all duration-300"
                             >
-                                Sign In
+                                {t('auth.submitLogin')}
                                 {!submitting && <ArrowRight size={18} />}
                             </Button>
                         </form>
 
                         {/* Register Link */}
                         <div className="mt-8 border-t border-white/5 pt-6 text-center text-sm text-white/40">
-                            Don't have an account?{' '}
+                            {t('auth.noAccount')}{' '}
                             <Link
                                 to="/register"
                                 className="text-blue-300/50 transition-all duration-300 hover:text-blue-300/80"
                             >
-                                Request Access
+                                {t('auth.requestAccess')}
                             </Link>
                         </div>
                     </div>
 
                     {/* Footer */}
                     <p className="mt-6 text-center text-xs text-white/30">
-                        © {new Date().getFullYear()} YKA M.K.C CHOIR
+                        © {new Date().getFullYear()} {t('brand.choirName')}
                     </p>
                 </div>
             </div>

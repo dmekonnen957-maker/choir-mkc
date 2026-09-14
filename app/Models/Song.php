@@ -100,6 +100,13 @@ class Song extends Model
             ->withTimestamps();
     }
 
+    public function participants(): BelongsToMany
+    {
+        return $this->belongsToMany(Member::class, 'song_participants')
+            ->withPivot(['choir_id', 'role', 'notes'])
+            ->withTimestamps();
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

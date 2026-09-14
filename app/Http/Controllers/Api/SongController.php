@@ -362,4 +362,40 @@ class SongController extends ApiController
             Storage::disk('public')->delete($path);
         }
     }
+
+    public function participants(Request $request, Song $song): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('view', $song);
+        $participants = $song->participants()->with(['voiceSection', 'guardians'])->get();
+        return $this->ok(\App\Http\Resources\Api\MemberResource::collection($participants));
+    }
+
+    public function attachParticipant(Request $request, Song $song): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('update', $song);
+        $request->validate([
+            'member_id' => 'required|exists:members,id',
+            'role' => 'nullable|string|max:50',
+            'notes' => 'nullable|string',
+        ]);
+
+        $memberId = $request->input('member_id');
+        $song->participants()->syncWithoutDetaching([
+            $memberId => [
+                'choir_id' => $song->choir_id,
+                'role' => $request->input('role', 'Vocalist'),
+                'notes' => $request->input('notes'),
+            ],
+        ]);
+
+        $participants = $song->participants()->with(['voiceSection', 'guardians'])->get();
+        return $this->ok(\App\Http\Resources\Api\MemberResource::collection($participants), 'Participant added successfully.');
+    }
+
+    public function detachParticipant(Request $request, Song $song, $memberId): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('update', $song);
+        $song->participants()->detach($memberId);
+        return $this->ok(null, 'Participant removed successfully.');
+    }
 }

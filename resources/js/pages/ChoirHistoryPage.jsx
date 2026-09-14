@@ -11,17 +11,19 @@ import {
     getChoirPerformances,
 } from '../data/landingData';
 import { formatLongDate } from '../data/dateUtils';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ChoirHistoryPage() {
     const { id } = useParams();
+    const { t } = useLanguage();
     const choir = getChoirById(id);
 
     if (!choir) {
         return (
             <div className="mx-auto max-w-3xl px-4 py-24 text-center">
-                <h1 className="text-2xl font-semibold text-blue-900">Choir not found</h1>
+                <h1 className="text-2xl font-semibold text-blue-900">{t('choirHistory.notFoundTitle')}</h1>
                 <Link to="/choirs" className="mt-6 inline-block rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
-                    Back to choirs
+                    {t('choirHistory.backToChoirs')}
                 </Link>
             </div>
         );
@@ -40,7 +42,7 @@ export default function ChoirHistoryPage() {
                         <ArrowLeft size={16} /> {choir.name}
                     </Link>
                     <div className="mt-4 flex flex-wrap items-center gap-3">
-                        <h1 className="text-3xl font-semibold text-white sm:text-4xl">{choir.name} — History</h1>
+                        <h1 className="text-3xl font-semibold text-white sm:text-4xl">{choir.name} — {t('choirHistory.history')}</h1>
                         <DemoBadge className="bg-white/15 text-white ring-white/30" />
                     </div>
                 </div>
@@ -50,12 +52,12 @@ export default function ChoirHistoryPage() {
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <p className="max-w-2xl text-lg leading-relaxed text-ink-600">{choir.summary}</p>
 
-                    <h2 className="mt-12 text-2xl font-semibold text-blue-900">Timeline</h2>
+                    <h2 className="mt-12 text-2xl font-semibold text-blue-900">{t('choirHistory.timeline')}</h2>
                     <div className="mt-6">
                         <Timeline milestones={milestones} />
                     </div>
 
-                    <h2 className="mt-14 text-2xl font-semibold text-blue-900">Historical Photos</h2>
+                    <h2 className="mt-14 text-2xl font-semibold text-blue-900">{t('choirHistory.photos')}</h2>
                     <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-3">
                         {gallery.map((g) => (
                             <Reveal key={g.id} direction="up" className="overflow-hidden rounded-2xl ring-1 ring-blue-100">
@@ -64,7 +66,7 @@ export default function ChoirHistoryPage() {
                         ))}
                     </div>
 
-                    <h2 className="mt-14 text-2xl font-semibold text-blue-900">Important Performances</h2>
+                    <h2 className="mt-14 text-2xl font-semibold text-blue-900">{t('choirHistory.performances')}</h2>
                     <ul className="mt-6 space-y-3">
                         {performances.map((p) => (
                             <li key={p.id}>
@@ -79,7 +81,7 @@ export default function ChoirHistoryPage() {
                             </li>
                         ))}
                         {performances.length === 0 && (
-                            <li className="text-ink-500">No public performances yet.</li>
+                            <li className="text-ink-500">{t('choirHistory.noPerformances')}</li>
                         )}
                     </ul>
                 </div>

@@ -77,6 +77,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::apiResource('/{choir}/voice-sections', VoiceSectionController::class);
             Route::apiResource('/{choir}/song-categories', SongCategoryController::class);
             Route::apiResource('/{choir}/songs', SongController::class);
+            Route::get('/{choir}/songs/{song}/participants', [SongController::class, 'participants']);
+            Route::post('/{choir}/songs/{song}/participants', [SongController::class, 'attachParticipant']);
+            Route::delete('/{choir}/songs/{song}/participants/{member}', [SongController::class, 'detachParticipant']);
             Route::apiResource('/{choir}/songs/{song}/histories', SongHistoryController::class);
             Route::apiResource('/{choir}/songs/{song}/files', SongFileController::class);
 
@@ -117,6 +120,10 @@ Route::middleware('auth:sanctum')->group(function () {
             ->name('admin.choirs.destroy')
             ->middleware('permission:choirs.delete');
         Route::get('/members', [AdminMemberController::class, 'index'])->middleware('permission:members.view');
+        Route::post('/members', [MemberController::class, 'storeWithoutChoirParam'])->middleware('permission:members.create');
+        Route::get('/members/{member}', [MemberController::class, 'showWithoutChoirParam'])->middleware('permission:members.view');
+        Route::match(['PUT', 'PATCH'], '/members/{member}', [MemberController::class, 'updateWithoutChoirParam'])->middleware('permission:members.update');
+        Route::delete('/members/{member}', [MemberController::class, 'destroyWithoutChoirParam'])->middleware('permission:members.delete');
         Route::apiResource('roles', RoleController::class);
         Route::apiResource('permissions', PermissionController::class);
         Route::get('/audit-logs', [AuditLogController::class, 'index']);
@@ -127,6 +134,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/reports/{report}', [ReportController::class, 'show']);
         Route::get('/reports-export', [ReportController::class, 'export']);
         Route::apiResource('songs', SongController::class);
+        Route::get('songs/{song}/participants', [SongController::class, 'participants']);
+        Route::post('songs/{song}/participants', [SongController::class, 'attachParticipant']);
+        Route::delete('songs/{song}/participants/{member}', [SongController::class, 'detachParticipant']);
         Route::get('songs-stats', [SongController::class, 'stats']);
         Route::post('songs/{song}/approve', [SongController::class, 'approve']);
         Route::post('songs/{song}/reject', [SongController::class, 'reject']);
@@ -201,12 +211,26 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'teamLeaderDashboard']);
         Route::get('/calendar', [CalendarController::class, 'teamLeaderCalendar']);
         Route::get('/choir', [MemberController::class, 'choir']);
+        Route::get('/members', [AdminMemberController::class, 'index']);
+        Route::post('/members', [MemberController::class, 'storeWithoutChoirParam']);
+        Route::get('/members/{member}', [MemberController::class, 'showWithoutChoirParam']);
+        Route::match(['PUT', 'PATCH'], '/members/{member}', [MemberController::class, 'updateWithoutChoirParam']);
+        Route::delete('/members/{member}', [MemberController::class, 'destroyWithoutChoirParam']);
         Route::get('/profile', [MemberController::class, 'profile']);
         Route::match(['PUT', 'PATCH'], '/profile', [MemberController::class, 'updateProfile']);
         Route::get('/performances', [MemberController::class, 'performances']);
         Route::get('/songs', [MemberController::class, 'songs']);
         Route::post('/songs', [MemberController::class, 'submitSong']);
         Route::get('/notifications', [NotificationController::class, 'index']);
+    });
+
+    // Members endpoints (accessible to anyone with permission:members.view)
+    Route::middleware(['auth:sanctum', 'permission:members.view'])->prefix('members')->group(function () {
+        Route::get('/', [AdminMemberController::class, 'index']);
+        Route::post('/', [MemberController::class, 'storeWithoutChoirParam'])->middleware('permission:members.create');
+        Route::get('/{member}', [MemberController::class, 'showWithoutChoirParam']);
+        Route::match(['PUT', 'PATCH'], '/{member}', [MemberController::class, 'updateWithoutChoirParam'])->middleware('permission:members.update');
+        Route::delete('/{member}', [MemberController::class, 'destroyWithoutChoirParam'])->middleware('permission:members.delete');
     });
 
     // Song Engagement (Likes) - approved members only

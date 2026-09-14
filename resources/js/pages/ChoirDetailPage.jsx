@@ -26,20 +26,22 @@ import {
     fetchChoirAnnouncements,
     imageUrl,
     isUpcoming,
-    formatDate,
 } from '../lib/publicApi';
+import { localizedDate } from '../lib/dates';
+import { useLanguage } from '../context/LanguageContext';
 
 const TABS = [
-    { key: 'overview', label: 'Overview', icon: Info },
-    { key: 'songs', label: 'Songs', icon: Music2 },
-    { key: 'performances', label: 'Performances', icon: CalendarDays },
-    { key: 'gallery', label: 'Gallery', icon: Images },
-    { key: 'members', label: 'Members', icon: Users },
-    { key: 'announcements', label: 'Announcements', icon: Megaphone },
+    { key: 'overview', labelKey: 'choir.tabOverview', icon: Info },
+    { key: 'songs', labelKey: 'choir.tabSongs', icon: Music2 },
+    { key: 'performances', labelKey: 'choir.tabPerformances', icon: CalendarDays },
+    { key: 'gallery', labelKey: 'choir.tabGallery', icon: Images },
+    { key: 'members', labelKey: 'choir.tabMembers', icon: Users },
+    { key: 'announcements', labelKey: 'choir.tabAnnouncements', icon: Megaphone },
 ];
 
 export default function ChoirDetailPage() {
     const { id } = useParams();
+    const { t } = useLanguage();
     const [choir, setChoir] = useState(null);
     const [data, setData] = useState({ songs: [], performances: [], members: [], gallery: [], announcements: [] });
     const [loading, setLoading] = useState(true);
@@ -71,7 +73,7 @@ export default function ChoirDetailPage() {
     if (loading) {
         return (
             <div className="flex h-64 items-center justify-center bg-white">
-                <LoadingSpinner text="Loading choir..." />
+                <LoadingSpinner text={t('choir.loading')} />
             </div>
         );
     }
@@ -81,14 +83,14 @@ export default function ChoirDetailPage() {
             <div className="mx-auto max-w-7xl px-4 py-24">
                 <EmptyState
                     icon={Users}
-                    title="This choir could not be found."
-                    message="It may be private or no longer available."
+                    title={t('choir.notFoundTitle')}
+                    message={t('choir.notFoundMessage')}
                     action={
                         <Link
                             to="/choirs"
                             className="inline-flex items-center gap-2 rounded-full bg-blue-700 px-6 py-3 text-sm font-semibold text-white"
                         >
-                            <ArrowLeft size={16} /> Back to Choirs
+                            <ArrowLeft size={16} /> {t('choir.backToChoirs')}
                         </Link>
                     }
                 />
@@ -112,7 +114,7 @@ export default function ChoirDetailPage() {
                             to="/choirs"
                             className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-blue-700"
                         >
-                            <ArrowLeft size={16} /> All Choirs
+                            <ArrowLeft size={16} /> {t('choir.allChoirs')}
                         </Link>
                         <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
                             {choir.name}
@@ -126,12 +128,12 @@ export default function ChoirDetailPage() {
                             </p>
                         )}
                         <div className="mt-6 flex flex-wrap gap-3">
-                            <Stat icon={Users} value={choir.member_count ?? 0} label="Members" />
-                            <Stat icon={Music2} value={choir.songs_count ?? data.songs.length} label="Songs" />
+                            <Stat icon={Users} value={choir.member_count ?? 0} label={t('choir.members')} />
+                            <Stat icon={Music2} value={choir.songs_count ?? data.songs.length} label={t('choir.songs')} />
                             <Stat
                                 icon={CalendarDays}
                                 value={choir.performances_count ?? data.performances.length}
-                                label="Performances"
+                                label={t('choir.performances')}
                             />
                         </div>
                     </div>
@@ -158,7 +160,7 @@ export default function ChoirDetailPage() {
                                 }`}
                             >
                                 <Icon size={16} />
-                                {t.label}
+                                {t(t.labelKey)}
                                 {count !== null && (
                                     <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
                                         {count}
@@ -172,14 +174,14 @@ export default function ChoirDetailPage() {
 
             <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
                 {tab === 'overview' && (
-                    <OverviewTab choir={choir} data={data} upcoming={upcoming} />
+                    <OverviewTab choir={choir} data={data} upcoming={upcoming} onViewSongs={() => setTab('songs')} />
                 )}
                 {tab === 'songs' && (
                     <GridEmpty
                         items={data.songs}
                         icon={Music2}
-                        emptyTitle="No songs published yet."
-                        emptyMsg="This choir has not shared songs publicly."
+                        emptyTitle={t('choir.noSongsPublished')}
+                        emptyMsg={t('choir.noSongsPublishedMsg')}
                         gridClass="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
                     >
                         {(s) => (
@@ -191,12 +193,12 @@ export default function ChoirDetailPage() {
                 )}
                 {tab === 'performances' && (
                     <div className="space-y-10">
-                        <SubHeading title={`Upcoming (${upcoming.length})`} />
+                        <SubHeading title={t('choir.upcomingCount', { count: upcoming.length })} />
                         <GridEmpty
                             items={upcoming}
                             icon={CalendarDays}
-                            emptyTitle="No upcoming performances."
-                            emptyMsg="Check back soon for the next gathering."
+                            emptyTitle={t('choir.noUpcoming')}
+                            emptyMsg={t('choir.noUpcomingMsg')}
                             gridClass="grid gap-8 lg:grid-cols-2"
                         >
                             {(p) => (
@@ -205,11 +207,11 @@ export default function ChoirDetailPage() {
                                 </Reveal>
                             )}
                         </GridEmpty>
-                        <SubHeading title="Past Performances" />
+                        <SubHeading title={t('choir.pastPerformances')} />
                         <GridEmpty
                             items={data.performances.filter((p) => !isUpcoming(p.date))}
                             icon={CalendarDays}
-                            emptyTitle="No past performances recorded."
+                            emptyTitle={t('choir.noPast')}
                             gridClass="grid gap-4"
                         >
                             {(p) => (
@@ -224,8 +226,8 @@ export default function ChoirDetailPage() {
                     <GridEmpty
                         items={data.gallery}
                         icon={Images}
-                        emptyTitle="No gallery photos yet."
-                        emptyMsg="Moments from this choir will appear here."
+                        emptyTitle={t('choir.noGallery')}
+                        emptyMsg={t('choir.noGalleryMsg')}
                         gridClass="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"
                     >
                         {(g) => (
@@ -239,8 +241,8 @@ export default function ChoirDetailPage() {
                     <GridEmpty
                         items={data.members}
                         icon={Users}
-                        emptyTitle="No members are publicly listed."
-                        emptyMsg="Member profiles for this choir are private."
+                        emptyTitle={t('choir.noMembersListed')}
+                        emptyMsg={t('choir.noMembersListedMsg')}
                         gridClass="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
                     >
                         {(m) => (
@@ -254,8 +256,8 @@ export default function ChoirDetailPage() {
                     <GridEmpty
                         items={data.announcements}
                         icon={Megaphone}
-                        emptyTitle="No announcements yet."
-                        emptyMsg="Updates from this choir will appear here."
+                        emptyTitle={t('choir.noAnnouncements')}
+                        emptyMsg={t('choir.noAnnouncementsMsg')}
                         gridClass="grid gap-6 lg:grid-cols-2"
                     >
                         {(a) => (
@@ -295,19 +297,20 @@ function GridEmpty({ items, icon: Icon, emptyTitle, emptyMsg, gridClass, childre
     return <div className={gridClass}>{items.map((it) => children(it))}</div>;
 }
 
-function OverviewTab({ choir, data, upcoming }) {
+function OverviewTab({ choir, data, upcoming, onViewSongs }) {
+    const { t } = useLanguage();
     const leader = choir.team_leader;
     return (
         <div className="grid gap-10 lg:grid-cols-3">
             <div className="lg:col-span-2">
-                <SubHeading title="About this Choir" />
+                <SubHeading title={t('choir.aboutThisChoir')} />
                 <p className="mt-3 max-w-2xl leading-relaxed text-slate-600">
-                    {choir.description || 'A vibrant part of the YKA M.K.C Choirs and Worship Teams community.'}
+                    {choir.description || t('choir.aboutFallback')}
                 </p>
 
                 {upcoming.length > 0 && (
                     <div className="mt-10">
-                        <SubHeading title="Next Performance" />
+                        <SubHeading title={t('choir.nextPerformance')} />
                         <div className="mt-4 grid gap-8 lg:grid-cols-2">
                             {upcoming.slice(0, 2).map((p) => (
                                 <PerformanceCard key={p.id} performance={p} variant="upcoming" />
@@ -319,13 +322,13 @@ function OverviewTab({ choir, data, upcoming }) {
                 {data.songs.length > 0 && (
                     <div className="mt-10">
                         <div className="flex items-center justify-between">
-                            <SubHeading title="Latest Songs" />
+                            <SubHeading title={t('choir.latestSongs')} />
                             <button
                                 type="button"
-                                onClick={() => setTab('songs')}
+                                onClick={onViewSongs}
                                 className="text-sm font-semibold text-blue-700 hover:text-blue-800"
                             >
-                                View all
+                                {t('common.viewAll')}
                             </button>
                         </div>
                         <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -341,7 +344,7 @@ function OverviewTab({ choir, data, upcoming }) {
                 {leader && (
                     <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
                         <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-                            Choir Leader
+                            {t('choir.leaderLabel')}
                         </p>
                         <p className="mt-2 text-lg font-semibold text-slate-900">{leader.name}</p>
                         <p className="text-sm text-slate-500">{leader.email}</p>
@@ -350,7 +353,7 @@ function OverviewTab({ choir, data, upcoming }) {
                 {data.announcements.length > 0 && (
                     <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
                         <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
-                            Latest Announcement
+                            {t('choir.latestAnnouncement')}
                         </p>
                         <p className="mt-2 text-base font-semibold text-slate-900">
                             {data.announcements[0].title}
@@ -390,7 +393,8 @@ function GalleryItem({ item }) {
 }
 
 function MemberItem({ member }) {
-    const name = member.full_name || member.first_name || member.name || 'Member';
+    const { t } = useLanguage();
+    const name = member.full_name || member.first_name || member.name || t('choir.member');
     return (
         <div className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
             <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full">
@@ -410,6 +414,7 @@ function MemberItem({ member }) {
 }
 
 function AnnouncementItem({ announcement }) {
+    const { language } = useLanguage();
     return (
         <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
             {announcement.image_path && (
@@ -423,8 +428,8 @@ function AnnouncementItem({ announcement }) {
             )}
             <p className="text-xs font-medium text-slate-400">
                 {announcement.published_at
-                    ? formatDate(announcement.published_at)
-                    : formatDate(announcement.created_at)}
+                    ? localizedDate(announcement.published_at, language)
+                    : localizedDate(announcement.created_at, language)}
             </p>
             <h3 className="mt-1 text-lg font-semibold text-slate-900">{announcement.title}</h3>
             <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-slate-500">

@@ -22,7 +22,9 @@ import EmptyState from '../components/public/EmptyState';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import CoverImage from '../components/public/CoverImage';
 import { useAuth } from '../context/AuthContext';
-import { fetchPublicSong, fetchChoirSong, likeSong, unlikeSong, formatDate } from '../lib/publicApi';
+import { useLanguage } from '../context/LanguageContext';
+import { fetchPublicSong, fetchChoirSong, likeSong, unlikeSong } from '../lib/publicApi';
+import { localizedDate } from '../lib/dates';
 
 const QUICK_STEPS = [-3, -2, -1, 0, 1, 2, 3];
 
@@ -30,6 +32,7 @@ export default function SongDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { isAuthenticated, hasRole } = useAuth();
+    const { t, language } = useLanguage();
     const canLike = isAuthenticated && hasRole('member');
 
     const [song, setSong] = useState(null);
@@ -141,7 +144,7 @@ export default function SongDetailPage() {
     if (loading) {
         return (
             <div className="flex h-96 items-center justify-center bg-white">
-                <LoadingSpinner text="Loading Ethiopian choir song..." />
+                <LoadingSpinner text={t('song.detailLoading')} />
             </div>
         );
     }
@@ -151,14 +154,14 @@ export default function SongDetailPage() {
             <div className="mx-auto max-w-3xl px-4 py-24">
                 <EmptyState
                     icon={Music2}
-                    title="This song could not be found."
-                    message="It may be private, unpublished, or removed."
+                    title={t('song.notFoundTitle')}
+                    message={t('song.notFoundMessage')}
                     action={
                         <Link
                             to="/songs"
                             className="inline-flex items-center gap-2 rounded-full bg-blue-700 px-6 py-3 text-sm font-semibold text-white shadow hover:bg-blue-800"
                         >
-                            <ArrowLeft size={16} /> Back to Songs
+                            <ArrowLeft size={16} /> {t('song.backToSongs')}
                         </Link>
                     }
                 />
@@ -179,30 +182,30 @@ export default function SongDetailPage() {
                             <Heart size={24} className="fill-rose-500 text-rose-500" />
                         </div>
                         <h3 className="mt-4 text-xl font-bold text-slate-900">
-                            Sign in to like this song
+                            {t('song.loginModalTitle')}
                         </h3>
                         <p className="mt-2 text-sm text-slate-600">
-                            Create a free account or sign in to save <strong className="font-semibold text-slate-800">{song.title}</strong> to your liked songs collection and support our choirs.
+                            {t('song.loginSaveStart')} <strong className="font-semibold text-slate-800">{song.title}</strong> {t('song.loginSaveEnd')}
                         </p>
                         <div className="mt-6 flex flex-col gap-2.5 sm:flex-row-reverse sm:justify-start">
                             <Link
                                 to={`/login?redirect=/songs/${song.id}`}
                                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-800"
                             >
-                                <LogIn size={16} /> Sign In
+                                <LogIn size={16} /> {t('nav.login')}
                             </Link>
                             <Link
                                 to={`/register?redirect=/songs/${song.id}`}
                                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                             >
-                                Register
+                                {t('nav.register')}
                             </Link>
                             <button
                                 type="button"
                                 onClick={() => setShowLoginModal(false)}
                                 className="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-500 hover:text-slate-700 sm:mr-auto"
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                         </div>
                     </div>
@@ -222,7 +225,7 @@ export default function SongDetailPage() {
                             className="group inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition-colors hover:text-blue-700"
                         >
                             <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-1" />
-                            Back to Discover Songs
+                            {t('song.backToDiscover')}
                         </Link>
                         <div className="flex items-center gap-2">
                             <button
@@ -231,7 +234,7 @@ export default function SongDetailPage() {
                                 className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-medium text-slate-700 shadow-xs transition-colors hover:bg-slate-50 hover:text-blue-700"
                             >
                                 {copied ? <Check size={14} className="text-emerald-600" /> : <Share2 size={14} />}
-                                {copied ? 'Link Copied!' : 'Share'}
+                                {copied ? t('song.linkCopied') : t('song.share')}
                             </button>
                         </div>
                     </div>
@@ -252,12 +255,12 @@ export default function SongDetailPage() {
                                 <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                                     <div>
                                         <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                                            Audience Love
+                                            {t('song.audienceLove')}
                                         </div>
                                         <div className="mt-0.5 flex items-baseline gap-1.5">
                                             <span className="text-2xl font-black text-slate-900">{likesCount}</span>
                                             <span className="text-sm font-medium text-slate-500">
-                                                {likesCount === 1 ? 'like' : 'likes'}
+                                                {likesCount === 1 ? t('song.like') : t('song.likes')}
                                             </span>
                                         </div>
                                     </div>
@@ -266,7 +269,7 @@ export default function SongDetailPage() {
                                         type="button"
                                         onClick={handleLikeToggle}
                                         disabled={liking}
-                                        aria-label={canLike ? (isLiked ? 'Unlike song' : 'Like song') : 'Login to like this song'}
+                                        aria-label={canLike ? (isLiked ? t('song.unlikeSong') : t('song.likeSong')) : t('songs.loginToLike')}
                                         className={`group relative flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold text-sm transition-all duration-200 shadow-sm active:scale-95 ${
                                             isLiked
                                                 ? 'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 hover:border-rose-300'
@@ -281,7 +284,7 @@ export default function SongDetailPage() {
                                                     : 'text-slate-400 group-hover:text-rose-500'
                                             }`}
                                         />
-                                        <span>{canLike ? (isLiked ? 'Liked' : 'Like Song') : 'Login to like this song'}</span>
+                                        <span>{canLike ? (isLiked ? t('song.liked') : t('song.likeSong')) : t('songs.loginToLike')}</span>
                                     </button>
                                 </div>
                             </div>
@@ -291,7 +294,7 @@ export default function SongDetailPage() {
                         <div className="flex flex-col justify-center">
                             <div className="flex flex-wrap items-center gap-2">
                                 <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100/80 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-blue-800">
-                                    <Music2 size={13} /> Ethiopian Choir Song
+                                    <Music2 size={13} /> {t('song.ethiopianChoirSong')}
                                 </span>
                                 {song.song_category?.name && (
                                     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
@@ -307,7 +310,7 @@ export default function SongDetailPage() {
                             {/* Choir Info */}
                             {choir?.name && (
                                 <div className="mt-3 flex items-center gap-2">
-                                    <span className="text-sm text-slate-500">Created by:</span>
+                                    <span className="text-sm text-slate-500">{t('song.createdBy')}</span>
                                     <Link
                                         to={`/choirs/${choir.id}`}
                                         className="inline-flex items-center gap-1.5 text-base font-semibold text-blue-700 transition-colors hover:text-blue-800 hover:underline"
@@ -322,31 +325,31 @@ export default function SongDetailPage() {
                             <div className="mt-6 grid grid-cols-2 gap-4 rounded-2xl border border-slate-200/80 bg-white/70 p-4 backdrop-blur-xs sm:grid-cols-3">
                                 {song.composer && (
                                     <div>
-                                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Composer</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{t('song.composer')}</span>
                                         <p className="mt-0.5 text-sm font-medium text-slate-900">{song.composer}</p>
                                     </div>
                                 )}
                                 {song.artist && (
                                     <div>
-                                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Artist / Lead</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{t('song.artistLead')}</span>
                                         <p className="mt-0.5 text-sm font-medium text-slate-900">{song.artist}</p>
                                     </div>
                                 )}
                                 {song.arranger && (
                                     <div>
-                                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Arranger</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{t('song.arranger')}</span>
                                         <p className="mt-0.5 text-sm font-medium text-slate-900">{song.arranger}</p>
                                     </div>
                                 )}
                                 {song.created_at && (
                                     <div>
-                                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Date Added</span>
-                                        <p className="mt-0.5 text-sm font-medium text-slate-900">{formatDate(song.created_at)}</p>
+                                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{t('song.dateAdded')}</span>
+                                        <p className="mt-0.5 text-sm font-medium text-slate-900">{localizedDate(song.created_at, language)}</p>
                                     </div>
                                 )}
                                 {song.language && (
                                     <div>
-                                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Language</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{t('song.language')}</span>
                                         <p className="mt-0.5 text-sm font-medium text-slate-900">{song.language}</p>
                                     </div>
                                 )}
@@ -356,7 +359,7 @@ export default function SongDetailPage() {
                             {song.audio_url && (
                                 <div className="mt-8 space-y-3">
                                     <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                                        Listen to Track
+                                        {t('song.listenToTrack')}
                                     </div>
                                     <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-md">
                                         <AudioPlayer src={song.audio_url} title={song.title} />
@@ -366,7 +369,7 @@ export default function SongDetailPage() {
                                         download
                                         className="inline-flex items-center gap-2 text-xs font-semibold text-blue-700 hover:text-blue-800 hover:underline"
                                     >
-                                        <Download size={14} /> Download Audio
+                                        <Download size={14} /> {t('song.downloadAudio')}
                                     </a>
                                 </div>
                             )}
@@ -374,7 +377,7 @@ export default function SongDetailPage() {
                             {/* Description */}
                             {song.description && (
                                 <div className="mt-8 border-t border-slate-200 pt-6">
-                                    <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">About this song</h2>
+                                    <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">{t('song.aboutThisSong')}</h2>
                                     <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
                                         {song.description}
                                     </p>
@@ -393,10 +396,10 @@ export default function SongDetailPage() {
                             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6">
                                 <div>
                                     <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-                                        Lyrics & Chords
+                                        {t('song.lyricsChords')}
                                     </h2>
                                     <p className="mt-1 text-xs text-slate-500">
-                                        Adjust pitch transpose to fit your vocal range.
+                                        {t('song.transposeHint')}
                                     </p>
                                 </div>
 
@@ -406,20 +409,20 @@ export default function SongDetailPage() {
                                         onClick={() => changeTranspose(transpose - 1)}
                                         disabled={transpose <= -12}
                                         className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
-                                        title="Down a semitone"
+                                        title={t('song.downSemitone')}
                                     >
                                         <Minus size={16} />
                                     </button>
                                     <span className="min-w-[100px] text-center text-sm font-bold text-slate-800">
-                                        {transpose > 0 ? `+${transpose}` : transpose} semitone
-                                        {transpose === 1 || transpose === -1 ? '' : 's'}
+                                        {transpose > 0 ? `+${transpose}` : transpose}{' '}
+                                        {transpose === 1 || transpose === -1 ? t('song.semitone') : t('song.semitones')}
                                     </span>
                                     <button
                                         type="button"
                                         onClick={() => changeTranspose(transpose + 1)}
                                         disabled={transpose >= 12}
                                         className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
-                                        title="Up a semitone"
+                                        title={t('song.upSemitone')}
                                     >
                                         <Plus size={16} />
                                     </button>
@@ -428,9 +431,9 @@ export default function SongDetailPage() {
                                             type="button"
                                             onClick={() => changeTranspose(0)}
                                             className="inline-flex h-9 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
-                                            title="Reset transpose"
+                                            title={t('song.resetTranspose')}
                                         >
-                                            <RotateCcw size={14} /> Reset
+                                            <RotateCcw size={14} /> {t('song.reset')}
                                         </button>
                                     )}
                                 </div>
@@ -438,7 +441,7 @@ export default function SongDetailPage() {
 
                             {/* Quick Semitone Steps */}
                             <div className="mt-4 flex flex-wrap items-center gap-2">
-                                <span className="text-xs font-medium text-slate-500 mr-1">Quick transpose:</span>
+                                <span className="text-xs font-medium text-slate-500 mr-1">{t('song.quickTranspose')}</span>
                                 {QUICK_STEPS.map((s) => (
                                     <button
                                         type="button"

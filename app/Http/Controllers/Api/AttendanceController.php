@@ -427,7 +427,7 @@ class AttendanceController extends ApiController
 
         // Load the current active roster for this choir only.
         $members = $this->currentMembers($choir)
-            ->with(['voiceSection', 'user'])
+            ->with(['voiceSection', 'user', 'guardians'])
             ->orderBy('first_name')
             ->orderBy('last_name')
             ->get();
@@ -437,15 +437,30 @@ class AttendanceController extends ApiController
         $memberRoster = $members->map(function (Member $member) use ($recordsMap, $attendanceSession) {
             /** @var AttendanceRecord|null $record */
             $record = $recordsMap->get($member->id);
+            $isChild = $member->is_child;
+            $guardian = $isChild ? $member->primaryGuardian() : null;
 
             return [
                 'member_id' => $member->id,
                 'member_code' => $member->member_code,
+                'member_type' => $member->calculated_member_type,
+                'is_child' => $isChild,
+                'age' => $member->age,
                 'first_name' => $member->first_name,
+                'middle_name' => $member->middle_name,
                 'last_name' => $member->last_name,
                 'full_name' => $member->full_name,
-                'email' => $member->email ?? $member->user?->email,
-                'phone' => $member->phone ?? $member->user?->phone,
+                'email' => $isChild ? ($guardian?->email) : ($member->email ?? $member->user?->email),
+                'phone' => $isChild ? ($guardian?->phone) : ($member->phone ?? $member->user?->phone),
+                'guardian' => $guardian ? [
+                    'name' => $guardian->full_name,
+                    'relationship' => $guardian->relationship === 'Other' && $guardian->relationship_other
+                        ? $guardian->relationship_other
+                        : $guardian->relationship,
+                    'phone' => $guardian->phone,
+                    'alt_phone' => $guardian->alt_phone,
+                    'email' => $guardian->email,
+                ] : null,
                 'photo_path' => $member->photo_path,
                 'role_title' => $member->role_title,
                 'voice_section' => $member->voiceSection ? [
@@ -466,6 +481,8 @@ class AttendanceController extends ApiController
         });
 
         $counts = $this->sessionCounts($attendanceSession, $members->count());
+        $counts['adults_count'] = $members->where('is_child', false)->count();
+        $counts['children_count'] = $members->where('is_child', true)->count();
 
         $sessionResource = (new AttendanceSessionResource($attendanceSession))->toArray($request);
 

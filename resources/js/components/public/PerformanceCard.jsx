@@ -1,30 +1,35 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Clock, ChevronRight, CalendarDays, Music, Sparkles } from 'lucide-react';
-import { parseDate, formatDate, getPerformanceStatus } from '../../lib/publicApi';
+import { MapPin, Clock, ChevronRight, CalendarDays, Music } from 'lucide-react';
+import { parseDate, getPerformanceStatus } from '../../lib/publicApi';
+import { useLanguage } from '../../context/LanguageContext';
+import { programTypeLabel } from '../../lib/programTypes';
 import CoverImage from './CoverImage';
 
 const DEFAULT_CHOIR = 'YKA M.K.C Choirs and Worship Teams';
 
 function DateBadge({ dateValue, isToday = false }) {
+    const { t, language } = useLanguage();
     const d = parseDate(dateValue);
     if (!d) {
         return (
             <div
                 className="flex aspect-square w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"
-                aria-label="Date unavailable"
+                aria-label={t('perf.dateUnavailable')}
             >
                 <CalendarDays size={18} aria-hidden="true" />
             </div>
         );
     }
-    const month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+    const month = language === 'am' ? t('common.monthShort')[d.getMonth()] : d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
     const day = d.getDate();
-    const label = d.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-    });
+    const label = language === 'am'
+        ? `${t('common.dayNames')[d.getDay()]}, ${t('common.monthNames')[d.getMonth()]} ${day}`
+        : d.toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+          });
 
     return (
         <div
@@ -35,19 +40,24 @@ function DateBadge({ dateValue, isToday = false }) {
             }`}
             aria-label={label}
         >
-            <span className="text-[9px] font-bold uppercase tracking-wider opacity-90">{month}</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider opacity-90 truncate max-w-full px-0.5">{month}</span>
             <span className="text-xl font-extrabold leading-none">{day}</span>
         </div>
     );
 }
 
 export default function PerformanceCard({ performance }) {
+    const { t, language } = useLanguage();
     const computedStatus = getPerformanceStatus(performance.date, performance.status);
     const isToday = computedStatus === 'today';
     const choir = performance.choir;
     const choirName = choir?.name || DEFAULT_CHOIR;
     const parsedDate = parseDate(performance.date);
-    const weekday = parsedDate?.toLocaleDateString('en-US', { weekday: 'long' });
+    const weekday = parsedDate
+        ? language === 'am'
+            ? t('common.weekdayNames')[parsedDate.getDay()]
+            : parsedDate.toLocaleDateString('en-US', { weekday: 'long' })
+        : null;
     const posterSrc = performance.poster_url || performance.poster_path;
     const eventType = performance.type || 'Worship';
 
@@ -75,11 +85,11 @@ export default function PerformanceCard({ performance }) {
                     {/* Floating Badges */}
                     <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
                         <span className="inline-flex items-center rounded-full bg-blue-600/90 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-white shadow backdrop-blur-md">
-                            {eventType}
+                            {programTypeLabel(eventType, t)}
                         </span>
                         {isToday && (
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow animate-pulse">
-                                <span className="h-1.5 w-1.5 rounded-full bg-white"></span> Today
+                                <span className="h-1.5 w-1.5 rounded-full bg-white"></span> {t('common.today')}
                             </span>
                         )}
                     </div>
@@ -138,7 +148,7 @@ export default function PerformanceCard({ performance }) {
                     to={`/performances/${performance.id}`}
                     className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-4 py-2.5 text-xs sm:text-sm font-bold shadow-sm transition-all duration-200"
                 >
-                    View Event
+                    {t('perf.viewEvent')}
                     <ChevronRight size={15} />
                 </Link>
             </div>

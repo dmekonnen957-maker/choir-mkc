@@ -21,22 +21,18 @@ import EmptyState from '../components/public/EmptyState';
 import CoverImage from '../components/public/CoverImage';
 import { fetchAllPerformances, fetchChoirs, formatDate, parseDate, getPerformanceStatus } from '../lib/publicApi';
 import { FeaturedPerformanceSkeleton, PerformanceCardSkeleton } from '../components/public/PublicSkeletons';
+import { useLanguage } from '../context/LanguageContext';
+import { PROGRAM_TYPES, programTypeLabel } from '../lib/programTypes';
 
-const PROGRAM_TYPES = [
-    'All Program Types',
-    'Worship',
-    'Worship Night',
-    'Concert',
-    'Special Program',
-    'Sunday Service',
-    'Christmas',
-    'Easter',
-    'Youth',
-    'Choir Presentation',
-    'Other',
-];
+function localizedDate(dateStr, t) {
+    const d = parseDate(dateStr);
+    if (!d) return formatDate(dateStr);
+    const months = t('common.monthNames');
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
 
 function FeaturedPerformanceCard({ performance }) {
+    const { t } = useLanguage();
     if (!performance) return null;
 
     const choir = performance.choir;
@@ -44,8 +40,8 @@ function FeaturedPerformanceCard({ performance }) {
     const computedStatus = getPerformanceStatus(performance.date, performance.status);
     const isToday = computedStatus === 'today';
     const parsedDate = parseDate(performance.date);
-    const weekday = parsedDate?.toLocaleDateString('en-US', { weekday: 'long' });
-    const formattedDate = formatDate(performance.date);
+    const weekday = parsedDate ? t('common.weekdayNames')[parsedDate.getDay()] : '';
+    const formattedDate = localizedDate(performance.date, t);
     const posterSrc = performance.poster_url || performance.poster_path;
     const eventType = performance.type || 'Worship';
 
@@ -73,11 +69,11 @@ function FeaturedPerformanceCard({ performance }) {
                     {/* Top badging */}
                     <div className="absolute top-4 left-4 flex flex-wrap gap-2">
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-3.5 py-1 text-xs font-extrabold uppercase tracking-wider text-white shadow-md backdrop-blur-md">
-                            <Sparkles size={13} /> {eventType}
+                            <Sparkles size={13} /> {programTypeLabel(eventType, t)}
                         </span>
                         {isToday && (
                             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-md animate-pulse">
-                                <span className="h-2 w-2 rounded-full bg-white"></span> Today
+                                <span className="h-2 w-2 rounded-full bg-white"></span> {t('common.today')}
                             </span>
                         )}
                     </div>
@@ -88,7 +84,7 @@ function FeaturedPerformanceCard({ performance }) {
                     <div>
                         <div className="flex items-center gap-2 mb-3">
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-blue-50 text-blue-700 uppercase tracking-wider">
-                                Featured Program
+                                {t('perf.featured')}
                             </span>
                             {weekday && (
                                 <span className="text-xs font-semibold text-slate-500">
@@ -103,7 +99,7 @@ function FeaturedPerformanceCard({ performance }) {
 
                         {choirName && (
                             <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-blue-600">
-                                <span className="text-slate-500 font-normal">By:</span>
+                                <span className="text-slate-500 font-normal">{t('perf.by')}:</span>
                                 <span>{choirName}</span>
                             </p>
                         )}
@@ -121,7 +117,7 @@ function FeaturedPerformanceCard({ performance }) {
                                     <CalendarDays size={18} />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Date</p>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('perf.date')}</p>
                                     <p className="text-xs sm:text-sm font-bold text-slate-800 truncate">{formattedDate}</p>
                                 </div>
                             </div>
@@ -132,7 +128,7 @@ function FeaturedPerformanceCard({ performance }) {
                                         <Clock size={18} />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Time</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('perf.time')}</p>
                                         <p className="text-xs sm:text-sm font-bold text-slate-800 truncate">
                                             {performance.start_time}
                                             {performance.end_time ? ` - ${performance.end_time}` : ''}
@@ -147,7 +143,7 @@ function FeaturedPerformanceCard({ performance }) {
                                         <MapPin size={18} />
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Location / Venue</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('perf.locationVenue')}</p>
                                         <p className="text-xs sm:text-sm font-bold text-slate-800 truncate">
                                             {performance.venue || performance.location}
                                         </p>
@@ -160,13 +156,13 @@ function FeaturedPerformanceCard({ performance }) {
                     {/* Actions */}
                     <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between gap-4">
                         <span className="text-xs font-medium text-slate-500 hidden sm:inline">
-                            {performance.songs?.length ? `${performance.songs.length} musical pieces scheduled` : 'Worship presentation'}
+                            {performance.songs?.length ? t('perf.piecesScheduled', { count: performance.songs.length }) : t('perf.worshipPresentation')}
                         </span>
                         <Link
                             to={`/performances/${performance.id}`}
                             className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-6 py-3 text-sm font-bold shadow-md transition-all duration-200"
                         >
-                            View Program &amp; Songs
+                            {t('perf.viewProgram')}
                             <ArrowRight size={16} />
                         </Link>
                     </div>
@@ -177,6 +173,7 @@ function FeaturedPerformanceCard({ performance }) {
 }
 
 export default function PerformancesPage() {
+    const { t } = useLanguage();
     const [timeframe, setTimeframe] = useState('upcoming'); // 'upcoming' | 'past'
     const [performances, setPerformances] = useState([]);
     const [choirs, setChoirs] = useState([]);
@@ -247,13 +244,13 @@ export default function PerformancesPage() {
                 <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-200 border border-blue-400/30 uppercase tracking-wider mb-4">
                         <CalendarDays size={14} className="text-blue-300" />
-                        Choir Worship Schedule
+                        {t('perf.heroBadge')}
                     </span>
                     <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight">
-                        Choir Performances &amp; Programs
+                        {t('perf.heroTitle')}
                     </h1>
                     <p className="mt-4 max-w-2xl text-base sm:text-lg text-blue-100/90 leading-relaxed font-normal">
-                        Experience Ethiopian choral worship, seasonal musical events, concerts, and Sunday presentations across our community.
+                        {t('perf.heroSubtitle')}
                     </p>
 
                     {/* Clean Timeframe Tabs (Upcoming vs Past) */}
@@ -267,7 +264,7 @@ export default function PerformancesPage() {
                                     : 'bg-white/10 text-white hover:bg-white/20 border border-white/15'
                             }`}
                         >
-                            <Calendar size={16} /> Upcoming Performances
+                            <Calendar size={16} /> {t('perf.tabUpcoming')}
                         </button>
                         <button
                             type="button"
@@ -278,7 +275,7 @@ export default function PerformancesPage() {
                                     : 'bg-white/10 text-white hover:bg-white/20 border border-white/15'
                             }`}
                         >
-                            <History size={16} /> Past Performances
+                            <History size={16} /> {t('perf.tabPast')}
                         </button>
                     </div>
                 </div>
@@ -294,7 +291,7 @@ export default function PerformancesPage() {
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search programs, events, venues..."
+                            placeholder={t('perf.searchPlaceholder')}
                             className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
                         />
                     </div>
@@ -310,7 +307,7 @@ export default function PerformancesPage() {
                             >
                                 {PROGRAM_TYPES.map((type) => (
                                     <option key={type} value={type}>
-                                        {type}
+                                        {programTypeLabel(type, t)}
                                     </option>
                                 ))}
                             </select>
@@ -323,7 +320,7 @@ export default function PerformancesPage() {
                                 onChange={(e) => setSelectedChoirId(e.target.value)}
                                 className="w-full sm:w-56 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
                             >
-                                <option value="">Filter by Choir</option>
+                                <option value="">{t('songs.filterByChoir')}</option>
                                 {choirs.map((c) => (
                                     <option key={c.id} value={c.id}>
                                         {c.name}
@@ -352,13 +349,13 @@ export default function PerformancesPage() {
                             icon={timeframe === 'upcoming' ? CalendarDays : History}
                             title={
                                 timeframe === 'upcoming'
-                                    ? 'No Upcoming Performances Found'
-                                    : 'No Past Performances Found'
+                                    ? t('perf.emptyUpcomingTitle')
+                                    : t('perf.emptyPastTitle')
                             }
                             message={
                                 timeframe === 'upcoming'
-                                    ? 'There are currently no upcoming choir performances scheduled. Please check back soon or explore past archives.'
-                                    : 'No past performances match your search criteria.'
+                                    ? t('perf.emptyUpcomingMessage')
+                                    : t('perf.emptyPastMessage')
                             }
                         />
                     </div>
@@ -379,16 +376,16 @@ export default function PerformancesPage() {
                                 <div className="mb-8">
                                     <SectionHeading
                                         align="left"
-                                        eyebrow={timeframe === 'upcoming' ? 'More Schedule' : 'Archive'}
+                                        eyebrow={timeframe === 'upcoming' ? t('perf.eyebrowMore') : t('perf.eyebrowArchive')}
                                         title={
                                             timeframe === 'upcoming'
-                                                ? `Upcoming Programs (${remainingPerformances.length})`
-                                                : `Past Programs (${remainingPerformances.length})`
+                                                ? t('perf.upcomingPrograms', { count: remainingPerformances.length })
+                                                : t('perf.pastPrograms', { count: remainingPerformances.length })
                                         }
                                         subtitle={
                                             timeframe === 'upcoming'
-                                                ? 'Join us for these upcoming choir worship presentations and events.'
-                                                : 'Archive of choir presentations, concerts, and worship services.'
+                                                ? t('perf.upcomingGridSubtitle')
+                                                : t('perf.archiveSubtitle')
                                         }
                                     />
                                 </div>

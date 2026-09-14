@@ -1,4 +1,7 @@
+import { useLanguage } from '../../context/LanguageContext';
+
 export default function LoadingSpinner({ size = 20, className = '' }) {
+    const { t } = useLanguage();
     return (
         <svg
             className={`animate-spin ${className}`}
@@ -7,7 +10,7 @@ export default function LoadingSpinner({ size = 20, className = '' }) {
             viewBox="0 0 24 24"
             fill="none"
             role="status"
-            aria-label="Loading"
+            aria-label={t('common.loading')}
         >
             <circle
                 className="opacity-25"

@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function Pagination({
     currentPage = 1,
@@ -7,9 +8,11 @@ export default function Pagination({
     total = 0,
     perPage = 15,
     onPageChange,
-    itemName = 'items',
+    itemName,
     className = '',
 }) {
+    const { t } = useLanguage();
+    const itemsLabel = itemName || t('common.items');
     if (!lastPage || lastPage <= 1) {
         return null;
     }
@@ -60,9 +63,12 @@ export default function Pagination({
         <div className={`flex flex-col sm:flex-row items-center justify-between gap-3 px-2 py-4 ${className}`}>
             {total > 0 && (
                 <div className="text-xs sm:text-sm text-slate-500 font-medium text-center sm:text-left">
-                    Showing <span className="font-bold text-slate-800">{startItem}</span> to{' '}
-                    <span className="font-bold text-slate-800">{endItem}</span> of{' '}
-                    <span className="font-bold text-slate-800">{total}</span> {itemName}
+                    {t('common.showingRange', {
+                        start: startItem,
+                        end: endItem,
+                        total,
+                        itemName: itemsLabel,
+                    })}
                 </div>
             )}
 
@@ -73,10 +79,10 @@ export default function Pagination({
                     onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                     disabled={currentPage <= 1}
                     className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:pointer-events-none"
-                    aria-label="Previous page"
+                    aria-label={t('common.previous')}
                 >
                     <ChevronLeft size={16} />
-                    <span className="hidden sm:inline">Previous</span>
+                    <span className="hidden sm:inline">{t('common.previous')}</span>
                 </button>
 
                 {/* Page Numbers */}
@@ -116,9 +122,9 @@ export default function Pagination({
                     onClick={() => onPageChange(Math.min(lastPage, currentPage + 1))}
                     disabled={currentPage >= lastPage}
                     className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs sm:text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:pointer-events-none"
-                    aria-label="Next page"
+                    aria-label={t('common.next')}
                 >
-                    <span className="hidden sm:inline">Next</span>
+                    <span className="hidden sm:inline">{t('common.next')}</span>
                     <ChevronRight size={16} />
                 </button>
             </div>

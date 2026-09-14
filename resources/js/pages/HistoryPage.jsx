@@ -5,9 +5,12 @@ import SectionHeading from '../components/public/SectionHeading';
 import Reveal from '../components/ui/Reveal';
 import EmptyState from '../components/public/EmptyState';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { fetchAllPerformances, isUpcoming, formatDate } from '../lib/publicApi';
+import { fetchAllPerformances, isUpcoming } from '../lib/publicApi';
+import { localizedDate } from '../lib/dates';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function HistoryPage() {
+    const { t, language } = useLanguage();
     const [performances, setPerformances] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -31,13 +34,13 @@ export default function HistoryPage() {
             .sort((a, b) => b[0] - a[0])
             .map(([year, items]) => ({
                 year: Number(year),
-                title: `${items.length} ${items.length === 1 ? 'Performance' : 'Performances'}`,
+                title: `${items.length} ${items.length === 1 ? t('history.performancesOne') : t('history.performancesMany')}`,
                 description: items
                     .slice(0, 4)
-                    .map((p) => `${p.title} (${formatDate(p.date)})`)
+                    .map((p) => `${p.title} (${localizedDate(p.date, language)})`)
                     .join(' · '),
             }));
-    }, [performances]);
+    }, [performances, t]);
 
     const totalPast = performances.filter((p) => !isUpcoming(p.date)).length;
 
@@ -47,14 +50,13 @@ export default function HistoryPage() {
                 <div className="pointer-events-none absolute -top-24 -left-16 h-80 w-80 rounded-full bg-blue-200/40 blur-3xl" />
                 <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-blue-700 ring-1 ring-inset ring-blue-100">
-                        <HistoryIcon size={14} /> Heritage
+                        <HistoryIcon size={14} /> {t('history.heritage')}
                     </span>
                     <h1 className="mt-5 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-                        Our History
+                        {t('history.title')}
                     </h1>
                     <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-500">
-                        A journey of worship, service, and song. Explore the milestones and memories that
-                        have shaped YKA M.K.C Choirs and Worship Teams through the years.
+                        {t('history.subtitle')}
                     </p>
                 </div>
             </section>
@@ -63,27 +65,27 @@ export default function HistoryPage() {
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     {loading ? (
                         <div className="flex justify-center">
-                            <LoadingSpinner text="Loading history..." />
+                            <LoadingSpinner text={t('history.loading')} />
                         </div>
                     ) : timeline.length === 0 ? (
                         <EmptyState
                             icon={HistoryIcon}
-                            title="Our history is just beginning."
-                            message="Once performances conclude, they will be remembered here. Check back soon."
+                            title={t('history.emptyTitle')}
+                            message={t('history.emptyMessage')}
                         />
                     ) : (
                         <>
                             <Reveal>
                                 <div className="mb-12 flex flex-wrap gap-4">
-                                    <StatCard icon={CalendarDays} value={totalPast} label="Past Performances" />
-                                    <StatCard icon={Sparkles} value={timeline.length} label="Years of Worship" />
+                                    <StatCard icon={CalendarDays} value={totalPast} label={t('history.pastPerformances')} />
+                                    <StatCard icon={Sparkles} value={timeline.length} label={t('history.yearsOfWorship')} />
                                 </div>
                             </Reveal>
                             <Reveal>
                                 <SectionHeading
-                                    eyebrow="Timeline"
-                                    title="Moments We Cherish"
-                                    subtitle="Each year, a story of faithful voices coming together."
+                                    eyebrow={t('history.timelineEyebrow')}
+                                    title={t('history.timelineTitle')}
+                                    subtitle={t('history.timelineSubtitle')}
                                 />
                             </Reveal>
                             <div className="mt-12">

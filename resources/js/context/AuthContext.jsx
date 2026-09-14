@@ -91,9 +91,13 @@ export function AuthProvider({ children }) {
 
     const roles = useMemo(() => user?.roles ?? [], [user]);
     const role = useMemo(() => {
-        if (roles.includes('super-admin') || roles.includes('admin') || user?.role === 'admin' || user?.role === 'super-admin') return 'admin';
-        if (roles.includes('team_leader') || user?.role === 'team_leader') return 'team_leader';
-        return 'member';
+        const rLower = (user?.role || '').toLowerCase();
+        const has = (name) => roles.includes(name) || roles.some(r => r.toLowerCase() === name.toLowerCase()) || rLower === name.toLowerCase();
+
+        if (has('super-admin') || has('admin')) return 'admin';
+        if (has('team_leader') || has('team-leader')) return 'team_leader';
+        if (has('musician') || has('musicians') || roles.some(r => r.toLowerCase().includes('music'))) return 'musician';
+        return rLower || (roles[0] ? roles[0].toLowerCase() : 'member');
     }, [roles, user]);
 
     const permissions = useMemo(() => user?.permissions ?? [], [user]);
@@ -156,7 +160,7 @@ export function AuthProvider({ children }) {
         register,
         logout,
         refreshUser,
-        hasRole: (r) => roles.includes(r) || user?.role === r,
+        hasRole: (r) => roles.includes(r) || roles.some(name => name.toLowerCase() === r.toLowerCase()) || user?.role?.toLowerCase() === r.toLowerCase(),
         can,
     };
 

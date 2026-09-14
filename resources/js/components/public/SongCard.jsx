@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Heart, Play, Pause, ArrowRight, Disc3, Music2, Calendar } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { likeSong, unlikeSong, formatDate } from '../../lib/publicApi';
+import { useLanguage } from '../../context/LanguageContext';
+import { likeSong, unlikeSong } from '../../lib/publicApi';
+import { localizedDate } from '../../lib/dates';
 import CoverImage from './CoverImage';
 
 export default function SongCard({
@@ -13,6 +15,7 @@ export default function SongCard({
     onPromptLogin,
 }) {
     const { isAuthenticated, hasRole } = useAuth();
+    const { t, language } = useLanguage();
     const canLike = isAuthenticated && hasRole('member');
     const navigate = useNavigate();
 
@@ -109,8 +112,8 @@ export default function SongCard({
                                 ? 'bg-blue-600 text-white ring-2 ring-white/60'
                                 : 'bg-white/90 text-blue-700 hover:bg-blue-600 hover:text-white'
                         }`}
-                        title={isPlaying ? 'Pause' : 'Play audio preview'}
-                        aria-label={isPlaying ? 'Pause audio' : 'Play audio'}
+                        title={isPlaying ? t('songs.pause') : t('songs.play')}
+                        aria-label={isPlaying ? t('songs.pause') : t('songs.play')}
                     >
                         {isPlaying ? <Pause size={15} /> : <Play size={15} className="ml-0.5 fill-current" />}
                     </button>
@@ -119,7 +122,7 @@ export default function SongCard({
                 {/* Unauthenticated Login Tooltip */}
                 {showLoginTooltip && (
                     <div className="absolute inset-x-3 bottom-3 z-30 rounded-xl bg-slate-950/95 p-2.5 text-center text-xs text-white shadow-2xl backdrop-blur-md border border-slate-700 animate-fade-in">
-                        <p className="font-semibold">Login to like this song</p>
+                        <p className="font-semibold">{t('songs.loginToLike')}</p>
                         <button
                             type="button"
                             onClick={(e) => {
@@ -128,7 +131,7 @@ export default function SongCard({
                             }}
                             className="mt-1.5 inline-block rounded-lg bg-blue-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-blue-500"
                         >
-                            Sign In →
+                            {t('song.signIn')} →
                         </button>
                     </div>
                 )}
@@ -145,7 +148,7 @@ export default function SongCard({
 
                     {/* Choir info: Created by: Choir Name */}
                     <div className="mt-1 flex items-center gap-1 text-xs text-slate-500">
-                        <span className="font-medium text-slate-400">Created by:</span>
+                        <span className="font-medium text-slate-400">{t('songs.createdBy')}</span>
                         {song.choir?.id ? (
                             <Link
                                 to={`/choirs/${song.choir.id}`}
@@ -163,7 +166,7 @@ export default function SongCard({
                         {song.created_at && (
                             <span className="flex items-center gap-1 text-[11px] text-slate-400 ml-auto">
                                 <Calendar size={12} />
-                                {formatDate(song.created_at)}
+                                {localizedDate(song.created_at, language)}
                             </span>
                         )}
                     </div>
@@ -182,8 +185,8 @@ export default function SongCard({
                                     ? 'bg-rose-50 text-rose-600 border border-rose-200'
                                     : 'bg-slate-50 text-slate-600 hover:bg-rose-50 hover:text-rose-600 border border-slate-200/60'
                             }`}
-                            title={canLike ? (isLiked ? 'Unlike this song' : 'Like this song') : 'Login to like this song'}
-                            aria-label={canLike ? `${likesCount} likes. Click to ${isLiked ? 'unlike' : 'like'}` : 'Login to like this song'}
+                            title={canLike ? (isLiked ? t('songs.unlike') : t('songs.like')) : t('songs.loginToLike')}
+                            aria-label={canLike ? `${likesCount} ${t('song.likedBy')}. ${isLiked ? t('songs.unlike') : t('songs.like')}` : t('songs.loginToLike')}
                         >
                             <Heart
                                 size={16}
@@ -191,7 +194,7 @@ export default function SongCard({
                                     isLiked ? 'fill-rose-500 text-rose-500' : 'text-slate-400 group-hover/like:text-rose-500'
                                 }`}
                             />
-                            <span>{likesCount} {likesCount === 1 ? 'like' : 'likes'}</span>
+                            <span>{likesCount} {t('song.likedBy')}</span>
                         </button>
                     </div>
 
@@ -200,7 +203,7 @@ export default function SongCard({
                         to={`/songs/${song.id}`}
                         className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 transition group/link"
                     >
-                        <span>View Song</span>
+                        <span>{t('songs.viewSong')}</span>
                         <ArrowRight size={14} className="transition-transform group-hover/link:translate-x-1" />
                     </Link>
                 </div>

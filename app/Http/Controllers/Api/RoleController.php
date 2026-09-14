@@ -54,8 +54,8 @@ class RoleController extends ApiController
             'description' => $data['description'] ?? null,
         ]);
 
-        if ($request->filled('permissions')) {
-            $role->syncPermissions($request->permissions);
+        if ($request->has('permissions')) {
+            $role->syncPermissions($request->permissions ?? []);
         }
 
         app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();

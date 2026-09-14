@@ -25,6 +25,9 @@ export default function ProtectedRoute({ children, allowedRoles }) {
         if (role === 'team_leader') {
             return <Navigate to="/team-leader/dashboard" replace />;
         }
+        if (role === 'musician') {
+            return <Navigate to="/musician/dashboard" replace />;
+        }
         if (role === 'member') {
             return <Navigate to="/member/dashboard" replace />;
         }

@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function AudioPlayer({ src, className = '', title = '', artist = '' }) {
     const [isPlaying, setIsPlaying] = useState(false);
+    const { t } = useLanguage();
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const [volume, setVolume] = useState(1);
@@ -99,7 +101,7 @@ export default function AudioPlayer({ src, className = '', title = '', artist = 
         return (
             <div className="rounded-xl bg-slate-100 p-4 text-center text-sm text-slate-400">
                 <Volume2 className="mx-auto h-8 w-8 text-slate-300 mb-2" />
-                Audio preview is not available for this song.
+                {t('song.audioPreviewNotAvailable')}
             </div>
         );
     }

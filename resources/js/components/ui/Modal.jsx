@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 /**
  * Accessible Modal / Drawer.
@@ -12,6 +13,7 @@ import { X } from 'lucide-react';
  * - on mobile becomes full-screen drawer via `full` size
  */
 export default function Modal({ open, onClose, title, children, size = 'lg', labelledBy }) {
+    const { t } = useLanguage();
     const [mounted, setMounted] = useState(open);
     const [closing, setClosing] = useState(false);
     const panelRef = useRef(null);
@@ -110,7 +112,7 @@ export default function Modal({ open, onClose, title, children, size = 'lg', lab
                     <button
                         type="button"
                         onClick={onClose}
-                        aria-label="Close"
+                        aria-label={t('common.close')}
                         className="rounded-lg p-1.5 text-blue-500 transition-colors hover:bg-blue-50 hover:text-blue-800"
                     >
                         <X size={22} />

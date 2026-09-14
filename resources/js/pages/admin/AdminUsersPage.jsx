@@ -121,6 +121,15 @@ export default function AdminUsersPage() {
     // Fetch Choirs and Roles for filtering and assigning
     const [rolesList, setRolesList] = useState([]);
 
+    const fetchRoles = useCallback(() => {
+        api.get('/admin/roles')
+            .then((res) => {
+                const items = res.data?.data || [];
+                setRolesList(Array.isArray(items) ? items : []);
+            })
+            .catch(() => {});
+    }, []);
+
     useEffect(() => {
         api.get('/public/choirs?per_page=100')
             .then((res) => {
@@ -129,13 +138,8 @@ export default function AdminUsersPage() {
             })
             .catch(() => {});
 
-        api.get('/admin/roles')
-            .then((res) => {
-                const items = res.data?.data || [];
-                setRolesList(Array.isArray(items) ? items : []);
-            })
-            .catch(() => {});
-    }, []);
+        fetchRoles();
+    }, [fetchRoles]);
 
     // Fetch users list
     const fetchUsers = useCallback(async () => {
@@ -168,6 +172,7 @@ export default function AdminUsersPage() {
 
     // Open review modal
     const handleReview = (user) => {
+        fetchRoles();
         setSelectedUser(user);
         setEditRole(user.role || 'member');
         const userChoirId = user.choir?.id || (user.choirs?.[0]?.id ?? '');
@@ -248,6 +253,7 @@ export default function AdminUsersPage() {
 
     // Create User modal handlers
     const openCreateModal = () => {
+        fetchRoles();
         setCreateForm({
             name: '',
             email: '',
@@ -683,9 +689,20 @@ export default function AdminUsersPage() {
                                         onChange={(e) => setEditRole(e.target.value)}
                                         className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm font-medium text-ink-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                     >
-                                        <option value="member">MEMBER (Standard choir member)</option>
-                                        <option value="team_leader">TEAM_LEADER (Choir leader / conductor)</option>
-                                        <option value="admin">ADMIN (System administrator)</option>
+                                        {rolesList.length > 0 ? (
+                                            rolesList.map((r) => (
+                                                <option key={r.id || r.name} value={r.name}>
+                                                    {r.name.toUpperCase()} {r.description ? `— ${r.description}` : ''}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <>
+                                                <option value="member">MEMBER</option>
+                                                <option value="team_leader">TEAM_LEADER</option>
+                                                <option value="admin">ADMIN</option>
+                                                <option value="super-admin">SUPER-ADMIN</option>
+                                            </>
+                                        )}
                                     </select>
                                     <p className="mt-1 text-xs text-ink-400">
                                         Changes to role are validated server-side.
@@ -895,9 +912,20 @@ export default function AdminUsersPage() {
                                     onChange={handleCreateChange('role')}
                                     className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm font-medium text-ink-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                 >
-                                    <option value="member">MEMBER (Standard choir member)</option>
-                                    <option value="team_leader">TEAM_LEADER (Choir leader / conductor)</option>
-                                    <option value="admin">ADMIN (System administrator)</option>
+                                    {rolesList.length > 0 ? (
+                                        rolesList.map((r) => (
+                                            <option key={r.id || r.name} value={r.name}>
+                                                {r.name.toUpperCase()} {r.description ? `— ${r.description}` : ''}
+                                            </option>
+                                        ))
+                                    ) : (
+                                        <>
+                                            <option value="member">MEMBER</option>
+                                            <option value="team_leader">TEAM_LEADER</option>
+                                            <option value="admin">ADMIN</option>
+                                            <option value="super-admin">SUPER-ADMIN</option>
+                                        </>
+                                    )}
                                 </select>
                             </div>
                             <div>

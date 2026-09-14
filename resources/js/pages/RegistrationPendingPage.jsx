@@ -1,9 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import { CheckCircle2, Music, ArrowLeft, Clock } from 'lucide-react';
 import Button from '../components/ui/Button';
+import LanguageSelector from '../components/ui/LanguageSelector';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function RegistrationPendingPage() {
     const location = useLocation();
+    const { t } = useLanguage();
     const email = location.state?.email;
     const name = location.state?.name;
 
@@ -31,8 +34,12 @@ export default function RegistrationPendingPage() {
                 to="/"
                 className="absolute left-4 top-4 z-20 inline-flex items-center gap-1.5 text-sm font-medium text-white/80 transition-colors hover:text-white"
             >
-                <ArrowLeft size={16} /> Back to home
+                <ArrowLeft size={16} /> {t('common.backToHome')}
             </Link>
+
+            <div className="absolute right-4 top-4 z-20">
+                <LanguageSelector compact />
+            </div>
 
             {/* Content */}
             <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
@@ -46,32 +53,32 @@ export default function RegistrationPendingPage() {
 
                     <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-300 ring-1 ring-amber-400/30">
                         <Clock size={13} />
-                        Pending Approval
+                        {t('auth.pendingApproval')}
                     </div>
 
                     <h1 className="mt-3 text-2xl font-bold text-white">
-                        Registration Submitted
+                        {t('auth.registrationSubmitted')}
                     </h1>
 
                     {name && (
                         <p className="mt-1 font-medium text-blue-200">
-                            Thank you, {name}!
+                            {t('auth.thankYou', { name })}
                         </p>
                     )}
 
                     <div className="my-6 space-y-3 rounded-2xl border border-white/15 bg-white/10 p-5 text-sm text-white/85 text-left">
                         <p>
-                            Your account is currently waiting for administrator approval.
+                            {t('auth.waitingApproval')}
                         </p>
                         <p className="text-white/70 text-xs leading-relaxed">
-                            An administrator will review your registration and choir assignment. Once approved, you will be able to sign in with <span className="font-semibold text-white">{email || 'your email'}</span>.
+                            {t('auth.reviewText', { email: email || t('auth.yourEmail') })}
                         </p>
                     </div>
 
                     <Link to="/login" className="block w-full">
                         <Button size="lg" className="w-full">
                             <ArrowLeft size={18} />
-                            Back to Login
+                            {t('auth.backToLogin')}
                         </Button>
                     </Link>
                 </div>

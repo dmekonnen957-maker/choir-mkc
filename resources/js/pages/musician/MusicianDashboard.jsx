@@ -9,10 +9,10 @@ import {
     Clock,
     ArrowRight,
     Church,
+    Music,
 } from 'lucide-react';
 import { api } from '../../axios';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import StatCard from '../../components/member/StatCard';
 import EmptyState from '../../components/member/EmptyState';
@@ -38,9 +38,8 @@ function formatTime(value) {
     return `${hour12}:${m ?? '00'} ${period}`;
 }
 
-export default function MemberDashboard() {
-    const { user, primaryChoir } = useAuth();
-    const { theme } = useTheme();
+export default function MusicianDashboard() {
+    const { user } = useAuth();
     const { t } = useLanguage();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -84,7 +83,7 @@ export default function MemberDashboard() {
                         <Logo size="lg" />
                         <div>
                             <h1 className="text-2xl font-bold tracking-tight text-ink-900">{t('brand.choirName')}</h1>
-                            <p className="text-sm text-ink-500">{t('dashboard.portal', 'Member Portal')}</p>
+                            <p className="text-sm text-ink-500">{t('dashboard.musician_portal', 'Musician Portal')}</p>
                         </div>
                     </div>
                     <h1 className="text-2xl font-bold text-ink-900">
@@ -95,14 +94,13 @@ export default function MemberDashboard() {
                 <EmptyState
                     icon={Church}
                     title={t('choir.not_assigned_title', 'No choir assigned')}
-                    message={t('dashboard.no_choir_message', 'Once an administrator assigns you to a choir, your schedule, performances and attendance will appear here.')}
+                    message={t('dashboard.no_choir_message', 'Once an administrator assigns you to a choir, your schedule, worship and attendance will appear here.')}
                 />
             </div>
         );
     }
 
-    const { choir, stats, next_performance, next_rehearsal, my_performances } = data;
-    const attendance = stats.attendance;
+    const { choir, stats, next_performance, next_rehearsal } = data;
 
     const cardStyle = { borderColor: `var(--theme-border)` };
 
@@ -113,7 +111,7 @@ export default function MemberDashboard() {
                     <Logo size="lg" />
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-ink-900">{t('brand.choirName')}</h1>
-                        <p className="text-sm text-ink-500">{t('dashboard.portal', 'Member Portal')}</p>
+                        <p className="text-sm text-ink-500">{t('dashboard.musician_portal', 'Musician Portal')}</p>
                     </div>
                 </div>
                 <div>
@@ -123,46 +121,39 @@ export default function MemberDashboard() {
                     <p className="mt-1 flex items-center gap-2 text-ink-500">
                         <Church size={16} style={{ color: 'var(--theme-primary)' }} />
                         <span className="font-medium" style={{ color: 'var(--theme-primary)' }}>{choir.name}</span>
+                        <span className="ml-2 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-700">
+                            {t('role.musician', 'Musician')}
+                        </span>
                     </p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <StatCard
                     icon={CalendarDays}
-                    label={t('dashboard.upcoming_performances', 'Upcoming Performances')}
+                    label={t('dashboard.upcoming_performances', 'Latest Worship')}
                     value={stats.upcoming_performances}
                     hint={t('dashboard.scheduled_ahead', 'Scheduled ahead')}
                 />
                 <StatCard
                     icon={CalendarClock}
-                    label={t('dashboard.upcoming_rehearsals', 'Upcoming Rehearsals')}
+                    label={t('dashboard.upcoming_rehearsals', 'Upcoming Practice')}
                     value={stats.upcoming_rehearsals}
                     hint={t('dashboard.scheduled_ahead', 'Scheduled ahead')}
                     accent="sky"
                 />
                 <StatCard
-                    icon={CheckCircle2}
-                    label={t('dashboard.attendance', 'Attendance')}
-                    value={attendance.present}
-                    hint={
-                        attendance.has_records
-                            ? t('dashboard.attendance_hint', { absent: attendance.absent, late: attendance.late })
-                            : t('dashboard.no_records_yet', 'No records yet')
-                    }
+                    icon={Music}
+                    label={t('nav.songs', 'Songs')}
+                    value={stats.my_performances || 0}
+                    hint={t('nav.section.music', 'Music & Lyrics')}
                     accent="indigo"
-                />
-                <StatCard
-                    icon={ListMusic}
-                    label={t('dashboard.my_performances', 'My Performances')}
-                    value={stats.my_performances}
-                    hint={t('dashboard.scheduled_count', 'You are scheduled')}
                 />
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <section style={cardStyle} className="rounded-2xl bg-canvas p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold text-ink-900">{t('dashboard.upcoming_performance', 'Upcoming Performance')}</h2>
+                    <h2 className="text-lg font-semibold text-ink-900">{t('dashboard.upcoming_performance', 'Latest Worship')}</h2>
                     {next_performance ? (
                         <div className="mt-4 space-y-3">
                             <p className="text-base font-semibold text-ink-800">
@@ -190,16 +181,16 @@ export default function MemberDashboard() {
                                 className="inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
                                 style={{ color: 'var(--theme-primary)' }}
                             >
-                                {t('dashboard.view_performance', 'View Performance')} <ArrowRight size={16} />
+                                {t('dashboard.view_performance', 'Worship Details')} <ArrowRight size={16} />
                             </Link>
                         </div>
                     ) : (
-                        <p className="mt-4 text-sm text-ink-500">{t('dashboard.no_upcoming_performances', 'No upcoming performances.')}</p>
+                        <p className="mt-4 text-sm text-ink-500">{t('dashboard.no_upcoming_performances', 'No upcoming worship.')}</p>
                     )}
                 </section>
 
                 <section style={cardStyle} className="rounded-2xl bg-canvas p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold text-ink-900">{t('dashboard.next_rehearsal', 'Next Rehearsal')}</h2>
+                    <h2 className="text-lg font-semibold text-ink-900">{t('dashboard.next_rehearsal', 'Next Practice')}</h2>
                     {next_rehearsal ? (
                         <div className="mt-4 space-y-1.5 text-sm text-ink-600">
                             <p className="text-base font-semibold text-ink-800">
@@ -219,37 +210,10 @@ export default function MemberDashboard() {
                             </div>
                         </div>
                     ) : (
-                        <p className="mt-4 text-sm text-ink-500">{t('dashboard.no_upcoming_rehearsals', 'No upcoming rehearsals.')}</p>
+                        <p className="mt-4 text-sm text-ink-500">{t('dashboard.no_upcoming_rehearsals', 'No upcoming practice.')}</p>
                     )}
                 </section>
             </div>
-
-            <section style={cardStyle} className="rounded-2xl bg-canvas p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-ink-900">{t('dashboard.my_performances', 'My Performances')}</h2>
-                {my_performances && my_performances.length > 0 ? (
-                    <ul className="mt-4 divide-y" style={{ borderColor: 'var(--theme-border)' }}>
-                        {my_performances.map((p) => (
-                            <li key={p.id} className="flex items-center justify-between py-3">
-                                <div>
-                                    <p className="text-sm font-semibold text-ink-800">{p.title}</p>
-                                    <p className="text-xs text-ink-500">
-                                        {formatDate(p.date)} · {formatTime(p.start_time)}
-                                    </p>
-                                </div>
-                                <Link
-                                    to={`/performances/${p.id}`}
-                                    className="text-sm font-medium hover:underline"
-                                    style={{ color: 'var(--theme-primary)' }}
-                                >
-                                    {t('common.view', 'View')}
-                                </Link>
-                            </li>
-                        ))}
-                    </ul>
-                ) : (
-                    <p className="mt-4 text-sm text-ink-500">{t('dashboard.no_performance_participation', 'No performance participation yet.')}</p>
-                )}
-            </section>
         </div>
     );
 }

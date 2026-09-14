@@ -52,6 +52,16 @@ class Choir extends Model
         return $this->hasMany(Member::class);
     }
 
+    public function adultMembers(): HasMany
+    {
+        return $this->hasMany(Member::class)->adults();
+    }
+
+    public function childMembers(): HasMany
+    {
+        return $this->hasMany(Member::class)->children();
+    }
+
     public function voiceSections(): HasMany
     {
         return $this->hasMany(VoiceSection::class);

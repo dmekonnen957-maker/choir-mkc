@@ -673,23 +673,26 @@ export default function AdminRolesPage() {
 
                             {/* Permissions Checkbox Matrix */}
                             <div className="border-t border-slate-100 pt-4">
-                                <div className="flex items-center justify-between mb-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
                                     <p className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                                        Assign Permissions ({formPermissions.length} selected)
+                                        Assign Permissions ({formPermissions.length} of {allPermissions.length} selected)
                                     </p>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            if (formPermissions.length === allPermissions.length) {
-                                                setFormPermissions([]);
-                                            } else {
-                                                setFormPermissions(allPermissions.map((p) => p.name));
-                                            }
-                                        }}
-                                        className="text-xs font-bold text-blue-700 hover:text-blue-800"
-                                    >
-                                        {formPermissions.length === allPermissions.length ? 'Deselect All' : 'Select All Permissions'}
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormPermissions(allPermissions.map((p) => p.name))}
+                                            className="text-xs font-bold text-blue-700 hover:text-blue-800 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 transition-colors"
+                                        >
+                                            Select All
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormPermissions([])}
+                                            className="text-xs font-bold text-slate-600 hover:text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 transition-colors"
+                                        >
+                                            Deselect All
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="max-h-96 overflow-y-auto space-y-4 rounded-2xl border border-slate-200 bg-slate-50/50 p-4">

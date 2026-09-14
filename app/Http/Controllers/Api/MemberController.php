@@ -8,10 +8,13 @@ use App\Http\Resources\Api\PerformanceResource;
 use App\Http\Resources\Api\SongResource;
 use App\Http\Resources\Api\UserResource;
 use App\Http\Requests\Api\Member\ChangePasswordRequest;
+use App\Http\Requests\Api\Member\StoreMemberRequest;
+use App\Http\Requests\Api\Member\UpdateMemberRequest;
 use App\Http\Requests\Api\Member\UpdateNotificationPreferencesRequest;
 use App\Http\Requests\Api\Member\UpdateProfileSettingsRequest;
 use App\Http\Requests\Api\Song\StoreSongRequest;
 use App\Models\Choir;
+use App\Models\Guardian;
 use App\Models\Member;
 use App\Models\Notification;
 use App\Models\Performance;
@@ -45,7 +48,444 @@ class MemberController extends ApiController
         }
 
         return $choir->members()->where('user_id', $user->id)->first();
+    }
+
+    /**
+     * List members for a specific choir.
+     */
+    public function index(Request $request, Choir $choir): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('viewAny', Member::class);
+
+        $query = $choir->members()->with(['voiceSection', 'guardians', 'user', 'consentRecorder']);
+
+        // Filter by member type: adult or child
+        if ($request->filled('type') && $request->type !== 'all') {
+            if ($request->type === 'child') {
+                $query->children();
+            } elseif ($request->type === 'adult') {
+                $query->adults();
+            }
         }
+
+        // Filter by status
+        if ($request->filled('status') && $request->status !== 'all' && $request->status !== '') {
+            $query->where('status', $request->status);
+        }
+
+        // Filter by voice section
+        if ($request->filled('voice_section_id') && $request->voice_section_id !== 'all' && $request->voice_section_id !== '') {
+            $query->where('voice_section_id', (int) $request->voice_section_id);
+        }
+
+        // Search by name, code, email, phone, or guardian details
+        if ($request->filled('search')) {
+            $search = '%' . trim($request->search) . '%';
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', $search)
+                    ->orWhere('middle_name', 'like', $search)
+                    ->orWhere('last_name', 'like', $search)
+                    ->orWhere('member_code', 'like', $search)
+                    ->orWhere('email', 'like', $search)
+                    ->orWhere('phone', 'like', $search)
+                    ->orWhereHas('user', function ($uq) use ($search) {
+                        $uq->where('name', 'like', $search)
+                            ->orWhere('email', 'like', $search)
+                            ->orWhere('phone', 'like', $search);
+                    })
+                    ->orWhereHas('guardians', function ($gq) use ($search) {
+                        $gq->where('full_name', 'like', $search)
+                            ->orWhere('phone', 'like', $search)
+                            ->orWhere('email', 'like', $search);
+                    });
+            });
+        }
+
+        $query->latest();
+
+        return $this->paginate($query, MemberResource::class);
+    }
+
+    /**
+     * Register a new member (Adult or Child Under 18).
+     */
+    public function store(StoreMemberRequest $request, ?Choir $choir = null): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('create', Member::class);
+
+        $user = $request->user();
+        if (! $choir && $request->filled('choir_id')) {
+            $choir = Choir::find($request->choir_id);
+        }
+        if (! $choir) {
+            $choir = $this->effectiveChoir($user);
+        }
+        if (! $choir) {
+            return $this->error('A valid choir must be specified for member registration.', null, 422);
+        }
+
+        $validated = $request->validated();
+        $memberType = $validated['member_type'] ?? 'adult';
+
+        return DB::transaction(function () use ($request, $validated, $choir, $memberType, $user) {
+            if ($memberType === 'child') {
+                // Auto-generate member code if missing
+                $memberCode = $validated['member_code'] ?? null;
+                if (! $memberCode) {
+                    $prefix = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $choir->name ?? 'CHOIR'), 0, 3));
+                    $seq = Member::where('choir_id', $choir->id)->count() + 1;
+                    $memberCode = $prefix . '-C' . str_pad((string)$seq, 4, '0', STR_PAD_LEFT);
+                    while (Member::where('choir_id', $choir->id)->where('member_code', $memberCode)->exists()) {
+                        $seq++;
+                        $memberCode = $prefix . '-C' . str_pad((string)$seq, 4, '0', STR_PAD_LEFT);
+                    }
+                }
+
+                $photoPath = $validated['photo_path'] ?? null;
+                if ($request->hasFile('photo')) {
+                    $photoPath = $request->file('photo')->store('members', 'public');
+                }
+
+                // Create child member record with NO user login credentials
+                $member = Member::create([
+                    'choir_id' => $choir->id,
+                    'member_code' => $memberCode,
+                    'user_id' => null, // Explicitly null for child!
+                    'member_type' => 'child',
+                    'voice_section_id' => $validated['voice_section_id'] ?? null,
+                    'first_name' => $validated['first_name'],
+                    'middle_name' => $validated['middle_name'] ?? null,
+                    'last_name' => $validated['last_name'],
+                    'date_of_birth' => $validated['date_of_birth'],
+                    'gender' => $validated['gender'] ?? null,
+                    'photo_path' => $photoPath,
+                    'join_date' => $validated['join_date'] ?? now()->toDateString(),
+                    'role_title' => $validated['role_title'] ?? null,
+                    'grade_school_level' => $validated['grade_school_level'] ?? null,
+                    'status' => $validated['status'] ?? 'active',
+                    'bio' => $validated['bio'] ?? null,
+                    'notes' => $validated['notes'] ?? null,
+                    'emergency_notes' => $validated['emergency_notes'] ?? null,
+                    'special_notes' => $validated['special_notes'] ?? null,
+                    'consent_confirmed' => true,
+                    'consent_confirmed_at' => now(),
+                    'consent_recorded_by' => $user->id,
+                    'is_public' => $validated['is_public'] ?? false,
+                ]);
+
+                // Deduplicate/reuse Guardian by phone number
+                $guardianPhone = trim($validated['guardian_phone']);
+                $guardian = Guardian::where('phone', $guardianPhone)->first();
+
+                if ($guardian) {
+                    $updates = [];
+                    if (empty($guardian->email) && !empty($validated['guardian_email'])) {
+                        $updates['email'] = $validated['guardian_email'];
+                    }
+                    if (empty($guardian->address) && !empty($validated['guardian_address'])) {
+                        $updates['address'] = $validated['guardian_address'];
+                    }
+                    if (empty($guardian->alt_phone) && !empty($validated['guardian_alt_phone'])) {
+                        $updates['alt_phone'] = $validated['guardian_alt_phone'];
+                    }
+                    if (!empty($updates)) {
+                        $guardian->update($updates);
+                    }
+                } else {
+                    $guardian = Guardian::create([
+                        'full_name' => $validated['guardian_name'],
+                        'relationship' => $validated['guardian_relationship'],
+                        'relationship_other' => ($validated['guardian_relationship'] === 'Other')
+                            ? ($validated['guardian_relationship_other'] ?? null)
+                            : null,
+                        'phone' => $guardianPhone,
+                        'alt_phone' => $validated['guardian_alt_phone'] ?? null,
+                        'email' => $validated['guardian_email'] ?? null,
+                        'address' => $validated['guardian_address'] ?? null,
+                    ]);
+                }
+
+                $effectiveRel = ($validated['guardian_relationship'] === 'Other')
+                    ? ($validated['guardian_relationship_other'] ?? 'Other')
+                    : $validated['guardian_relationship'];
+
+                $member->guardians()->syncWithoutDetaching([
+                    $guardian->id => [
+                        'relationship' => $effectiveRel,
+                        'is_primary' => true,
+                    ],
+                ]);
+
+                return $this->ok(
+                    new MemberResource($member->load(['guardians', 'voiceSection', 'choir', 'consentRecorder'])),
+                    'Child member registered successfully with parent/guardian contact.',
+                    201
+                );
+            }
+
+            // Adult member registration flow
+            $linkedUser = null;
+            if (!empty($validated['user_id'])) {
+                $linkedUser = User::find($validated['user_id']);
+            } elseif (!empty($validated['email']) && ($validated['create_user_account'] ?? false)) {
+                $existingUser = User::where('email', $validated['email'])->first();
+                if ($existingUser) {
+                    $linkedUser = $existingUser;
+                } else {
+                    $linkedUser = User::create([
+                        'name' => trim($validated['first_name'] . ' ' . $validated['last_name']),
+                        'email' => $validated['email'],
+                        'phone' => $validated['phone'] ?? null,
+                        'password' => Hash::make($validated['password'] ?? 'Choir@1234'),
+                        'role' => 'member',
+                        'status' => User::STATUS_APPROVED,
+                        'approved_at' => now(),
+                        'approved_by' => $user->id,
+                    ]);
+                }
+            }
+
+            if ($linkedUser) {
+                $choir->users()->syncWithoutDetaching([
+                    $linkedUser->id => [
+                        'is_primary_leader' => false,
+                        'status' => 'active',
+                    ],
+                ]);
+            }
+
+            $memberCode = $validated['member_code'] ?? null;
+            if (! $memberCode) {
+                $prefix = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $choir->name ?? 'CHOIR'), 0, 3));
+                $seq = Member::where('choir_id', $choir->id)->count() + 1;
+                $memberCode = $prefix . '-' . str_pad((string)($linkedUser?->id ?? $seq), 4, '0', STR_PAD_LEFT);
+                while (Member::where('choir_id', $choir->id)->where('member_code', $memberCode)->exists()) {
+                    $seq++;
+                    $memberCode = $prefix . '-' . str_pad((string)$seq, 4, '0', STR_PAD_LEFT);
+                }
+            }
+
+            $photoPath = $validated['photo_path'] ?? null;
+            if ($request->hasFile('photo')) {
+                $photoPath = $request->file('photo')->store('members', 'public');
+            }
+
+            $member = Member::create([
+                'choir_id' => $choir->id,
+                'member_code' => $memberCode,
+                'user_id' => $linkedUser?->id,
+                'member_type' => 'adult',
+                'voice_section_id' => $validated['voice_section_id'] ?? null,
+                'first_name' => $validated['first_name'],
+                'middle_name' => $validated['middle_name'] ?? null,
+                'last_name' => $validated['last_name'],
+                'date_of_birth' => $validated['date_of_birth'] ?? null,
+                'photo_path' => $photoPath,
+                'phone' => $validated['phone'] ?? $linkedUser?->phone,
+                'email' => $validated['email'] ?? $linkedUser?->email,
+                'join_date' => $validated['join_date'] ?? now()->toDateString(),
+                'role_title' => $validated['role_title'] ?? null,
+                'status' => $validated['status'] ?? 'active',
+                'bio' => $validated['bio'] ?? null,
+                'notes' => $validated['notes'] ?? null,
+                'is_public' => $validated['is_public'] ?? false,
+            ]);
+
+            return $this->ok(
+                new MemberResource($member->load(['voiceSection', 'choir', 'user'])),
+                'Adult member registered successfully.',
+                201
+            );
+        });
+    }
+
+    /**
+     * Show member details with full participation, attendance, performance, and song history.
+     */
+    public function show(Request $request, ?Choir $choir, Member $member): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('view', $member);
+
+        $member->load([
+            'choir',
+            'voiceSection',
+            'guardians',
+            'user',
+            'consentRecorder',
+            'performances.songs',
+            'songs',
+        ]);
+
+        $choirId = $choir?->id ?? $member->choir_id;
+
+        $records = $member->attendanceRecords()
+            ->where('choir_id', $choirId)
+            ->with(['attendanceSession.performance', 'attendanceSession.rehearsal'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        $presentCount = $records->where('status', 'present')->count();
+        $lateCount = $records->where('status', 'late')->count();
+        $absentCount = $records->where('status', 'absent')->count();
+        $excusedCount = $records->where('status', 'excused')->count();
+        $totalRecords = $records->count();
+        $rate = $totalRecords > 0 ? round((($presentCount + $lateCount) / $totalRecords) * 100, 1) : 0;
+
+        $attendanceHistory = $records->take(20)->map(function ($rec) {
+            $session = $rec->attendanceSession;
+            return [
+                'id' => $rec->id,
+                'session_id' => $rec->attendance_session_id,
+                'date' => $session?->session_date?->format('Y-m-d') ?? $rec->created_at?->format('Y-m-d'),
+                'event_type' => $session?->event_type ?? ($session?->performance_id ? 'performance' : 'rehearsal'),
+                'title' => $session?->title ?? $session?->performance?->title ?? $session?->rehearsal?->title ?? 'Session',
+                'status' => $rec->status,
+                'check_in_time' => $rec->check_in_at ? $rec->check_in_at->format('h:i A') : null,
+                'notes' => $rec->notes,
+            ];
+        });
+
+        // Separate rehearsal practice attendance
+        $practiceHistory = $records->filter(function ($rec) {
+            return ($rec->attendanceSession?->event_type === 'rehearsal') || $rec->attendanceSession?->rehearsal_id;
+        })->values()->take(10)->map(function ($rec) {
+            $session = $rec->attendanceSession;
+            return [
+                'id' => $rec->id,
+                'date' => $session?->session_date?->format('Y-m-d') ?? $rec->created_at?->format('Y-m-d'),
+                'title' => $session?->title ?? $session?->rehearsal?->title ?? 'Practice Rehearsal',
+                'status' => $rec->status,
+                'check_in_time' => $rec->check_in_at ? $rec->check_in_at->format('h:i A') : null,
+                'notes' => $rec->notes,
+            ];
+        });
+
+        return $this->ok([
+            'member' => new MemberResource($member),
+            'stats' => [
+                'total_events' => $totalRecords,
+                'present' => $presentCount,
+                'late' => $lateCount,
+                'absent' => $absentCount,
+                'excused' => $excusedCount,
+                'attendance_rate' => $rate,
+                'performances_count' => $member->performances()->count(),
+                'songs_count' => $member->songs()->count(),
+            ],
+            'attendance_history' => $attendanceHistory,
+            'practice_history' => $practiceHistory,
+            'performances' => PerformanceResource::collection($member->performances()->take(15)->get()),
+            'songs' => SongResource::collection($member->songs()->take(15)->get()),
+        ]);
+    }
+
+    /**
+     * Update member profile and guardian information.
+     */
+    public function update(UpdateMemberRequest $request, ?Choir $choir, Member $member): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('update', $member);
+
+        $validated = $request->validated();
+
+        return DB::transaction(function () use ($request, $validated, $member) {
+            if ($request->hasFile('photo')) {
+                $validated['photo_path'] = $request->file('photo')->store('members', 'public');
+            }
+
+            if (!empty($validated['date_of_birth'])) {
+                $dob = \Carbon\Carbon::parse($validated['date_of_birth']);
+                $age = $dob->diffInYears(now());
+                if (!isset($validated['member_type'])) {
+                    $validated['member_type'] = $age < 18 ? 'child' : 'adult';
+                }
+            }
+
+            $member->update($validated);
+
+            // Update Guardian if provided
+            if (!empty($validated['guardian_name']) || !empty($validated['guardian_phone'])) {
+                $guardian = $member->primaryGuardian();
+                if ($guardian) {
+                    $guardianData = [];
+                    if (!empty($validated['guardian_name'])) $guardianData['full_name'] = $validated['guardian_name'];
+                    if (!empty($validated['guardian_phone'])) $guardianData['phone'] = $validated['guardian_phone'];
+                    if (array_key_exists('guardian_alt_phone', $validated)) $guardianData['alt_phone'] = $validated['guardian_alt_phone'];
+                    if (array_key_exists('guardian_email', $validated)) $guardianData['email'] = $validated['guardian_email'];
+                    if (array_key_exists('guardian_address', $validated)) $guardianData['address'] = $validated['guardian_address'];
+                    if (!empty($validated['guardian_relationship'])) {
+                        $guardianData['relationship'] = $validated['guardian_relationship'];
+                        $guardianData['relationship_other'] = ($validated['guardian_relationship'] === 'Other')
+                            ? ($validated['guardian_relationship_other'] ?? null)
+                            : null;
+                    }
+                    $guardian->update($guardianData);
+
+                    if (!empty($validated['guardian_relationship'])) {
+                        $rel = ($validated['guardian_relationship'] === 'Other')
+                            ? ($validated['guardian_relationship_other'] ?? 'Other')
+                            : $validated['guardian_relationship'];
+                        $member->guardians()->updateExistingPivot($guardian->id, ['relationship' => $rel]);
+                    }
+                } elseif (!empty($validated['guardian_phone'])) {
+                    $guardian = Guardian::firstOrCreate(
+                        ['phone' => $validated['guardian_phone']],
+                        [
+                            'full_name' => $validated['guardian_name'] ?? 'Parent/Guardian',
+                            'relationship' => $validated['guardian_relationship'] ?? 'Legal Guardian',
+                            'relationship_other' => ($validated['guardian_relationship'] ?? null) === 'Other' ? ($validated['guardian_relationship_other'] ?? null) : null,
+                            'alt_phone' => $validated['guardian_alt_phone'] ?? null,
+                            'email' => $validated['guardian_email'] ?? null,
+                            'address' => $validated['guardian_address'] ?? null,
+                        ]
+                    );
+                    $member->guardians()->syncWithoutDetaching([
+                        $guardian->id => ['relationship' => $validated['guardian_relationship'] ?? 'Legal Guardian', 'is_primary' => true]
+                    ]);
+                }
+            }
+
+            return $this->ok(
+                new MemberResource($member->fresh(['guardians', 'voiceSection', 'choir', 'consentRecorder'])),
+                'Member updated successfully'
+            );
+        });
+    }
+
+    /**
+     * Deactivate a member (soft delete), preserving historical attendance, songs, and performance records.
+     */
+    public function destroy(Request $request, ?Choir $choir, Member $member): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('delete', $member);
+
+        $member->status = 'inactive';
+        $member->save();
+        $member->delete(); // Soft delete preserves historical records
+
+        return $this->ok(null, 'Member deactivated and removed from active roster successfully.');
+    }
+
+    // Direct wrappers without choir route parameter
+    public function storeWithoutChoirParam(StoreMemberRequest $request): \Illuminate\Http\JsonResponse
+    {
+        return $this->store($request, null);
+    }
+
+    public function showWithoutChoirParam(Request $request, Member $member): \Illuminate\Http\JsonResponse
+    {
+        return $this->show($request, null, $member);
+    }
+
+    public function updateWithoutChoirParam(UpdateMemberRequest $request, Member $member): \Illuminate\Http\JsonResponse
+    {
+        return $this->update($request, null, $member);
+    }
+
+    public function destroyWithoutChoirParam(Request $request, Member $member): \Illuminate\Http\JsonResponse
+    {
+        return $this->destroy($request, null, $member);
+    }
 
     public function dashboard(Request $request): \Illuminate\Http\JsonResponse
     {

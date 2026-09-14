@@ -6,11 +6,14 @@ import Input from '../components/ui/Input';
 import PasswordInput from '../components/ui/PasswordInput';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
+import LanguageSelector from '../components/ui/LanguageSelector';
 import { api } from '../axios';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function RegisterPage() {
     const { register } = useAuth();
+    const { t, isAmharic } = useLanguage();
     const navigate = useNavigate();
 
     const [form, setForm] = useState({
@@ -69,7 +72,7 @@ export default function RegisterPage() {
         setAlert(null);
 
         if (!form.choir_id) {
-            setErrors((prev) => ({ ...prev, choir_id: ['Please select a choir.'] }));
+            setErrors((prev) => ({ ...prev, choir_id: [t('auth.pleaseSelectChoir')] }));
             return;
         }
 
@@ -94,7 +97,7 @@ export default function RegisterPage() {
             if (err.errors) {
                 setErrors(err.errors);
             }
-            setAlert({ variant: 'error', message: err.message || 'Registration failed. Please review the form.' });
+            setAlert({ variant: 'error', message: err.message || t('auth.registerFailed') });
             setSubmitting(false);
         }
     };
@@ -123,21 +126,25 @@ export default function RegisterPage() {
                 to="/"
                 className="absolute left-6 top-6 z-20 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/60 backdrop-blur-md transition-all duration-300 hover:border-blue-400/30 hover:bg-white/10 hover:text-white/80"
             >
-                <ArrowLeft size={16} /> Back to home
+                <ArrowLeft size={16} /> {t('common.backToHome')}
             </Link>
+
+            <div className="absolute right-6 top-6 z-20">
+                <LanguageSelector compact />
+            </div>
 
             {/* Content */}
             <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
                 <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-white/5 p-7 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-9">
                     <div className="mb-6 flex flex-col items-center justify-center text-center">
                         <Logo size="md" />
-                        <p className="mt-3 text-lg font-black tracking-wide text-white">YEKA <span className="text-blue-400">M.K.C</span> CHOIR</p>
+                        <p className="mt-3 text-lg font-black tracking-wide text-white">{isAmharic ? t('brand.choirName') : (<>{t('brand.choirPrimary')} <span className="text-blue-400">M.K.C</span> {t('brand.choirSuffix')}</>)}</p>
                     </div>
 
                     <div className="mb-6 text-center">
-                        <h1 className="text-2xl font-semibold text-white">Create an Account</h1>
+                        <h1 className="text-2xl font-semibold text-white">{t('auth.registerTitle')}</h1>
                         <p className="mt-1 text-sm text-white/75">
-                            Register as a choir member. Administrator approval is required before access.
+                            {t('auth.registerAsMember')}
                         </p>
                     </div>
 
@@ -149,7 +156,7 @@ export default function RegisterPage() {
 
                     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                         <Input
-                            label="Full Name"
+                            label={t('auth.fullName')}
                             required
                             autoComplete="name"
                             placeholder="Abebe Bikila"
@@ -166,7 +173,7 @@ export default function RegisterPage() {
 
                         <div className="grid gap-4 sm:grid-cols-2">
                             <Input
-                                label="Email"
+                                label={t('auth.email')}
                                 type="email"
                                 required
                                 autoComplete="email"
@@ -183,7 +190,7 @@ export default function RegisterPage() {
                             />
 
                             <Input
-                                label="Phone"
+                                label={t('auth.phone')}
                                 type="tel"
                                 prefix="+251"
                                 autoComplete="tel"
@@ -191,7 +198,7 @@ export default function RegisterPage() {
                                 value={form.phone}
                                 onChange={handlePhone}
                                 error={errors.phone?.[0]}
-                                hint="9 digits, starting with 9 (e.g. 912345678)"
+                                hint={t('auth.phoneHint')}
                                 glass
                                 trailing={
                                     <span className="text-white/70">
@@ -204,8 +211,8 @@ export default function RegisterPage() {
                         {/* Choose Choir */}
                         <div>
                             <label className="mb-1.5 block text-sm font-medium text-white/90">
-                                Choose Choir <span className="text-blue-300">*</span>
-                            </label>
+                                    {t('auth.chooseChoir')} <span className="text-blue-300">*</span>
+                                </label>
                             <div className="relative">
                                 <select
                                     value={form.choir_id}
@@ -217,7 +224,7 @@ export default function RegisterPage() {
                                 >
                                     {loadingChoirs ? (
                                         <option value="" className="text-ink-900">
-                                            Loading choirs...
+                                            {t('auth.loadingChoirs')}
                                         </option>
                                     ) : (
                                         choirs.map((c) => (
@@ -238,7 +245,7 @@ export default function RegisterPage() {
 
                         <div className="grid gap-4 sm:grid-cols-2">
                             <PasswordInput
-                                label="Password"
+                                label={t('auth.password')}
                                 required
                                 autoComplete="new-password"
                                 placeholder="••••••••"
@@ -249,7 +256,7 @@ export default function RegisterPage() {
                             />
 
                             <PasswordInput
-                                label="Confirm Password"
+                                label={t('auth.confirmPassword')}
                                 required
                                 autoComplete="new-password"
                                 placeholder="••••••••"
@@ -261,15 +268,15 @@ export default function RegisterPage() {
                         </div>
 
                         <Button type="submit" size="lg" loading={submitting} className="mt-2 w-full">
-                            Register
+                            {t('auth.submitRegister')}
                             {!submitting && <ArrowRight size={18} />}
                         </Button>
                     </form>
 
                     <p className="mt-6 text-center text-sm text-white/70">
-                        Already have an account?{' '}
+                        {t('auth.yesAccount')}{' '}
                         <Link to="/login" className="font-medium text-blue-200 hover:text-white">
-                            Sign In
+                            {t('auth.submitLogin')}
                         </Link>
                     </p>
                 </div>

@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { Users, ChevronRight } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 import CoverImage from './CoverImage';
 
 export default function ChoirCard({ choir }) {
+    const { t } = useLanguage();
     const leader = choir.team_leader?.name;
     return (
         <Link
@@ -16,16 +18,16 @@ export default function ChoirCard({ choir }) {
             </div>
             <div className="flex flex-1 flex-col p-5">
                 <h3 className="text-lg font-semibold tracking-tight text-slate-900">{choir.name}</h3>
-                {leader && <p className="mt-0.5 text-sm text-slate-500">Led by {leader}</p>}
+                {leader && <p className="mt-0.5 text-sm text-slate-500">{t('choir.ledBy', { name: leader })}</p>}
                 <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-500">
                     {choir.description || 'A vibrant part of the YKA M.K.C Choirs and Worship Teams community.'}
                 </p>
                 <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
                     <Users size={16} className="text-blue-500" />
-                    {choir.member_count ?? 0} members
+                    {t('choir.memberCount', { count: choir.member_count ?? 0 })}
                 </div>
                 <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-blue-700">
-                    View Choir
+                    {t('choirs.viewChoir')}
                     <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" />
                 </span>
             </div>

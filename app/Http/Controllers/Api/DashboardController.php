@@ -31,6 +31,8 @@ class DashboardController extends ApiController
         return $this->ok([
             'counts' => [
                 'members' => $choir->members()->where('status', 'active')->count(),
+                'adults_count' => $choir->adultMembers()->where('status', 'active')->count(),
+                'children_count' => $choir->childMembers()->where('status', 'active')->count(),
                 'songs' => $choir->songs()->count(),
                 'rehearsals' => $choir->rehearsals()->count(),
                 'performances' => $choir->performances()->count(),
@@ -269,11 +271,13 @@ class DashboardController extends ApiController
         return $this->ok([
             'choir' => new ChoirResource($choir),
             'counts' => [
-                'members'      => $choir->members()->where('status', 'active')->count(),
-                'songs'        => $choir->songs()->count(),
-                'performances' => $choir->performances()->count(),
-                'upcoming'     => $choir->performances()->where('date', '>=', now()->toDateString())->count(),
-                'rehearsals'   => $choir->rehearsals()->count(),
+                'members'         => $choir->members()->where('status', 'active')->count(),
+                'adults_count'    => $choir->adultMembers()->where('status', 'active')->count(),
+                'children_count'  => $choir->childMembers()->where('status', 'active')->count(),
+                'songs'           => $choir->songs()->count(),
+                'performances'    => $choir->performances()->count(),
+                'upcoming'        => $choir->performances()->where('date', '>=', now()->toDateString())->count(),
+                'rehearsals'      => $choir->rehearsals()->count(),
                 'attendance_rate' => $rate,
             ],
             'charts' => [
@@ -311,6 +315,8 @@ class DashboardController extends ApiController
                 'choir' => null,
                 'stats' => [
                     'members' => 0,
+                    'adults_count' => 0,
+                    'children_count' => 0,
                     'songs' => 0,
                     'upcoming_performances' => 0,
                     'upcoming_rehearsals' => 0,
@@ -333,6 +339,8 @@ class DashboardController extends ApiController
         }
 
         $membersCount = $choir->members()->where('status', 'active')->count();
+        $adultsCount = $choir->adultMembers()->where('status', 'active')->count();
+        $childrenCount = $choir->childMembers()->where('status', 'active')->count();
         $songsCount = $choir->songs()->count();
         $upcomingPerformancesCount = $choir->performances()->where('date', '>=', now()->toDateString())->count();
         $upcomingRehearsalsCount = $choir->rehearsals()->where('date', '>=', now()->toDateString())->count();
@@ -379,6 +387,8 @@ class DashboardController extends ApiController
             'choir' => new ChoirResource($choir),
             'stats' => [
                 'members' => $membersCount,
+                'adults_count' => $adultsCount,
+                'children_count' => $childrenCount,
                 'songs' => $songsCount,
                 'upcoming_performances' => $upcomingPerformancesCount,
                 'upcoming_rehearsals' => $upcomingRehearsalsCount,

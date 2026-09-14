@@ -3,8 +3,10 @@ import Modal from '../ui/Modal';
 import AudioPlayer from './AudioPlayer';
 import LyricsViewer from './LyricsViewer';
 import { Music2, Download, Share2, Disc3 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function SongLyricsModal({ song, isOpen, onClose, onShare }) {
+    const { t } = useLanguage();
     if (!song) return null;
 
     const choirName = song.choir?.name || 'Choir MKC';
@@ -54,7 +56,7 @@ export default function SongLyricsModal({ song, isOpen, onClose, onShare }) {
                             </p>
                             {song.artist && (
                                 <p className="mt-0.5 text-xs text-slate-500 truncate">
-                                    Artist: {song.artist}
+                                    {t('song.artistLabel')} {song.artist}
                                 </p>
                             )}
 
@@ -66,7 +68,7 @@ export default function SongLyricsModal({ song, isOpen, onClose, onShare }) {
                                         download
                                         className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-95"
                                     >
-                                        <Download size={14} /> Download
+                                        <Download size={14} /> {t('song.download')}
                                     </a>
                                 ) : null}
 
@@ -75,7 +77,7 @@ export default function SongLyricsModal({ song, isOpen, onClose, onShare }) {
                                     onClick={handleShare}
                                     className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-blue-600 active:scale-95"
                                 >
-                                    <Share2 size={14} /> Share
+                                    <Share2 size={14} /> {t('song.share')}
                                 </button>
                             </div>
                         </div>
@@ -87,7 +89,7 @@ export default function SongLyricsModal({ song, isOpen, onClose, onShare }) {
                             <AudioPlayer src={song.audio_url} title={song.title} artist={choirName} />
                         ) : (
                             <div className="rounded-xl bg-white/70 p-3 text-center text-xs font-medium text-slate-500 border border-slate-200/60">
-                                Audio recording not available for this song.
+                                {t('song.audioNotAvailable')}
                             </div>
                         )}
                     </div>
@@ -97,7 +99,7 @@ export default function SongLyricsModal({ song, isOpen, onClose, onShare }) {
                 <div className="rounded-2xl border border-slate-100 bg-white p-5 sm:p-6 shadow-sm">
                     <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
                         <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">
-                            LYRICS
+                            {t('song.lyricsHeading').toUpperCase()}
                         </h3>
                     </div>
                     <LyricsViewer lyrics={song.lyrics} />

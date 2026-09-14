@@ -6,8 +6,10 @@ import Reveal from '../components/ui/Reveal';
 import EmptyState from '../components/public/EmptyState';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { fetchChoirs } from '../lib/publicApi';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ChoirsPage() {
+    const { t } = useLanguage();
     const [choirs, setChoirs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [query, setQuery] = useState('');
@@ -35,9 +37,9 @@ export default function ChoirsPage() {
                 <div className="pointer-events-none absolute -top-24 -right-16 h-80 w-80 rounded-full bg-blue-200/40 blur-3xl" />
                 <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <SectionHeading
-                        eyebrow="Community"
-                        title="Our Choirs"
-                        subtitle="Discover the voices, people, and stories behind YKA M.K.C Choirs and Worship Teams."
+                        eyebrow={t('choirs.eyebrow')}
+                        title={t('choirs.title')}
+                        subtitle={t('choirs.heroSubtitle')}
                         align="left"
                     />
                 </div>
@@ -55,8 +57,8 @@ export default function ChoirsPage() {
                                 type="search"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                placeholder="Search choirs by name or leader"
-                                aria-label="Search choirs"
+                                placeholder={t('choirs.searchPlaceholder')}
+                                aria-label={t('choirs.searchAria')}
                                 className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-700 outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                             />
                         </div>
@@ -64,17 +66,17 @@ export default function ChoirsPage() {
 
                     {loading ? (
                         <div className="mt-16 flex justify-center">
-                            <LoadingSpinner text="Loading choirs..." />
+                            <LoadingSpinner text={t('choirs.loading')} />
                         </div>
                     ) : filtered.length === 0 ? (
                         <div className="mt-10">
                             <EmptyState
                                 icon={Users}
-                                title="No choirs are currently available."
+                                title={t('choirs.noChoirs')}
                                 message={
                                     query
-                                        ? `No choirs match “${query}”.`
-                                        : 'Check back soon as our choirs continue to grow.'
+                                        ? t('choirs.noMatch', { query })
+                                        : t('choirs.checkBack')
                                 }
                             />
                         </div>

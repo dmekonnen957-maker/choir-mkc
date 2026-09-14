@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 
 function renderLine(line, lineIndex) {
     const parts = [];
@@ -30,15 +31,18 @@ function renderLine(line, lineIndex) {
 }
 
 export default function LyricsViewer({ lyrics }) {
+    const { t, language } = useLanguage();
     if (!lyrics || !lyrics.trim()) {
         return (
             <div className="py-8 text-center text-slate-400">
-                <p className="text-sm font-medium">Lyrics are not available for this song.</p>
+                <p className="text-sm font-medium">{t('song.lyricsNotAvailable')}</p>
             </div>
         );
     }
 
-    const sectionRegex = /^(verse\s*\d*|chorus\s*\d*|bridge\s*\d*|intro\s*\d*|outro\s*\d*|refrain\s*\d*|pre-chorus\s*\d*|tag\s*\d*):?$/i;
+    const sectionRegex = language === 'am'
+        ? /^(ግጥም|ቆርስ|ድልድል|ጅምር|መደምደሚያ|ማጠር\s*\d*):?$/i
+        : /^(verse\s*\d*|chorus\s*\d*|bridge\s*\d*|intro\s*\d*|outro\s*\d*|refrain\s*\d*|pre-chorus\s*\d*|tag\s*\d*):?$/i;
     const lines = lyrics.split('\n');
 
     return (

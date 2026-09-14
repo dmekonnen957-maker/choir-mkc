@@ -14,6 +14,7 @@ const SongDetailPage = lazy(() => import('./pages/SongDetailPage'));
 const PerformancesPage = lazy(() => import('./pages/PerformancesPage'));
 const PerformanceDetailPage = lazy(() => import('./pages/PerformanceDetailPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
+const MusicianDashboard = lazy(() => import('./pages/musician/MusicianDashboard'));
 
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -135,6 +136,29 @@ export default function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/registration-pending" element={<RegistrationPendingPage />} />
 
+            {/* Musician Area */}
+            <Route
+                path="/musician"
+                element={
+                    <ProtectedRoute allowedRoles={['musician', 'member', 'admin', 'super-admin']}>
+                        <MemberLayout />
+                    </ProtectedRoute>
+                }
+            >
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<MusicianDashboard />} />
+                <Route path="choir" element={<MemberChoir />} />
+                <Route path="profile" element={<MemberProfile />} />
+                <Route path="notifications" element={<MemberNotifications />} />
+                <Route path="songs" element={<MemberSongsPage />} />
+                <Route path="rehearsals" element={<AdminRehearsalsPage />} />
+                <Route path="performances" element={<MemberPerformancesPage />} />
+                <Route path="calendar" element={<MemberCalendarPage />} />
+                <Route path="attendance" element={<MemberAttendancePage />} />
+                <Route path="my-performances" element={<MemberPerformancesPage />} />
+                <Route path="settings" element={<MemberSettings />} />
+            </Route>
+
             {/* Member Area */}
             <Route
                 path="/member/choir-history"
@@ -202,7 +226,7 @@ export default function App() {
                 <Route path="my-performances" element={<MemberPlaceholder title="My Performances" />} />
                 <Route path="settings" element={<AdminSettingsPage />} />
                 <Route path="reports" element={<AdminReportsPage />} />
-                <Route path="choir-history" element={<MemberPlaceholder title="Choir History" />} />
+                <Route path="choir-history" element={<MemberChoirHistoryPage />} />
                 <Route path="activity-logs" element={<AdminActivityLogsPage />} />
             </Route>
 
@@ -226,6 +250,7 @@ export default function App() {
                 <Route path="calendar" element={<TeamLeaderCalendarPage />} />
                 <Route path="attendance" element={<AdminAttendancePage />} />
                 <Route path="my-performances" element={<MemberPlaceholder title="My Performances" />} />
+                <Route path="choir-history" element={<MemberChoirHistoryPage />} />
                 <Route path="settings" element={<MemberSettings />} />
             </Route>
 

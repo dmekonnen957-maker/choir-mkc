@@ -1,11 +1,13 @@
 import { forwardRef, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import Input from './Input';
+import { useLanguage } from '../../context/LanguageContext';
 
 const PasswordInput = forwardRef(function PasswordInput(
     { label, error, hint, id, className = '', required = false, glass = false, ...props },
     ref,
 ) {
+    const { t } = useLanguage();
     const [visible, setVisible] = useState(false);
 
     return (
@@ -24,7 +26,7 @@ const PasswordInput = forwardRef(function PasswordInput(
                     type="button"
                     onClick={() => setVisible((v) => !v)}
                     className={`flex items-center transition-colors ${glass ? 'text-white/70 hover:text-white' : 'text-ink-400 hover:text-ink-600'}`}
-                    aria-label={visible ? 'Hide password' : 'Show password'}
+                    aria-label={visible ? t('common.hidePassword') : t('common.showPassword')}
                     aria-pressed={visible}
                     tabIndex={-1}
                 >

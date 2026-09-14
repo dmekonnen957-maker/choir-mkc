@@ -30,6 +30,7 @@ const BASE_PATHS = {
     team_leader: '/team-leader',
     admin: '/admin',
     'super-admin': '/admin',
+    musician: '/musician',
 };
 
 // Full admin navigation
@@ -127,7 +128,7 @@ function getMemberNav(basePath, role, can, t) {
                     ? []
                     : [{ label: t('nav.my_attendance', 'My Attendance'), to: `${basePath}/attendance`, icon: CheckCircle2 }]),
                 { label: t('nav.my_performances', 'My Performances'), to: `${basePath}/my-performances`, icon: ListMusic },
-                { label: t('nav.choir_history', 'Choir History'), to: '/member/choir-history', icon: BookOpen },
+                { label: t('nav.choir_history', 'Choir History'), to: `${basePath}/choir-history`, icon: BookOpen },
             ],
         },
         {

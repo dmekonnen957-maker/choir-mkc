@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, Music2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
 
 const HERO_IMAGES = [
     { src: '/images/p1.jpg', alt: 'Yeka M.K.C choir performing indoors' },
@@ -10,9 +11,9 @@ const HERO_IMAGES = [
 
 const DISPLAY_TIME = 3000;
 const FADE_TIME = 1000;
-const HERO_VERSE = 'LET EVERYTHING THAT HAS BREATH PRAISE THE LORD. PRAISE THE LORD! - PSALM 150:6';
 
 export default function HeroSection() {
+    const { t } = useLanguage();
     const [currentIndex, setCurrentIndex] = useState(0);
 
     const nextSlide = useCallback(() => {
@@ -52,41 +53,41 @@ export default function HeroSection() {
 
             <div className="relative z-10 flex min-h-[100svh] items-center justify-center px-6 py-24 text-center sm:px-10">
                 <div className="max-w-4xl">
-                    <p className="text-xs font-bold uppercase tracking-[0.25em] text-white sm:text-sm">Yeka M.K.C Ministry</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.25em] text-white sm:text-sm">{t('hero.ministry')}</p>
                     <h1 className="mt-5 text-4xl font-black uppercase tracking-[0.02em] text-white sm:text-6xl lg:text-7xl">
-                        Yeka Meserete Kristos
+                        {t('hero.title')}
                     </h1>
                     <p className="mx-auto mt-5 max-w-2xl text-sm font-medium leading-7 tracking-[0.03em] text-white sm:text-lg">
-                        Discover  choir songs, worship music, and performances united by faith and community.
+                        {t('hero.subtitle')}
                     </p>
                     <p className="mx-auto mt-4 max-w-2xl text-[11px] font-semibold uppercase leading-6 tracking-[0.16em] text-white/90 sm:text-xs">
-                        {HERO_VERSE}
+                        {t('hero.verse')}
                     </p>
                     <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                         <Link to="/songs" className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-600">
-                            <Music2 size={17} /> DISCOVER SONGS <ArrowRight size={16} />
+                            <Music2 size={17} /> {t('hero.discoverSongs')} <ArrowRight size={16} />
                         </Link>
                         <Link to="/choirs" className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur-md transition hover:bg-white/20">
-                            EXPLORE CHOIR <ArrowRight size={16} />
+                            {t('hero.exploreChoir')} <ArrowRight size={16} />
                         </Link>
                     </div>
                 </div>
             </div>
 
-            <button type="button" onClick={previousSlide} aria-label="Previous hero image" className="absolute left-4 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/20 text-white backdrop-blur-md transition hover:bg-black/45 sm:left-8">
+            <button type="button" onClick={previousSlide} aria-label={t('hero.prevImage')} className="absolute left-4 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/20 text-white backdrop-blur-md transition hover:bg-black/45 sm:left-8">
                 <ChevronLeft size={21} />
             </button>
-            <button type="button" onClick={nextSlide} aria-label="Next hero image" className="absolute right-4 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/20 text-white backdrop-blur-md transition hover:bg-black/45 sm:right-8">
+            <button type="button" onClick={nextSlide} aria-label={t('hero.nextImage')} className="absolute right-4 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/20 text-white backdrop-blur-md transition hover:bg-black/45 sm:right-8">
                 <ChevronRight size={21} />
             </button>
 
-            <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2" aria-label="Hero image selection">
+            <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2" aria-label={t('hero.showImage')}>
                 {HERO_IMAGES.map((image, index) => (
                     <button
                         key={image.src}
                         type="button"
                         onClick={() => setCurrentIndex(index)}
-                        aria-label={`Show hero image ${index + 1}`}
+                        aria-label={t('hero.showImage')}
                         className={`h-2 rounded-full transition-all duration-300 ${currentIndex === index ? 'w-8 bg-cyan-300' : 'w-2 bg-white/50 hover:bg-white/80'}`}
                     />
                 ))}

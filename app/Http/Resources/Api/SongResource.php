@@ -100,6 +100,12 @@ class SongResource extends JsonResource
             $data['lyric_records']    = $this->whenLoaded('lyrics', function () {
                 return LyricResource::collection($this->lyrics);
             });
+            $data['participants']     = $this->whenLoaded('participants', function () {
+                return MemberResource::collection($this->participants);
+            });
+            $data['participants_count'] = $this->relationLoaded('participants')
+                ? $this->participants->count()
+                : null;
         }
 
         return $data;

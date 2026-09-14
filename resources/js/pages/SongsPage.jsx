@@ -20,18 +20,12 @@ import EmptyState from '../components/public/EmptyState';
 import SongLyricsModal from '../components/public/SongLyricsModal';
 import { fetchPaginatedSongs, fetchChoirs, fetchLikedSongs, likeSong, unlikeSong } from '../lib/publicApi';
 import { useAuth } from '../context/AuthContext';
-
-function formatScale(scale, scaleMode) {
-    const value = scale || scaleMode;
-    if (!value) return 'Not specified';
-    return value
-        .replace(/[_-]+/g, ' ')
-        .replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
+import { useLanguage } from '../context/LanguageContext';
 
 export default function SongsPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const { isAuthenticated, hasRole } = useAuth();
+    const { t } = useLanguage();
     const canLike = isAuthenticated && hasRole('member');
 
     // Query state
@@ -215,14 +209,14 @@ export default function SongsPage() {
             <section className="relative shrink-0 overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 text-white py-14 sm:py-18 border-b border-blue-900/40">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.2),transparent_50%)] pointer-events-none" />
                 <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-blue-300 backdrop-blur-md mb-4">
-                        <Music2 size={14} className="text-cyan-400" /> Ethiopian Worship Music Library
+<span className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-blue-300 backdrop-blur-md mb-4">
+                        <Music2 size={14} className="text-cyan-400" /> {t('home.musicLibrary')}
                     </span>
                     <h1 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-white">
-                        Songs
+                        {t('nav.songs')}
                     </h1>
                     <p className="mt-3 max-w-2xl text-base sm:text-lg text-blue-100/80 font-normal leading-relaxed">
-                        Explore Ethiopian choir songs and discover new music.
+                        {t('songs.subtitle')}
                     </p>
                 </div>
             </section>
@@ -245,8 +239,8 @@ export default function SongsPage() {
                                     setSearchQuery(e.target.value);
                                     setPage(1);
                                 }}
-                                placeholder="Search songs by title, choir, or composer..."
-                                aria-label="Search songs"
+placeholder={t('songs.searchPlaceholder')}
+                                aria-label={t('songs.search')}
                                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-10 text-sm font-medium text-slate-900 placeholder:text-slate-400 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                             />
                             {searchQuery && (
@@ -267,10 +261,10 @@ export default function SongsPage() {
                                     setSelectedChoir(e.target.value);
                                     setPage(1);
                                 }}
-                                aria-label="Filter by Choir"
+aria-label={t('songs.filterByChoir')}
                                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-700 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                             >
-                                <option value="">All Choirs</option>
+                                <option value="">{t('songs.allChoirs')}</option>
                                 {choirs.map((c) => (
                                     <option key={c.id} value={c.id}>
                                         {c.name}
@@ -287,13 +281,13 @@ export default function SongsPage() {
                                     setSortOption(e.target.value);
                                     setPage(1);
                                 }}
-                                aria-label="Sort Songs"
+aria-label={t('songs.sortSongs')}
                                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-700 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100"
                             >
-                                <option value="most_liked">Most Liked (Popular)</option>
-                                <option value="newest">Newest First</option>
-                                <option value="oldest">Oldest First</option>
-                                <option value="title">Title (A - Z)</option>
+                                <option value="most_liked">{t('songs.mostLiked')}</option>
+                                <option value="newest">{t('songs.newestFirst')}</option>
+                                <option value="oldest">{t('songs.oldestFirst')}</option>
+                                <option value="title">{t('songs.titleAZ')}</option>
                             </select>
                         </div>
                     </div>
@@ -319,7 +313,7 @@ export default function SongsPage() {
                                         size={14}
                                         className={onlyLiked ? 'fill-rose-600 text-rose-600' : 'text-slate-400'}
                                     />
-                                    <span>My Liked Songs</span>
+<span>{t('songs.myLiked')}</span>
                                 </button>
                             )}
 
@@ -329,7 +323,7 @@ export default function SongsPage() {
                                     onClick={handleResetFilters}
                                     className="text-xs font-semibold text-slate-400 hover:text-rose-600 transition"
                                 >
-                                    Reset Filters
+                                    {t('songs.resetFilters')}
                                 </button>
                             )}
                         </div>
@@ -341,14 +335,14 @@ export default function SongsPage() {
             <main className={`mx-auto flex w-full max-w-7xl min-h-0 flex-1 flex-col px-4 pt-8 sm:px-6 sm:pt-10 lg:px-8 ${playingSong ? 'pb-24' : 'pb-6'}`}>
                 {/* Result count summary */}
                 <div className="mb-6 flex shrink-0 items-center justify-between">
-                    <p className="text-sm font-semibold text-slate-500">
+<p className="text-sm font-semibold text-slate-500">
                         {loading
-                            ? 'Loading songs...'
-                            : `Showing ${songs.length} of ${pagination.total || songs.length} choir songs`}
+                            ? t('songs.loading')
+                            : t('songs.showing', { shown: songs.length, total: pagination.total || songs.length })}
                     </p>
                     {onlyLiked && (
                         <span className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
-                            <Heart size={12} className="fill-rose-500" /> Filtered by Liked Songs
+                            <Heart size={12} className="fill-rose-500" /> {t('songs.filteredByLiked')}
                         </span>
                     )}
                 </div>
@@ -365,11 +359,11 @@ export default function SongsPage() {
                     <div className="min-h-0 flex-1 overflow-y-auto">
                         <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-16 text-center shadow-sm">
                         <Music2 size={48} className="mx-auto text-slate-300 mb-3" />
-                        <h3 className="text-lg font-bold text-slate-900">No songs match your criteria</h3>
+<h3 className="text-lg font-bold text-slate-900">{t('songs.noMatch')}</h3>
                         <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
                             {hasActiveFilters
-                                ? 'Try clearing your search keyword or selecting a different choir.'
-                                : 'Our Ethiopian choir songs catalog is being updated. Please check back soon.'}
+                                ? t('songs.noMatchText')
+                                : t('songs.updating')}
                         </p>
                         {hasActiveFilters && (
                             <button
@@ -377,7 +371,7 @@ export default function SongsPage() {
                                 onClick={handleResetFilters}
                                 className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-blue-700 transition"
                             >
-                                Clear All Filters
+                                {t('songs.clearAllFilters')}
                             </button>
                         )}
                         </div>
@@ -385,26 +379,24 @@ export default function SongsPage() {
                 ) : (
                     <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                         <div className="h-full overflow-y-auto pb-16 [scrollbar-color:#94a3b8_#f8fafc] [scrollbar-width:thin]">
-                            <div className="sticky top-0 z-10 hidden grid-cols-[minmax(0,1.5fr)_minmax(140px,1fr)_minmax(140px,0.8fr)_auto] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 sm:grid">
-                                <span>Song</span>
-                                <span>Created by Choir</span>
-                                <span>Ethiopian Scale</span>
-                                <span className="text-right">Likes</span>
+<div className="sticky top-0 z-10 hidden grid-cols-[minmax(0,1.5fr)_minmax(140px,1fr)_auto] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 sm:grid">
+                                <span>{t('songs.song')}</span>
+                                <span>{t('songs.createdByChoir')}</span>
+                                <span className="text-right">{t('songs.likes')}</span>
                             </div>
                             {songs.map((song, index) => (
-                                <div key={song.id} className="grid gap-3 border-b border-slate-100 px-4 py-3.5 last:border-b-0 hover:bg-blue-50/40 sm:grid-cols-[minmax(0,1.5fr)_minmax(140px,1fr)_minmax(140px,0.8fr)_auto] sm:items-center sm:gap-4 sm:px-5">
+                                <div key={song.id} className="grid gap-3 border-b border-slate-100 px-4 py-3.5 last:border-b-0 hover:bg-blue-50/40 sm:grid-cols-[minmax(0,1.5fr)_minmax(140px,1fr)_auto] sm:items-center sm:gap-4 sm:px-5">
                                     <div className="min-w-0">
                                         <span className="mr-2 text-xs font-semibold text-slate-400">{String(index + 1).padStart(2, '0')}</span>
                                         <Link to={`/songs/${song.id}`} className="font-bold text-slate-900 transition hover:text-blue-700">
                                             {song.title}
                                         </Link>
-                                        <p className="mt-1 text-xs text-slate-500 sm:hidden">{song.choir?.name || 'Choir MKC'} · {formatScale(song.scale, song.scale_mode)}</p>
+                                        <p className="mt-1 text-xs text-slate-500 sm:hidden">{song.choir?.name || 'Choir MKC'}</p>
                                     </div>
                                     <span className="hidden truncate text-sm text-slate-600 sm:block">{song.choir?.name || 'Choir MKC'}</span>
-                                    <span className="hidden text-sm capitalize text-slate-600 sm:block">{formatScale(song.scale, song.scale_mode)}</span>
                                     <div className="flex items-center justify-between gap-3 sm:justify-end">
-                                        <span className="text-xs font-semibold text-slate-500 sm:hidden">{song.likes_count || 0} likes</span>
-                                        <button type="button" onClick={() => handleLikeToggle(song)} disabled={!canLike || likingSongId === song.id} className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${song.is_liked ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-600 hover:bg-rose-50 hover:text-rose-600'}`} aria-label={canLike ? `${song.is_liked ? 'Unlike' : 'Like'} ${song.title}` : 'Login to like this song'} title={canLike ? undefined : 'Login to like this song'}>
+                                        <span className="text-xs font-semibold text-slate-500 sm:hidden">{song.likes_count || 0} {t('song.likedBy')}</span>
+                                        <button type="button" onClick={() => handleLikeToggle(song)} disabled={!canLike || likingSongId === song.id} className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${song.is_liked ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-600 hover:bg-rose-50 hover:text-rose-600'}`} aria-label={canLike ? (song.is_liked ? t('songs.unlike') : t('songs.like')) : t('songs.loginToLike')} title={canLike ? undefined : t('songs.loginToLike')}>
                                             <Heart size={14} className={song.is_liked ? 'fill-current' : ''} />
                                             <span className="hidden sm:inline">{song.likes_count || 0}</span>
                                         </button>
@@ -427,7 +419,7 @@ export default function SongsPage() {
                             disabled={page <= 1}
                             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            <ChevronLeft size={15} /> Previous
+                            <ChevronLeft size={15} /> {t('common.previous')}
                         </button>
 
                         {/* Page number buttons */}
@@ -487,7 +479,7 @@ export default function SongsPage() {
                             disabled={page >= pagination.last_page}
                             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            Next <ChevronRight size={15} />
+                            {t('common.next')} <ChevronRight size={15} />
                         </button>
                     </div>
                 )}
@@ -522,7 +514,7 @@ export default function SongsPage() {
                                     download
                                     className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                                 >
-                                    <Download size={14} /> Download
+                                    <Download size={14} /> {t('song.download')}
                                 </a>
                             )}
                         </div>
