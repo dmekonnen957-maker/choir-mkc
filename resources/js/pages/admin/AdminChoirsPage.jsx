@@ -9,8 +9,10 @@ import Alert from '../../components/ui/Alert';
 import Input from '../../components/ui/Input';
 import ChoirFormModal from '../../components/admin/ChoirFormModal';
 import ChoirDeleteModal from '../../components/admin/ChoirDeleteModal';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function AdminChoirsPage() {
+    const { t } = useLanguage();
     const [choirs, setChoirs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -28,9 +30,9 @@ export default function AdminChoirsPage() {
         setLoading(true);
         api.get('/admin/choirs', { params: { per_page: 100 } })
             .then((res) => setChoirs(res.data.data.items || []))
-            .catch(() => setError('Failed to load choirs.'))
+            .catch(() => setError(t('choirs.load_error', 'Failed to load choirs.')))
             .finally(() => setLoading(false));
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         load();
@@ -56,13 +58,13 @@ export default function AdminChoirsPage() {
     };
 
     const handleSaved = () => {
-        setSuccessMessage(editingChoir ? 'Choir updated successfully.' : 'Choir created successfully.');
+        setSuccessMessage(editingChoir ? t('choirs.update_success', 'Choir updated successfully.') : t('choirs.create_success', 'Choir created successfully.'));
         load();
         setTimeout(() => setSuccessMessage(''), 4000);
     };
 
     const handleDeleted = (deletedId) => {
-        setSuccessMessage('Choir deleted successfully.');
+        setSuccessMessage(t('choirs.delete_success', 'Choir deleted successfully.'));
         setChoirs((prev) => prev.filter((c) => c.id !== deletedId));
         setTimeout(() => setSuccessMessage(''), 4000);
     };
@@ -75,13 +77,13 @@ export default function AdminChoirsPage() {
         <div className="space-y-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-slate-900">Choirs Management</h1>
+                    <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('choirs.management_title', 'Choirs Management')}</h1>
                     <p className="mt-1 text-sm text-slate-500">
-                        Manage church choirs, team leaders, uniforms, and repertoire.
+                        {t('choirs.management_subtitle', 'Manage church choirs, team leaders, uniforms, and repertoire.')}
                     </p>
                 </div>
                 <Button onClick={handleCreateClick}>
-                    <Plus size={16} className="mr-1.5" /> New Choir
+                    <Plus size={16} className="mr-1.5" /> {t('choirs.new_choir', 'New Choir')}
                 </Button>
             </div>
 
@@ -90,7 +92,7 @@ export default function AdminChoirsPage() {
 
             <div className="max-w-sm">
                 <Input
-                    placeholder="Search choirs..."
+                    placeholder={t('choirs.search_placeholder', 'Search choirs...')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     trailing={<Search size={16} className="text-slate-400" />}
@@ -99,18 +101,18 @@ export default function AdminChoirsPage() {
 
             {loading ? (
                 <div className="flex h-48 items-center justify-center">
-                    <LoadingSpinner text="Loading choirs..." />
+                    <LoadingSpinner text={t('common.loading', 'Loading...')} />
                 </div>
             ) : filtered.length === 0 ? (
                 <Card className="py-16 text-center">
                     <Building2 size={32} className="mx-auto text-slate-300" />
-                    <p className="mt-2 text-sm text-slate-500 font-medium">No choirs found.</p>
+                    <p className="mt-2 text-sm text-slate-500 font-medium">{t('choirs.empty_title', 'No choirs found.')}</p>
                     <button
                         type="button"
                         onClick={handleCreateClick}
                         className="mt-3 text-sm font-bold text-blue-600 hover:underline"
                     >
-                        Create your first choir
+                        {t('common.create', 'Create')}
                     </button>
                 </Card>
             ) : (
@@ -142,7 +144,7 @@ export default function AdminChoirsPage() {
                                             <div className="min-w-0 flex-1">
                                                 <p className="truncate font-bold text-slate-900">{choir.name}</p>
                                                 <p className="truncate text-xs text-slate-500 font-medium">
-                                                    {choir.church_name || choir.choir_type || 'Choir'}
+                                                    {choir.church_name || choir.choir_type || t('common.choir', 'Choir')}
                                                 </p>
                                             </div>
                                         </div>
@@ -162,7 +164,7 @@ export default function AdminChoirsPage() {
                                     <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
                                         <span className="inline-flex items-center gap-1 font-semibold text-slate-700 truncate">
                                             <User size={14} className="text-blue-600 shrink-0" />{' '}
-                                            {choir.team_leader?.name || 'No leader assigned'}
+                                            {choir.team_leader?.name || t('choirs.form_no_leader', 'No leader assigned')}
                                         </span>
 
                                         {(choir.uniform_primary_color || choir.uniform_secondary_color) && (
@@ -202,7 +204,7 @@ export default function AdminChoirsPage() {
                                                 type="button"
                                                 onClick={(e) => handleEditClick(choir, e)}
                                                 className="rounded-lg p-1.5 text-slate-500 hover:bg-blue-50 hover:text-blue-700 transition"
-                                                title="Edit Choir"
+                                                title={t('choirs.edit_choir', 'Edit Choir')}
                                             >
                                                 <Pencil size={14} />
                                             </button>
@@ -210,7 +212,7 @@ export default function AdminChoirsPage() {
                                                 type="button"
                                                 onClick={(e) => handleDeleteClick(choir, e)}
                                                 className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition"
-                                                title="Delete Choir"
+                                                title={t('choirs.delete_choir', 'Delete Choir')}
                                             >
                                                 <Trash2 size={14} />
                                             </button>

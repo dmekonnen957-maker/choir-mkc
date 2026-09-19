@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../axios';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import PasswordInput from '../../components/ui/PasswordInput';
@@ -54,6 +55,7 @@ function formatDate(val) {
 }
 
 export default function AdminUsersPage() {
+    const { t } = useLanguage();
     const [users, setUsers] = useState([]);
     const [choirs, setChoirs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -339,12 +341,12 @@ export default function AdminUsersPage() {
             {/* Header */}
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-ink-900">User Management</h1>
+                    <h1 className="text-2xl font-bold text-ink-900">{t('users.management_title', 'User Accounts')}</h1>
                     <p className="text-sm text-ink-500">
-                        Review member registration requests, approve/reject accounts, and assign roles & choirs.
+                        {t('users.management_subtitle', 'Manage user registrations, system access permissions, and account approvals.')}
                     </p>
                 </div>
-                <Button onClick={openCreateModal}><UserPlus size={16} className="mr-2" /> Create User</Button>
+                <Button onClick={openCreateModal}><UserPlus size={16} className="mr-2" /> {t('users.create_user', 'Create User')}</Button>
             </div>
 
             {/* Notification toast */}
@@ -361,10 +363,10 @@ export default function AdminUsersPage() {
             {/* Status Tabs */}
             <div className="flex flex-wrap gap-2 border-b border-blue-100 pb-3">
                 {[
-                    { key: 'all', label: 'All Users', icon: Users },
-                    { key: 'pending', label: 'Pending Approval', icon: Clock, count: statusFilter === 'all' ? pendingCount : null },
-                    { key: 'approved', label: 'Approved', icon: UserCheck },
-                    { key: 'rejected', label: 'Rejected', icon: UserX },
+                    { key: 'all', label: t('role.all_roles', 'All Users'), icon: Users },
+                    { key: 'pending', label: t('status.pending_review', 'Pending Review'), icon: Clock, count: statusFilter === 'all' ? pendingCount : null },
+                    { key: 'approved', label: t('status.approved', 'Approved'), icon: UserCheck },
+                    { key: 'rejected', label: t('status.rejected', 'Rejected'), icon: UserX },
                 ].map((tab) => {
                     const active = statusFilter === tab.key;
                     return (
@@ -402,7 +404,7 @@ export default function AdminUsersPage() {
                 <div className="relative sm:col-span-2">
                     <input
                         type="text"
-                        placeholder="Search by name, email, or phone..."
+                        placeholder={t('users.search_placeholder', 'Search users by name, email, phone...')}
                         value={search}
                         onChange={(e) => {
                             setSearch(e.target.value);
@@ -423,10 +425,10 @@ export default function AdminUsersPage() {
                         }}
                         className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm text-ink-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     >
-                        <option value="all">All Roles</option>
-                        <option value="member">Member</option>
-                        <option value="team_leader">Team Leader</option>
-                        <option value="admin">Admin</option>
+                        <option value="all">{t('role.all_roles', 'All Roles')}</option>
+                        <option value="member">{t('role.member', 'Member')}</option>
+                        <option value="team_leader">{t('role.team_leader', 'Team Leader')}</option>
+                        <option value="admin">{t('role.admin', 'Admin')}</option>
                     </select>
                 </div>
 
@@ -440,7 +442,7 @@ export default function AdminUsersPage() {
                         }}
                         className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm text-ink-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                     >
-                        <option value="all">All Choirs</option>
+                        <option value="all">{t('common.choir', 'Choir')} — {t('status.all_statuses', 'All')}</option>
                         {choirs.map((c) => (
                             <option key={c.id} value={c.id}>
                                 {c.name}
@@ -459,21 +461,21 @@ export default function AdminUsersPage() {
                 ) : users.length === 0 ? (
                     <div className="py-20 text-center text-ink-500">
                         <Users size={40} className="mx-auto mb-2 text-ink-300" />
-                        <p className="font-semibold text-ink-700">No users found</p>
-                        <p className="text-xs text-ink-400">Try adjusting your filters or search terms.</p>
+                        <p className="font-semibold text-ink-700">{t('common.no_data', 'No data found')}</p>
+                        <p className="text-xs text-ink-400">{t('common.no_results', 'No results found.')}</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm text-ink-700">
                             <thead className="border-b border-blue-100 bg-blue-50/50 text-xs font-semibold uppercase tracking-wider text-ink-500">
                                 <tr>
-                                    <th className="px-5 py-3.5">User</th>
-                                    <th className="px-5 py-3.5">Phone</th>
-                                    <th className="px-5 py-3.5">Choir</th>
-                                    <th className="px-5 py-3.5">Role</th>
-                                    <th className="px-5 py-3.5">Status</th>
-                                    <th className="px-5 py-3.5">Registered</th>
-                                    <th className="px-5 py-3.5 text-right">Actions</th>
+                                    <th className="px-5 py-3.5">{t('users.col_user', 'User')}</th>
+                                    <th className="px-5 py-3.5">{t('common.phone', 'Phone')}</th>
+                                    <th className="px-5 py-3.5">{t('users.col_choir', 'Choir')}</th>
+                                    <th className="px-5 py-3.5">{t('users.col_role', 'Assigned Role')}</th>
+                                    <th className="px-5 py-3.5">{t('users.col_status', 'Account Status')}</th>
+                                    <th className="px-5 py-3.5">{t('users.col_registered', 'Registered On')}</th>
+                                    <th className="px-5 py-3.5 text-right">{t('common.actions', 'Actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-blue-50">
@@ -552,21 +554,21 @@ export default function AdminUsersPage() {
                                                                 type="button"
                                                                 onClick={() => handleApprove(u)}
                                                                 disabled={saving}
-                                                                title="Approve User"
+                                                                title={t('users.approve_user', 'Approve Account')}
                                                                 className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 hover:text-emerald-800 disabled:opacity-50"
                                                             >
                                                                 <CheckCircle2 size={14} />
-                                                                Approve
+                                                                {t('status.approved', 'Approve')}
                                                             </button>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleOpenReject(u)}
                                                                 disabled={saving}
-                                                                title="Reject User"
+                                                                title={t('users.reject_user', 'Reject Account')}
                                                                 className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 hover:text-red-800 disabled:opacity-50"
                                                             >
                                                                 <XCircle size={14} />
-                                                                Reject
+                                                                {t('status.rejected', 'Reject')}
                                                             </button>
                                                         </>
                                                     )}
@@ -577,7 +579,7 @@ export default function AdminUsersPage() {
                                                         className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-50"
                                                     >
                                                         <Edit3 size={13} />
-                                                        Review
+                                                        {t('users.review_title', 'Review')}
                                                     </button>
 
                                                     {can('users.delete') && u.id !== currentUser?.id && (
@@ -585,11 +587,11 @@ export default function AdminUsersPage() {
                                                             type="button"
                                                             onClick={() => setDeleteTarget(u)}
                                                             disabled={saving}
-                                                            title="Delete User"
+                                                            title={t('common.delete', 'Delete')}
                                                             className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100 hover:text-red-800 disabled:opacity-50"
                                                         >
                                                             <Trash2 size={14} />
-                                                            Delete
+                                                            {t('common.delete', 'Delete')}
                                                         </button>
                                                     )}
                                                 </div>
@@ -633,7 +635,7 @@ export default function AdminUsersPage() {
                 <Modal
                     open={modalOpen}
                     onClose={() => setModalOpen(false)}
-                    title={`Review User: ${selectedUser.name}`}
+                    title={`${t('users.review_title', 'Review User Registration')}: ${selectedUser.name}`}
                     size="lg"
                 >
                     <div className="space-y-6">
@@ -641,19 +643,19 @@ export default function AdminUsersPage() {
                         <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">Full Name</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">{t('common.full_name', 'Full Name')}</p>
                                     <p className="mt-0.5 text-sm font-bold text-ink-900">{selectedUser.name}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">Email</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">{t('common.email', 'Email')}</p>
                                     <p className="mt-0.5 text-sm font-medium text-ink-800">{selectedUser.email}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">Phone</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">{t('common.phone', 'Phone')}</p>
                                     <p className="mt-0.5 text-sm font-medium text-ink-800">{selectedUser.phone || '—'}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">Registered Date</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">{t('users.col_registered', 'Registered On')}</p>
                                     <p className="mt-0.5 text-sm font-medium text-ink-800">{formatDate(selectedUser.created_at)}</p>
                                 </div>
                             </div>
@@ -667,7 +669,7 @@ export default function AdminUsersPage() {
 
                             {selectedUser.rejection_reason && (
                                 <div className="mt-3 rounded-lg bg-red-50 p-2.5 text-xs text-red-700">
-                                    <span className="font-semibold">Rejection reason:</span> {selectedUser.rejection_reason}
+                                    <span className="font-semibold">{t('users.rejection_reason_label', 'Rejection Reason')}:</span> {selectedUser.rejection_reason}
                                 </div>
                             )}
                         </div>
@@ -682,7 +684,7 @@ export default function AdminUsersPage() {
                                 {/* Role Selection */}
                                 <div>
                                     <label className="mb-1.5 block text-xs font-semibold text-ink-700">
-                                        Assign Role <span className="text-blue-600">*</span>
+                                        {t('common.role', 'Role')} <span className="text-blue-600">*</span>
                                     </label>
                                     <select
                                         value={editRole}
@@ -712,7 +714,7 @@ export default function AdminUsersPage() {
                                 {/* Choir Selection */}
                                 <div>
                                     <label className="mb-1.5 block text-xs font-semibold text-ink-700">
-                                        Assign Choir <span className="text-blue-600">*</span>
+                                        {t('common.choir', 'Choir')} <span className="text-blue-600">*</span>
                                     </label>
                                     <select
                                         value={editChoirId}
@@ -735,7 +737,7 @@ export default function AdminUsersPage() {
                             {/* Status Selection */}
                             <div>
                                 <label className="mb-1.5 block text-xs font-semibold text-ink-700">
-                                    Account Status
+                                    {t('users.col_status', 'Account Status')}
                                 </label>
                                 <select
                                     value={editStatus}
@@ -761,7 +763,7 @@ export default function AdminUsersPage() {
                                             className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
                                         >
                                             <CheckCircle2 size={16} />
-                                            Approve Account
+                                            {t('users.approve_user', 'Approve Account')}
                                         </button>
                                         <button
                                             type="button"
@@ -770,7 +772,7 @@ export default function AdminUsersPage() {
                                             className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:opacity-50"
                                         >
                                             <XCircle size={16} />
-                                            Reject
+                                            {t('users.reject_user', 'Reject Account')}
                                         </button>
                                     </>
                                 )}
@@ -781,14 +783,14 @@ export default function AdminUsersPage() {
                                     variant="outline"
                                     onClick={() => setModalOpen(false)}
                                 >
-                                    Cancel
+                                    {t('common.cancel', 'Cancel')}
                                 </Button>
                                 <Button
                                     variant="primary"
                                     loading={saving}
                                     onClick={handleSaveChanges}
                                 >
-                                    Save Changes
+                                    {t('common.save', 'Save')}
                                 </Button>
                             </div>
                         </div>
@@ -801,7 +803,7 @@ export default function AdminUsersPage() {
                 <Modal
                     open={rejectModalOpen}
                     onClose={() => setRejectModalOpen(false)}
-                    title="Reject Registration"
+                    title={t('users.reject_user', 'Reject Account')}
                     size="md"
                 >
                     <div className="space-y-4">
@@ -812,13 +814,13 @@ export default function AdminUsersPage() {
 
                         <div>
                             <label className="mb-1 block text-xs font-semibold text-ink-700">
-                                Rejection Reason (Optional)
+                                {t('users.rejection_reason_label', 'Rejection Reason')}
                             </label>
                             <textarea
                                 rows={3}
                                 value={rejectionReason}
                                 onChange={(e) => setRejectionReason(e.target.value)}
-                                placeholder="Provide a reason for rejection (e.g. invalid information or choir full)..."
+                                placeholder={t('users.rejection_reason_placeholder', 'Specify the reason for rejecting this user registration...')}
                                 className="w-full rounded-xl border border-blue-200 p-3 text-sm text-ink-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                             />
                         </div>
@@ -828,14 +830,14 @@ export default function AdminUsersPage() {
                                 variant="outline"
                                 onClick={() => setRejectModalOpen(false)}
                             >
-                                Cancel
+                                {t('common.cancel', 'Cancel')}
                             </Button>
                             <Button
                                 variant="danger"
                                 loading={saving}
                                 onClick={handleConfirmReject}
                             >
-                                Confirm Rejection
+                                {t('common.confirm', 'Confirm')}
                             </Button>
                         </div>
                     </div>
@@ -847,13 +849,13 @@ export default function AdminUsersPage() {
                 <Modal
                     open={createModalOpen}
                     onClose={closeCreateModal}
-                    title="Create User"
+                    title={t('users.create_modal_title', 'Create New User Account')}
                     size="lg"
                 >
                     <form onSubmit={handleCreateSubmit} className="space-y-6">
                         <div className="grid gap-4 sm:grid-cols-2">
                             <Input
-                                label="Full Name"
+                                label={t('common.full_name', 'Full Name')}
                                 value={createForm.name}
                                 onChange={handleCreateChange('name')}
                                 error={createErrors.name?.[0]}
@@ -862,7 +864,7 @@ export default function AdminUsersPage() {
                                 required
                             />
                             <Input
-                                label="Email"
+                                label={t('common.email', 'Email')}
                                 type="email"
                                 value={createForm.email}
                                 onChange={handleCreateChange('email')}
@@ -870,7 +872,7 @@ export default function AdminUsersPage() {
                                 required
                             />
                             <Input
-                                label="Phone"
+                                label={t('common.phone', 'Phone')}
                                 prefix="+251"
                                 value={createForm.phone}
                                 onChange={handleCreatePhoneChange}
@@ -882,7 +884,7 @@ export default function AdminUsersPage() {
                             />
                             <div>
                                 <label className="mb-1.5 block text-xs font-semibold text-ink-700">
-                                    Choir <span className="text-blue-600">*</span>
+                                    {t('common.choir', 'Choir')} <span className="text-blue-600">*</span>
                                 </label>
                                 <select
                                     value={createForm.choir_id}
@@ -905,7 +907,7 @@ export default function AdminUsersPage() {
                         <div className="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <label className="mb-1.5 block text-xs font-semibold text-ink-700">
-                                    Role <span className="text-blue-600">*</span>
+                                    {t('common.role', 'Role')} <span className="text-blue-600">*</span>
                                 </label>
                                 <select
                                     value={createForm.role}
@@ -930,7 +932,7 @@ export default function AdminUsersPage() {
                             </div>
                             <div>
                                 <label className="mb-1.5 block text-xs font-semibold text-ink-700">
-                                    Account Status
+                                    {t('users.col_status', 'Account Status')}
                                 </label>
                                 <select
                                     value={createForm.status}
@@ -946,11 +948,11 @@ export default function AdminUsersPage() {
 
                         <div className="border-t border-blue-100 pt-4">
                             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400">
-                                Password
+                                {t('users.password_field', 'Password')}
                             </p>
                             <div className="space-y-3">
                                 <PasswordInput
-                                    label="Password"
+                                    label={t('users.password_field', 'Password')}
                                     value={createForm.password}
                                     onChange={handleCreateChange('password')}
                                     error={createErrors.password?.[0]}
@@ -958,7 +960,7 @@ export default function AdminUsersPage() {
                                     minLength={8}
                                 />
                                 <PasswordInput
-                                    label="Confirm Password"
+                                    label={t('users.confirm_password', 'Confirm Password')}
                                     value={createForm.password_confirmation}
                                     onChange={handleCreateChange('password_confirmation')}
                                     error={createErrors.password_confirmation?.[0]}
@@ -973,10 +975,10 @@ export default function AdminUsersPage() {
                             </div>
                             <div className="flex items-center gap-2">
                                 <Button variant="outline" onClick={closeCreateModal} disabled={createSaving}>
-                                    Cancel
+                                    {t('common.cancel', 'Cancel')}
                                 </Button>
                                 <Button variant="primary" loading={createSaving} type="submit">
-                                    Create User
+                                    {t('users.create_user', 'Create User')}
                                 </Button>
                             </div>
                         </div>
@@ -989,12 +991,12 @@ export default function AdminUsersPage() {
                 <Modal
                     open={!!deleteTarget}
                     onClose={() => setDeleteTarget(null)}
-                    title="Delete User"
+                    title={t('common.confirm_delete', 'Confirm Delete')}
                     size="sm"
                 >
                     <div className="space-y-4">
                         <p className="text-sm text-ink-700">
-                            Are you sure you want to delete this user?
+                            {t('users.delete_confirm', 'Are you sure you want to delete this user?')}
                         </p>
                         <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
                             <span className="font-semibold">{deleteTarget.name}</span>{' '}
@@ -1007,10 +1009,10 @@ export default function AdminUsersPage() {
                         </p>
                         <div className="flex justify-end gap-2 pt-2">
                             <Button variant="ghost" onClick={() => setDeleteTarget(null)} disabled={deleting}>
-                                Cancel
+                                {t('common.cancel', 'Cancel')}
                             </Button>
                             <Button variant="danger" onClick={confirmDelete} disabled={deleting}>
-                                {deleting ? 'Deleting…' : 'Delete User'}
+                                {deleting ? t('common.loading', 'Loading...') : t('common.delete', 'Delete')}
                             </Button>
                         </div>
                     </div>

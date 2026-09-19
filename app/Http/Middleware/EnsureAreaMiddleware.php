@@ -33,6 +33,12 @@ class EnsureAreaMiddleware
             return $next($request);
         }
 
+        // Normalize requested allowed areas
+        $normalizedAreas = array_map(function ($a) {
+            $a = str_replace('-', '_', strtolower(trim($a)));
+            return $a === 'musicians' ? 'musician' : $a;
+        }, $areas);
+
         // Check if user has any role with an allowed area
         $userRoleNames = $user->getRoleNames()->toArray();
         
@@ -52,19 +58,36 @@ class EnsureAreaMiddleware
             
             // If not a core role, check the role's area field
             if (! $roleArea) {
-                $role = Role::where('name', $roleName)->where('guard_name', 'api')->first();
+                $role = Role::where('name', $roleName)->where('guard_name', 'api')->with('permissions')->first();
                 $roleArea = $role?->area;
+                if (! $roleArea && $role) {
+                    $perms = $role->permissions->pluck('name')->toArray();
+                    foreach ($perms as $p) {
+                        if (str_starts_with($p, 'users.') || str_starts_with($p, 'roles.') || str_starts_with($p, 'permissions.') || str_starts_with($p, 'audit_logs.') || str_starts_with($p, 'reports.') || str_starts_with($p, 'settings.') || $p === 'choirs.create' || $p === 'choirs.delete') {
+                            $roleArea = 'admin';
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if ($roleArea) {
+                $roleArea = str_replace('-', '_', strtolower(trim($roleArea)));
+                if ($roleArea === 'musicians') {
+                    $roleArea = 'musician';
+                }
             }
             
-            if ($roleArea && in_array($roleArea, $areas, true)) {
+            if ($roleArea && in_array($roleArea, $normalizedAreas, true)) {
                 return $next($request);
             }
         }
 
         // Also check legacy role column
         $legacyRole = strtolower(trim((string) $user->getAttribute('role')));
-        $legacyArea = $coreRoleAreas[$legacyRole] ?? null;
-        if ($legacyArea && in_array($legacyArea, $areas, true)) {
+        $legacyArea = $coreRoleAreas[$legacyRole] ?? $legacyRole;
+        $legacyArea = str_replace('-', '_', $legacyArea);
+        if ($legacyArea && in_array($legacyArea, $normalizedAreas, true)) {
             return $next($request);
         }
 

@@ -28,6 +28,7 @@ import {
 import Modal from '../components/ui/Modal';
 import MemberSongLyricsModal from '../components/member/MemberSongLyricsModal';
 import EmptyState from '../components/member/EmptyState';
+import { useLanguage } from '../context/LanguageContext';
 
 /* ──────────────────────────────────────────────
  | Helpers
@@ -271,6 +272,7 @@ function WeekView({ currentDate, eventsByDate, onEventClick }) {
  | Agenda View
  | ─────────────────────────────────────────────*/
 function AgendaView({ events, onEventClick }) {
+    const { t } = useLanguage();
     // Group by date
     const grouped = useMemo(() => {
         const map = {};
@@ -286,8 +288,8 @@ function AgendaView({ events, onEventClick }) {
         return (
             <EmptyState
                 icon={Calendar}
-                title="No scheduled events"
-                message="Your choir calendar will appear here when performances and rehearsals are scheduled."
+                title={t('calendar.no_events', 'No events scheduled for this period.')}
+                message={t('calendar.no_events', 'No events scheduled for this period.')}
             />
         );
     }
@@ -313,7 +315,7 @@ function AgendaView({ events, onEventClick }) {
                                 </span>
                             </div>
                             <span className={`text-sm font-bold ${isToday ? 'text-blue-700' : 'text-slate-600'}`}>
-                                {isToday ? 'Today — ' : ''}{formatDisplayDate(date)}
+                                {isToday ? `${t('calendar.today', 'Today')} — ` : ''}{formatDisplayDate(date)}
                             </span>
                         </div>
                         <div className="ml-12 space-y-2">
@@ -380,6 +382,7 @@ function AgendaView({ events, onEventClick }) {
  | Upcoming Events Panel (sidebar)
  | ─────────────────────────────────────────────*/
 function UpcomingPanel({ events, onEventClick }) {
+    const { t } = useLanguage();
     const today = toYMD(new Date());
     const upcoming = useMemo(
         () => events.filter((e) => e.date && e.date >= today).slice(0, 8),
@@ -389,8 +392,8 @@ function UpcomingPanel({ events, onEventClick }) {
     if (upcoming.length === 0) {
         return (
             <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-                <h3 className="mb-3 text-sm font-black uppercase tracking-wider text-slate-400">Upcoming</h3>
-                <p className="text-xs text-slate-400">No upcoming events.</p>
+                <h3 className="mb-3 text-sm font-black uppercase tracking-wider text-slate-400">{t('calendar.today', 'Today')}</h3>
+                <p className="text-xs text-slate-400">{t('calendar.no_events', 'No events scheduled for this period.')}</p>
             </div>
         );
     }
@@ -398,7 +401,7 @@ function UpcomingPanel({ events, onEventClick }) {
     return (
         <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
             <div className="border-b border-slate-100 px-5 py-4">
-                <h3 className="text-sm font-black uppercase tracking-wider text-slate-500">Upcoming Events</h3>
+                <h3 className="text-sm font-black uppercase tracking-wider text-slate-500">{t('calendar.title', 'Choir Schedule & Calendar')}</h3>
             </div>
             <div className="divide-y divide-slate-50">
                 {upcoming.map((ev) => {
@@ -437,6 +440,7 @@ function UpcomingPanel({ events, onEventClick }) {
  | Event Details Modal
  | ─────────────────────────────────────────────*/
 function EventDetailsModal({ event, open, onClose }) {
+    const { t } = useLanguage();
     const [lyricsSong, setLyricsSong] = useState(null);
 
     if (!event) return null;
@@ -465,7 +469,7 @@ function EventDetailsModal({ event, open, onClose }) {
                             <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
                                 <Calendar size={16} className="mt-0.5 shrink-0 text-slate-400" />
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Date</p>
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{t('common.date', 'Date')}</p>
                                     <p className="text-sm font-bold text-slate-800">{formatDisplayDate(event.date)}</p>
                                 </div>
                             </div>
@@ -474,7 +478,7 @@ function EventDetailsModal({ event, open, onClose }) {
                             <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
                                 <Clock size={16} className="mt-0.5 shrink-0 text-slate-400" />
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Time</p>
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{t('calendar.start_time', 'Start Time:')}</p>
                                     <p className="text-sm font-bold text-slate-800">
                                         {formatTime(event.start_time)}
                                         {event.end_time && ` – ${formatTime(event.end_time)}`}
@@ -486,7 +490,7 @@ function EventDetailsModal({ event, open, onClose }) {
                             <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
                                 <MapPin size={16} className="mt-0.5 shrink-0 text-slate-400" />
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Location</p>
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{t('calendar.venue', 'Venue:')}</p>
                                     <p className="text-sm font-bold text-slate-800">{event.location}</p>
                                 </div>
                             </div>
@@ -495,7 +499,7 @@ function EventDetailsModal({ event, open, onClose }) {
                             <div className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3">
                                 <Users size={16} className="mt-0.5 shrink-0 text-slate-400" />
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Choir</p>
+                                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{t('calendar.choir', 'Choir:')}</p>
                                     <p className="text-sm font-bold text-slate-800">{event.choir.name}</p>
                                 </div>
                             </div>
@@ -505,7 +509,7 @@ function EventDetailsModal({ event, open, onClose }) {
                     {/* Description */}
                     {event.description && (
                         <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                            <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">Description</p>
+                            <p className="mb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">{t('common.notes', 'Notes')}</p>
                             <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{event.description}</p>
                         </div>
                     )}
@@ -514,7 +518,7 @@ function EventDetailsModal({ event, open, onClose }) {
                     {event.songs && event.songs.length > 0 && (
                         <div>
                             <p className="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-500">
-                                {event.type === 'performance' ? 'Performance Songs' : 'Songs to Practice'}
+                                {t('calendar.songs', 'Scheduled Songs')}
                             </p>
                             <div className="space-y-2">
                                 {event.songs.map((song) => (
@@ -549,7 +553,7 @@ function EventDetailsModal({ event, open, onClose }) {
                             onClick={onClose}
                             className="rounded-xl border border-slate-200 bg-slate-50 px-6 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
                         >
-                            Close
+                            {t('common.close', 'Close')}
                         </button>
                     </div>
                 </div>
@@ -603,6 +607,7 @@ function FilterSelect({ label, value, onChange, options }) {
  | Main CalendarPage
  | ─────────────────────────────────────────────*/
 export default function CalendarPage({ fetchEvents, role = 'member', pageTitle, pageSubtitle }) {
+    const { t } = useLanguage();
     const today = toYMD(new Date());
     const [currentDate, setCurrentDate] = useState(today);       // YYYY-MM-DD anchor
     const [view, setView]               = useState('month');      // month | week | agenda
@@ -707,14 +712,14 @@ export default function CalendarPage({ fetchEvents, role = 'member', pageTitle, 
     }, []);
 
     const choirOptions = [
-        { value: '', label: 'All Choirs' },
+        { value: '', label: t('calendar.filter_all', 'All Events') },
         ...choirs.map((c) => ({ value: String(c.id), label: c.name })),
     ];
 
     const typeOptions = [
-        { value: '', label: 'All Event Types' },
-        { value: 'performance', label: 'Performance' },
-        { value: 'rehearsal', label: 'Rehearsal' },
+        { value: '', label: t('calendar.filter_all', 'All Events') },
+        { value: 'performance', label: t('calendar.filter_performances', 'Worship') },
+        { value: 'rehearsal', label: t('calendar.filter_rehearsals', 'Practice') },
     ];
 
     return (
@@ -722,10 +727,10 @@ export default function CalendarPage({ fetchEvents, role = 'member', pageTitle, 
             {/* Page header */}
             <div>
                 <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-                    {pageTitle || 'Calendar'}
+                    {pageTitle || t('calendar.title', 'Choir Schedule & Calendar')}
                 </h1>
                 <p className="mt-0.5 text-sm text-slate-500">
-                    {pageSubtitle || 'View scheduled performances and rehearsals.'}
+                    {pageSubtitle || t('calendar.subtitle', 'Unified calendar of worship events, practices, and choir milestones.')}
                 </p>
             </div>
 
@@ -736,7 +741,7 @@ export default function CalendarPage({ fetchEvents, role = 'member', pageTitle, 
                     <button
                         onClick={navigatePrev}
                         className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-                        aria-label="Previous"
+                        aria-label={t('calendar.prev', 'Previous')}
                     >
                         <ChevronLeft size={16} />
                     </button>
@@ -744,12 +749,12 @@ export default function CalendarPage({ fetchEvents, role = 'member', pageTitle, 
                         onClick={goToday}
                         className="rounded-xl border border-slate-200 bg-white px-4 py-1.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                     >
-                        Today
+                        {t('calendar.today', 'Today')}
                     </button>
                     <button
                         onClick={navigateNext}
                         className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
-                        aria-label="Next"
+                        aria-label={t('calendar.next', 'Next')}
                     >
                         <ChevronRight size={16} />
                     </button>
@@ -761,14 +766,14 @@ export default function CalendarPage({ fetchEvents, role = 'member', pageTitle, 
                     {/* Filters */}
                     {role === 'admin' && choirs.length > 0 && (
                         <FilterSelect
-                            label="Choir"
+                            label={t('calendar.choir', 'Choir:')}
                             value={filterChoir}
                             onChange={setFilterChoir}
                             options={choirOptions}
                         />
                     )}
                     <FilterSelect
-                        label="Type"
+                        label={t('common.filter', 'Filter')}
                         value={filterType}
                         onChange={setFilterType}
                         options={typeOptions}
@@ -777,9 +782,9 @@ export default function CalendarPage({ fetchEvents, role = 'member', pageTitle, 
                     {/* View buttons */}
                     <div className="flex rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
                         {[
-                            { id: 'month',  label: 'Month',  icon: CalendarDays },
-                            { id: 'week',   label: 'Week',   icon: Calendar },
-                            { id: 'agenda', label: 'Agenda', icon: List },
+                            { id: 'month',  label: t('calendar.view_month', 'Month'),  icon: CalendarDays },
+                            { id: 'week',   label: t('calendar.view_week', 'Week'),   icon: Calendar },
+                            { id: 'agenda', label: t('calendar.view_list', 'List'), icon: List },
                         ].map(({ id, label, icon: Icon }) => (
                             <button
                                 key={id}
@@ -799,7 +804,7 @@ export default function CalendarPage({ fetchEvents, role = 'member', pageTitle, 
                         onClick={load}
                         disabled={loading}
                         className="flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-blue-200 hover:text-blue-600 disabled:opacity-50"
-                        aria-label="Refresh"
+                        aria-label={t('common.refresh', 'Refresh')}
                     >
                         <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                     </button>
@@ -814,7 +819,7 @@ export default function CalendarPage({ fetchEvents, role = 'member', pageTitle, 
                         <p className="text-sm font-semibold text-rose-700">{error}</p>
                     </div>
                     <button onClick={load} className="rounded-xl border border-rose-200 bg-white px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50">
-                        Try Again
+                        {t('common.refresh', 'Refresh')}
                     </button>
                 </div>
             )}
@@ -849,8 +854,8 @@ export default function CalendarPage({ fetchEvents, role = 'member', pageTitle, 
                                 <div className="mt-8 text-center">
                                     <EmptyState
                                         icon={Calendar}
-                                        title="No scheduled events"
-                                        message="Your choir calendar will appear here when performances and rehearsals are scheduled."
+                                        title={t('calendar.no_events', 'No events scheduled for this period.')}
+                                        message={t('calendar.no_events', 'No events scheduled for this period.')}
                                     />
                                 </div>
                             )}

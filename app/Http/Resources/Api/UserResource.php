@@ -12,25 +12,58 @@ class UserResource extends JsonResource
 
         // Fetch effective roles and permissions from Spatie
         $roleNames = collect($this->getRoleNames()->values()->all());
-        if (empty($roleNames) && $this->role) {
+        if ($roleNames->isEmpty() && $this->role) {
             $roleNames = collect([$this->role]);
         }
 
         // Load role models with areas
         $roleModels = \Spatie\Permission\Models\Role::where('guard_name', 'api')
             ->whereIn('name', $roleNames->toArray())
+            ->with('permissions')
             ->get()
             ->keyBy('name');
 
-        $rolesWithArea = $roleNames->map(function ($name) use ($roleModels) {
+        $coreRoleAreas = [
+            'super-admin' => 'admin',
+            'admin' => 'admin',
+            'team_leader' => 'team_leader',
+            'team-leader' => 'team_leader',
+            'member' => 'member',
+            'musician' => 'musician',
+            'musicians' => 'musician',
+        ];
+
+        $rolesWithArea = $roleNames->map(function ($name) use ($roleModels, $coreRoleAreas) {
             $role = $roleModels->get($name);
+            $area = $role?->area;
+            if ($area === 'team-leader') {
+                $area = 'team_leader';
+            } elseif ($area === 'musicians') {
+                $area = 'musician';
+            }
+
+            if (! $area) {
+                $area = $coreRoleAreas[$name] ?? null;
+            }
+
+            if (! $area && $role) {
+                $perms = $role->permissions->pluck('name')->toArray();
+                foreach ($perms as $p) {
+                    if (str_starts_with($p, 'users.') || str_starts_with($p, 'roles.') || str_starts_with($p, 'permissions.') || str_starts_with($p, 'audit_logs.') || str_starts_with($p, 'reports.') || str_starts_with($p, 'settings.') || $p === 'choirs.create' || $p === 'choirs.delete' || $p === 'choirs.manage') {
+                        $area = 'admin';
+                        break;
+                    }
+                }
+            }
+
             return [
                 'name' => $name,
-                'area' => $role?->area,
+                'area' => $area ?: 'member',
             ];
         });
 
         $permissions = $this->getAllPermissions()->pluck('name')->values()->all();
+        $primaryRole = $roleNames->first() ?? $this->role ?? 'member';
 
         return [
             'id' => $this->id,
@@ -44,8 +77,8 @@ class UserResource extends JsonResource
             'phone' => $this->phone,
             'language' => $this->language ?? 'en',
             'timezone' => $this->timezone ?? 'Africa/Addis_Ababa',
-            'role' => $this->role ?? ($roleNames[0] ?? 'member'),
-            'user_role' => $this->role ?? ($roleNames[0] ?? 'member'),
+            'role' => $primaryRole,
+            'user_role' => $primaryRole,
             'member_code' => null,
             'status' => $this->status ?? 'pending',
             'approved_at' => $this->approved_at,

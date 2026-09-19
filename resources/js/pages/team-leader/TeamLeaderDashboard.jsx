@@ -22,6 +22,7 @@ import {
 import { api } from '../../axios';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import Button from '../../components/ui/Button';
 
 function formatDate(value) {
@@ -57,6 +58,7 @@ export default function TeamLeaderDashboard() {
     const navigate = useNavigate();
     const { user, primaryChoir } = useAuth();
     const { theme } = useTheme();
+    const { t } = useLanguage();
 
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -72,11 +74,11 @@ export default function TeamLeaderDashboard() {
             const res = await api.get('/team-leader/dashboard');
             setData(res.data?.data || {});
         } catch (err) {
-            setError(err.response?.data?.message || err.message || 'Failed to load team leader dashboard.');
+            setError(err.response?.data?.message || err.message || t('dashboard.load_error', 'Failed to load team leader dashboard.'));
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         fetchDashboard();
@@ -113,10 +115,10 @@ export default function TeamLeaderDashboard() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
                     <AlertTriangle size={24} />
                 </div>
-                <h3 className="text-base font-bold">Could not load Team Leader Dashboard</h3>
+                <h3 className="text-base font-bold">{t('dashboard.load_error', 'Could not load Team Leader Dashboard')}</h3>
                 <p className="text-xs text-rose-700 max-w-md">{error}</p>
                 <Button variant="primary" size="sm" onClick={fetchDashboard} className="mt-2">
-                    <RefreshCw size={14} /> Retry
+                    <RefreshCw size={14} /> {t('common.retry', 'Retry')}
                 </Button>
             </div>
         );
@@ -130,9 +132,9 @@ export default function TeamLeaderDashboard() {
                     <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 mx-auto mb-4">
                         <Building2 size={32} />
                     </div>
-                    <h2 className="text-xl font-bold text-slate-900">Welcome, {user?.name}</h2>
+                    <h2 className="text-xl font-bold text-slate-900">{t('dashboard.welcome_back', { name: user?.name || '' })}</h2>
                     <p className="mt-1 text-sm text-slate-500 max-w-md mx-auto">
-                        You do not have a choir assigned to your team leader profile yet. An administrator will assign you to a choir soon.
+                        {t('dashboard.not_assigned_choir', 'You do not have a choir assigned to your team leader profile yet. An administrator will assign you to a choir soon.')}
                     </p>
                 </div>
             </div>
@@ -161,7 +163,7 @@ export default function TeamLeaderDashboard() {
                         <div>
                             <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                    Team Leader Portal
+                                    {t('role.team_leader', 'Team Leader Portal')}
                                 </span>
                                 <span className="text-slate-300">•</span>
                                 <span
@@ -175,7 +177,7 @@ export default function TeamLeaderDashboard() {
                                 </span>
                             </div>
                             <h1 className="text-2xl font-black tracking-tight text-slate-900 mt-0.5">
-                                Welcome, {user?.name}
+                                {t('dashboard.welcome_back', { name: user?.name || '' })}
                             </h1>
                         </div>
                     </div>
@@ -186,7 +188,7 @@ export default function TeamLeaderDashboard() {
                             onClick={fetchDashboard}
                             disabled={loading}
                             className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
-                            title="Refresh dashboard"
+                            title={t('common.refresh', 'Refresh')}
                         >
                             <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
                         </button>
@@ -199,7 +201,7 @@ export default function TeamLeaderDashboard() {
                             style={{ backgroundColor: primaryColor }}
                         >
                             <Play size={14} />
-                            <span>Live Attendance</span>
+                            <span>{t('attendance.management_title', 'Live Attendance')}</span>
                         </Button>
                     </div>
                 </div>
@@ -218,8 +220,8 @@ export default function TeamLeaderDashboard() {
                         <CheckCircle2 size={22} />
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-slate-900">Take Attendance</p>
-                        <p className="text-[11px] text-slate-400">Live roster check-in</p>
+                        <p className="text-sm font-bold text-slate-900">{t('leader.dashboard.take_attendance', 'Take Attendance')}</p>
+                        <p className="text-[11px] text-slate-400">{t('attendance.save_attendance', 'Live roster check-in')}</p>
                     </div>
                 </Link>
 
@@ -234,8 +236,8 @@ export default function TeamLeaderDashboard() {
                         <CalendarClock size={22} />
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-slate-900">Create Rehearsal</p>
-                        <p className="text-[11px] text-slate-400">Schedule team practice</p>
+                        <p className="text-sm font-bold text-slate-900">{t('leader.dashboard.schedule_practice', 'Schedule Practice')}</p>
+                        <p className="text-[11px] text-slate-400">{t('rehearsals.form_title', 'Schedule team practice')}</p>
                     </div>
                 </Link>
 
@@ -250,8 +252,8 @@ export default function TeamLeaderDashboard() {
                         <Users size={22} />
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-slate-900">View Members</p>
-                        <p className="text-[11px] text-slate-400">Choir roster & voices</p>
+                        <p className="text-sm font-bold text-slate-900">{t('choir.members_list', 'View Members')}</p>
+                        <p className="text-[11px] text-slate-400">{t('members.management_title', 'Choir roster & voices')}</p>
                     </div>
                 </Link>
 
@@ -266,8 +268,8 @@ export default function TeamLeaderDashboard() {
                         <CalendarDays size={22} />
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-slate-900">View Performances</p>
-                        <p className="text-[11px] text-slate-400">Scheduled events</p>
+                        <p className="text-sm font-bold text-slate-900">{t('performances.title', 'View Performances')}</p>
+                        <p className="text-[11px] text-slate-400">{t('performances.tab_all', 'Scheduled events')}</p>
                     </div>
                 </Link>
             </div>
@@ -276,7 +278,7 @@ export default function TeamLeaderDashboard() {
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Active Members</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{t('reports.active_stat', 'Active Members')}</span>
                         <div
                             className="flex h-9 w-9 items-center justify-center rounded-xl"
                             style={{ backgroundColor: `${primaryColor}18`, color: primaryColor }}
@@ -285,12 +287,12 @@ export default function TeamLeaderDashboard() {
                         </div>
                     </div>
                     <p className="mt-3 text-3xl font-black text-slate-900">{stats.members ?? 0}</p>
-                    <span className="text-xs text-slate-400">Choir roster count</span>
+                    <span className="text-xs text-slate-400">{t('leader.dashboard.total_members', 'Choir roster count')}</span>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Upcoming Events</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{t('performances.card_upcoming', 'Upcoming Events')}</span>
                         <div
                             className="flex h-9 w-9 items-center justify-center rounded-xl"
                             style={{ backgroundColor: `${primaryColor}18`, color: primaryColor }}
@@ -299,12 +301,12 @@ export default function TeamLeaderDashboard() {
                         </div>
                     </div>
                     <p className="mt-3 text-3xl font-black text-slate-900">{stats.upcoming_performances ?? 0}</p>
-                    <span className="text-xs text-slate-400">Performances ahead</span>
+                    <span className="text-xs text-slate-400">{t('performances.card_scheduled_ahead', 'Performances ahead')}</span>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Rehearsals</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{t('nav.rehearsals', 'Rehearsals')}</span>
                         <div
                             className="flex h-9 w-9 items-center justify-center rounded-xl"
                             style={{ backgroundColor: `${primaryColor}18`, color: primaryColor }}
@@ -313,12 +315,12 @@ export default function TeamLeaderDashboard() {
                         </div>
                     </div>
                     <p className="mt-3 text-3xl font-black text-slate-900">{stats.upcoming_rehearsals ?? 0}</p>
-                    <span className="text-xs text-slate-400">Scheduled rehearsals</span>
+                    <span className="text-xs text-slate-400">{t('rehearsals.management_title', 'Scheduled rehearsals')}</span>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Attendance Rate</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{t('attendance.stats_rate', 'Attendance Rate')}</span>
                         <div
                             className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"
                         >
@@ -329,7 +331,7 @@ export default function TeamLeaderDashboard() {
                         {attendance.attendance_rate !== undefined ? `${attendance.attendance_rate}%` : 'N/A'}
                     </p>
                     <span className="text-xs text-slate-400 font-medium">
-                        {attendance.has_records ? `${attendance.present || 0} present · ${attendance.absent || 0} absent` : 'No logs yet'}
+                        {attendance.has_records ? `${attendance.present || 0} ${t('status.present', 'present')} · ${attendance.absent || 0} ${t('status.absent', 'absent')}` : t('dashboard.no_records_yet', 'No logs yet')}
                     </span>
                 </div>
             </div>
@@ -341,14 +343,14 @@ export default function TeamLeaderDashboard() {
                     <div>
                         <div className="flex items-center justify-between mb-3">
                             <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700 border border-blue-100">
-                                <Sparkles size={12} /> Next Performance
+                                <Sparkles size={12} /> {t('dashboard.upcoming_performance', 'Next Performance')}
                             </span>
                             <Link
                                 to="/team-leader/performances"
                                 className="inline-flex items-center gap-1 text-xs font-bold hover:underline"
                                 style={{ color: primaryColor }}
                             >
-                                All Events <ChevronRight size={14} />
+                                {t('performances.tab_all', 'All Events')} <ChevronRight size={14} />
                             </Link>
                         </div>
 
@@ -374,7 +376,7 @@ export default function TeamLeaderDashboard() {
                         ) : (
                             <div className="py-8 text-center text-xs text-slate-400">
                                 <CalendarDays size={24} className="mx-auto mb-2 text-slate-300" />
-                                <p>No upcoming performances scheduled.</p>
+                                <p>{t('dashboard.no_upcoming_performances', 'No upcoming performances scheduled.')}</p>
                             </div>
                         )}
                     </div>
@@ -388,7 +390,7 @@ export default function TeamLeaderDashboard() {
                                 className="w-full justify-center"
                                 style={{ backgroundColor: primaryColor }}
                             >
-                                <CheckCircle2 size={14} /> Take Performance Attendance
+                                <CheckCircle2 size={14} /> {t('leader.dashboard.take_attendance', 'Take Performance Attendance')}
                             </Button>
                         </div>
                     )}
@@ -399,14 +401,14 @@ export default function TeamLeaderDashboard() {
                     <div>
                         <div className="flex items-center justify-between mb-3">
                             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-100">
-                                <CalendarClock size={12} /> Next Rehearsal
+                                <CalendarClock size={12} /> {t('dashboard.next_rehearsal', 'Next Rehearsal')}
                             </span>
                             <Link
                                 to="/team-leader/rehearsals"
                                 className="inline-flex items-center gap-1 text-xs font-bold hover:underline"
                                 style={{ color: primaryColor }}
                             >
-                                All Rehearsals <ChevronRight size={14} />
+                                {t('rehearsals.tab_all', 'All Rehearsals')} <ChevronRight size={14} />
                             </Link>
                         </div>
 
@@ -432,7 +434,7 @@ export default function TeamLeaderDashboard() {
                         ) : (
                             <div className="py-8 text-center text-xs text-slate-400">
                                 <CalendarClock size={24} className="mx-auto mb-2 text-slate-300" />
-                                <p>No upcoming rehearsals scheduled.</p>
+                                <p>{t('dashboard.no_upcoming_rehearsals', 'No upcoming rehearsals scheduled.')}</p>
                             </div>
                         )}
                     </div>
@@ -446,7 +448,7 @@ export default function TeamLeaderDashboard() {
                                 className="w-full justify-center"
                                 style={{ backgroundColor: primaryColor }}
                             >
-                                <CheckCircle2 size={14} /> Take Rehearsal Attendance
+                                <CheckCircle2 size={14} /> {t('leader.dashboard.take_attendance', 'Take Rehearsal Attendance')}
                             </Button>
                         </div>
                     )}
@@ -459,15 +461,15 @@ export default function TeamLeaderDashboard() {
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                            <CalendarClock size={16} style={{ color: primaryColor }} /> Upcoming Rehearsals
+                            <CalendarClock size={16} style={{ color: primaryColor }} /> {t('dashboard.upcoming_rehearsals', 'Upcoming Rehearsals')}
                         </h3>
                         <Link to="/team-leader/rehearsals" className="text-xs font-bold hover:underline" style={{ color: primaryColor }}>
-                            Manage
+                            {t('common.view', 'Manage')}
                         </Link>
                     </div>
 
                     {upcoming_rehearsals.length === 0 ? (
-                        <p className="py-8 text-center text-xs text-slate-400">No rehearsals on schedule.</p>
+                        <p className="py-8 text-center text-xs text-slate-400">{t('dashboard.no_upcoming_rehearsals', 'No rehearsals on schedule.')}</p>
                     ) : (
                         <div className="divide-y divide-slate-100">
                             {upcoming_rehearsals.map((r) => (
@@ -484,7 +486,7 @@ export default function TeamLeaderDashboard() {
                                         className="text-[11px] py-1 px-2.5 h-auto rounded-lg"
                                         onClick={() => navigate(`/team-leader/attendance?choir_id=${choir.id}&rehearsal_id=${r.id}`)}
                                     >
-                                        Attendance
+                                        {t('nav.attendance', 'Attendance')}
                                     </Button>
                                 </div>
                             ))}
@@ -496,15 +498,15 @@ export default function TeamLeaderDashboard() {
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                            <Music size={16} style={{ color: primaryColor }} /> Choir Songs ({stats.songs ?? 0})
+                            <Music size={16} style={{ color: primaryColor }} /> {t('nav.songs', 'Choir Songs')} ({stats.songs ?? 0})
                         </h3>
                         <Link to="/team-leader/songs" className="text-xs font-bold hover:underline" style={{ color: primaryColor }}>
-                            Library
+                            {t('songs.tab_all', 'Library')}
                         </Link>
                     </div>
 
                     {recent_songs.length === 0 ? (
-                        <p className="py-8 text-center text-xs text-slate-400">No songs cataloged yet.</p>
+                        <p className="py-8 text-center text-xs text-slate-400">{t('songs.empty', 'No songs cataloged yet.')}</p>
                     ) : (
                         <div className="divide-y divide-slate-100">
                             {recent_songs.map((s) => (
@@ -513,12 +515,12 @@ export default function TeamLeaderDashboard() {
                                         <p className="text-xs font-bold text-slate-900 truncate">{s.title}</p>
                                         <p className="text-[11px] text-slate-500">
                                             {s.artist ? `${s.artist} · ` : ''}
-                                            {s.category || 'Worship'}
+                                            {s.category || t('perf.tWorship', 'Worship')}
                                         </p>
                                     </div>
                                     {s.key && (
                                         <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-600">
-                                            Key: {s.key}
+                                            {t('song.key', 'Key')}: {s.key}
                                         </span>
                                     )}
                                 </div>

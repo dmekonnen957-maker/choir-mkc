@@ -60,8 +60,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
     public function isApprovedMember(): bool
     {
-        return $this->isApproved()
-            && ($this->hasRole('member', 'api') || $this->hasRole('member') || $this->role === 'member');
+        if (! $this->isApproved()) {
+            return false;
+        }
+
+        if ($this->hasRole(['member', 'musician', 'musicians'], 'api')
+            || $this->hasAnyRole(['member', 'musician', 'musicians'])
+            || in_array($this->role, ['member', 'musician', 'musicians'], true)) {
+            return true;
+        }
+
+        // Custom roles with member or musician area
+        return $this->roles()->whereIn('area', ['member', 'musician'])->exists();
     }
 
     public function isPending(): bool

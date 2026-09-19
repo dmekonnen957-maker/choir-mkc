@@ -90,12 +90,22 @@ class PermissionRoleSeeder extends Seeder
             'announcements.view', 'announcements.create', 'announcements.update', 'announcements.edit', 'announcements.manage',
             'gallery.view', 'gallery.create', 'gallery.update', 'gallery.edit', 'gallery.manage',
             'notifications.view',
-        ], 'team-leader');
+        ], 'team_leader');
         $make('member', [
             'choirs.view', 'members.view', 'songs.view', 'lyrics.view',
             'rehearsals.view', 'performances.view', 'calendar.view',
             'announcements.view', 'gallery.view', 'notifications.view',
         ], 'member');
+        $make('musician', [
+            'choirs.view', 'members.view', 'songs.view', 'lyrics.view',
+            'rehearsals.view', 'performances.view', 'calendar.view',
+            'announcements.view', 'gallery.view', 'notifications.view',
+        ], 'musician');
+        $make('musicians', [
+            'choirs.view', 'members.view', 'songs.view', 'lyrics.view',
+            'rehearsals.view', 'performances.view', 'calendar.view',
+            'announcements.view', 'gallery.view', 'notifications.view',
+        ], 'musician');
 
         $roleByColumn = [
             'super-admin' => 'super-admin',
@@ -103,6 +113,8 @@ class PermissionRoleSeeder extends Seeder
             'team_leader' => 'team_leader',
             'choir-manager' => 'team_leader',
             'member' => 'member',
+            'musician' => 'musician',
+            'musicians' => 'musicians',
         ];
 
         User::query()->each(function (User $user) use ($roleByColumn, $guard): void {

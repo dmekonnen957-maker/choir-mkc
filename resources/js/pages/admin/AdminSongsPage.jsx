@@ -35,11 +35,13 @@ import Alert from '../../components/ui/Alert';
 import Modal from '../../components/ui/Modal';
 import AdminSongFormPage from './AdminSongFormPage';
 import { fetchAdminSongStats } from '../../lib/publicApi';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function AdminSongsPage() {
     const { can } = useAuth();
     const { currentChoir, isAllChoirs } = useChoir();
     const navigate = useNavigate();
+    const { t } = useLanguage();
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -85,7 +87,7 @@ export default function AdminSongsPage() {
                 setChoirs(choirsRes.data?.data?.items ?? []);
                 if (statsData) setStats(statsData);
             })
-            .catch(() => setError('Unable to load songs.'))
+            .catch(() => setError(t('songs.load_error', 'Unable to load songs.')))
             .finally(() => setLoading(false));
     };
 
@@ -120,7 +122,7 @@ export default function AdminSongsPage() {
         setApprovingId(song.id);
         try {
             const res = await api.post(`/admin/songs/${song.id}/approve`);
-            setToast({ variant: 'success', message: `"${song.title}" approved and published to library.` });
+            setToast({ variant: 'success', message: `"${song.title}" ${t('songs.approved_published', 'approved and published to library.')}` });
             setSongs((prev) =>
                 prev.map((s) =>
                     s.id === song.id
@@ -132,7 +134,7 @@ export default function AdminSongsPage() {
                 setToReview(null);
             }
         } catch (err) {
-            setToast({ variant: 'error', message: err.message || 'Could not approve song.' });
+            setToast({ variant: 'error', message: err.message || t('songs.approve_error', 'Could not approve song.') });
         } finally {
             setApprovingId(null);
         }
@@ -147,7 +149,7 @@ export default function AdminSongsPage() {
             await api.post(`/admin/songs/${toReject.id}/reject`, {
                 rejection_reason: rejectionReason,
             });
-            setToast({ variant: 'success', message: `"${toReject.title}" has been rejected.` });
+            setToast({ variant: 'success', message: `"${toReject.title}" ${t('songs.rejected_msg', 'has been rejected.')}` });
             setSongs((prev) =>
                 prev.map((s) =>
                     s.id === toReject.id
@@ -161,7 +163,7 @@ export default function AdminSongsPage() {
                 setToReview(null);
             }
         } catch (err) {
-            setToast({ variant: 'error', message: err.message || 'Could not reject song.' });
+            setToast({ variant: 'error', message: err.message || t('songs.reject_error', 'Could not reject song.') });
         } finally {
             setRejecting(false);
         }
@@ -170,10 +172,10 @@ export default function AdminSongsPage() {
     const confirmDelete = async () => {
         try {
             await api.delete(`/admin/songs/${toDelete.id}`);
-            setToast({ variant: 'success', message: 'Song deleted.' });
+            setToast({ variant: 'success', message: t('songs.deleted_msg', 'Song deleted.') });
             setSongs((prev) => prev.filter((s) => s.id !== toDelete.id));
         } catch {
-            setToast({ variant: 'error', message: 'Could not delete song.' });
+            setToast({ variant: 'error', message: t('songs.delete_error', 'Could not delete song.') });
         } finally {
             setToDelete(null);
         }
@@ -217,7 +219,7 @@ export default function AdminSongsPage() {
     if (loading) {
         return (
             <div className="flex h-48 items-center justify-center">
-                <LoadingSpinner text="Loading songs..." />
+                <LoadingSpinner text={t('common.loading', 'Loading...')} />
             </div>
         );
     }
@@ -227,8 +229,8 @@ export default function AdminSongsPage() {
             {/* Header */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-ink-900">Music Library & Review</h1>
-                    <p className="text-sm text-ink-500">Review member submissions, approve songs, and monitor audience engagement</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-ink-900">{t('songs.management_title', 'Songs Library Management')}</h1>
+                    <p className="text-sm text-ink-500">{t('songs.management_subtitle', 'Manage choir songs, spiritual scales, chord sheets, audio recordings, and member submissions.')}</p>
                 </div>
                 {can('songs.create') && (
                     <button
@@ -236,7 +238,7 @@ export default function AdminSongsPage() {
                         onClick={() => setShowCreateModal(true)}
                         className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition"
                     >
-                        <Plus className="h-4 w-4" /> Add Song
+                        <Plus className="h-4 w-4" /> {t('songs.add_song', 'Add Song')}
                     </button>
                 )}
             </div>
@@ -245,7 +247,7 @@ export default function AdminSongsPage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Songs</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{t('songs.stats_total', 'Total Songs')}</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                             <Music size={16} />
                         </div>
@@ -253,12 +255,12 @@ export default function AdminSongsPage() {
                     <p className="mt-2 text-2xl font-extrabold text-slate-900">
                         {stats?.total_songs ?? songs.length}
                     </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">In catalog</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">{t('songs.in_catalog', 'In catalog')}</p>
                 </div>
 
                 <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50/40 to-white p-4 shadow-xs">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-rose-500">Total Likes</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-rose-500">{t('songs.total_likes', 'Total Likes')}</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
                             <Heart size={16} className="fill-rose-500 text-rose-500" />
                         </div>
@@ -266,27 +268,27 @@ export default function AdminSongsPage() {
                     <p className="mt-2 text-2xl font-extrabold text-slate-900">
                         {stats?.total_likes ?? 0}
                     </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Audience appreciations</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">{t('songs.audience_appreciations', 'Audience appreciations')}</p>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Most Liked Song</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{t('songs.most_liked_song', 'Most Liked Song')}</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
                             <TrendingUp size={16} />
                         </div>
                     </div>
                     <p className="mt-2 text-sm font-bold text-slate-900 truncate">
-                        {stats?.most_liked_song?.title || 'No likes yet'}
+                        {stats?.most_liked_song?.title || t('songs.no_likes_yet', 'No likes yet')}
                     </p>
                     <p className="text-[11px] text-indigo-600 font-semibold mt-0.5">
-                        {stats?.most_liked_song ? `♥ ${stats.most_liked_song.likes_count} likes` : '—'}
+                        {stats?.most_liked_song ? `♥ ${stats.most_liked_song.likes_count} ${t('songs.likes_label', 'likes')}` : '—'}
                     </p>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Avg Likes / Song</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{t('songs.avg_likes', 'Avg Likes / Song')}</span>
                         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                             <BarChart2 size={16} />
                         </div>
@@ -294,7 +296,7 @@ export default function AdminSongsPage() {
                     <p className="mt-2 text-2xl font-extrabold text-slate-900">
                         {stats?.avg_likes_per_song ?? 0}
                     </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Per published title</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">{t('songs.per_published_title', 'Per published title')}</p>
                 </div>
             </div>
 
@@ -306,7 +308,7 @@ export default function AdminSongsPage() {
                 <div className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                     <span>{error}</span>
                     <Button variant="outline" size="sm" onClick={load}>
-                        Retry
+                        {t('common.retry', 'Retry')}
                     </Button>
                 </div>
             )}
@@ -314,7 +316,7 @@ export default function AdminSongsPage() {
             <Modal
                 open={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
-                title="Create New Song"
+                title={t('songs.create_new_song', 'Create New Song')}
                 size="full"
             >
                 <AdminSongFormPage
@@ -323,7 +325,7 @@ export default function AdminSongsPage() {
                     onCancel={() => setShowCreateModal(false)}
                     onSuccess={(song) => {
                         setShowCreateModal(false);
-                        setToast({ variant: 'success', message: `"${song.title}" created successfully.` });
+                        setToast({ variant: 'success', message: `"${song.title}" ${t('songs.created_success', 'created successfully.')}` });
                         load();
                     }}
                 />
@@ -339,7 +341,7 @@ export default function AdminSongsPage() {
                             : 'text-slate-600 hover:bg-slate-100'
                     }`}
                 >
-                    All Songs ({songs.length})
+                    {t('songs.tab_all', 'All Songs')} ({songs.length})
                 </button>
                 <button
                     onClick={() => setStatusTab('pending')}
@@ -350,7 +352,7 @@ export default function AdminSongsPage() {
                     }`}
                 >
                     <Clock size={13} />
-                    Pending Review
+                    {t('songs.tab_pending', 'Pending Approval')}
                     {pendingCount > 0 && (
                         <span className={`px-1.5 py-0.2 rounded-full text-[11px] font-black ${
                             statusTab === 'pending' ? 'bg-white text-amber-800' : 'bg-amber-100 text-amber-800'
@@ -368,7 +370,7 @@ export default function AdminSongsPage() {
                     }`}
                 >
                     <CheckCircle2 size={13} />
-                    Approved ({approvedCount})
+                    {t('songs.tab_approved', 'Approved')} ({approvedCount})
                 </button>
                 <button
                     onClick={() => setStatusTab('rejected')}
@@ -379,7 +381,7 @@ export default function AdminSongsPage() {
                     }`}
                 >
                     <XCircle size={13} />
-                    Rejected ({rejectedCount})
+                    {t('songs.tab_rejected', 'Rejected')} ({rejectedCount})
                 </button>
             </div>
 
@@ -390,7 +392,7 @@ export default function AdminSongsPage() {
                     <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search songs by title…"
+                        placeholder={t('songs.search_placeholder', 'Search songs by title, artist, composer...')}
                         className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     />
                 </div>
@@ -399,7 +401,7 @@ export default function AdminSongsPage() {
                     onChange={(e) => setChoirId(e.target.value)}
                     className="min-w-[170px] rounded-xl border border-slate-200 bg-white py-2 pl-3 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-medium text-slate-700"
                 >
-                    <option value="">All Choirs</option>
+                    <option value="">{t('songs.filter_all_choirs', 'All Choirs')}</option>
                     {choirs.map((c) => (
                         <option key={c.id} value={c.id}>
                             {c.name}
@@ -412,10 +414,10 @@ export default function AdminSongsPage() {
                         onChange={(e) => setSortBy(e.target.value)}
                         className="min-w-[160px] rounded-xl border border-slate-200 bg-white py-2 pl-3 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 font-medium text-slate-700"
                     >
-                        <option value="newest">Sort: Newest First</option>
-                        <option value="most_liked">Sort: Most Liked ♥</option>
-                        <option value="oldest">Sort: Oldest First</option>
-                        <option value="title">Sort: Title (A-Z)</option>
+                        <option value="newest">{t('songs.sort_newest', 'Newest first')}</option>
+                        <option value="most_liked">{t('songs.sort_popular', 'Most liked')}</option>
+                        <option value="oldest">{t('songs.sort_oldest', 'Oldest first')}</option>
+                        <option value="title">{t('songs.sort_title', 'Title (A - Z)')}</option>
                     </select>
                 </div>
             </div>
@@ -426,12 +428,14 @@ export default function AdminSongsPage() {
                     <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
                     <Music className="mx-auto h-10 w-10 text-slate-300 mb-2" />
                     <p className="font-bold text-slate-800">
-                        {statusTab === 'pending' ? 'No pending song submissions' : 'No songs found'}
+                        {statusTab === 'pending'
+                            ? t('songs.no_pending', 'No pending song submissions')
+                            : t('common.no_data', 'No data found')}
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
                         {statusTab === 'pending'
-                            ? 'All submitted choir songs have been reviewed and approved.'
-                            : 'Adjust your search query or filters to see music records.'}
+                            ? t('songs.no_pending_desc', 'All submitted choir songs have been reviewed and approved.')
+                            : t('songs.no_results_desc', 'Adjust your search query or filters to see music records.')}
                     </p>
                 </div>
                 </div>
@@ -469,34 +473,34 @@ export default function AdminSongsPage() {
                                                 {/* Status Badge */}
                                                 {isPending && (
                                                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">
-                                                        <Clock size={11} className="animate-spin" /> Pending Review
+                                                        <Clock size={11} className="animate-spin" /> {t('songs.tab_pending', 'Pending Approval')}
                                                     </span>
                                                 )}
                                                 {isApproved && (
                                                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
-                                                        <CheckCircle2 size={11} /> Approved
+                                                        <CheckCircle2 size={11} /> {t('status.approved', 'Approved')}
                                                     </span>
                                                 )}
                                                 {isRejected && (
                                                     <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">
-                                                        <XCircle size={11} /> Rejected
+                                                        <XCircle size={11} /> {t('status.rejected', 'Rejected')}
                                                     </span>
                                                 )}
                                             </div>
 
                                             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                                                {s.artist && <span>Artist: <strong className="text-slate-700">{s.artist}</strong></span>}
-                                                <span>Choir: <strong className="text-slate-700">{s.choir?.name || '—'}</strong></span>
-                                                {s.original_key && <span>Key: <strong>{s.original_key}</strong></span>}
+                                                {s.artist && <span>{t('songs.artist_label', 'Artist')}: <strong className="text-slate-700">{s.artist}</strong></span>}
+                                                <span>{t('songs.choir_label', 'Choir')}: <strong className="text-slate-700">{s.choir?.name || '—'}</strong></span>
+                                                {s.original_key && <span>{t('songs.key_label_short', 'Key')}: <strong>{s.original_key}</strong></span>}
                                                 {s.likes_count !== undefined && (
                                                     <span className="inline-flex items-center gap-1 text-rose-600 font-semibold">
                                                         <Heart size={11} className="fill-rose-500 text-rose-500" />
-                                                        {s.likes_count} {s.likes_count === 1 ? 'like' : 'likes'}
+                                                        {s.likes_count} {s.likes_count === 1 ? t('songs.like_singular', 'like') : t('songs.likes_label', 'likes')}
                                                     </span>
                                                 )}
                                                 {s.creator && (
                                                     <span className="flex items-center gap-1 text-blue-700 font-medium">
-                                                        <User size={12} /> Submitted by {s.creator.name}
+                                                        <User size={12} /> {t('songs.submitted_by', 'Submitted by')} {s.creator.name}
                                                     </span>
                                                 )}
                                             </div>
@@ -504,7 +508,7 @@ export default function AdminSongsPage() {
                                             {/* Rejection Note in card */}
                                             {isRejected && s.rejection_reason && (
                                                 <p className="mt-2 rounded-lg bg-rose-50 px-2.5 py-1 text-xs text-rose-700 border border-rose-100">
-                                                    <strong>Reason:</strong> {s.rejection_reason}
+                                                    <strong>{t('songs.reason_label', 'Reason')}:</strong> {s.rejection_reason}
                                                 </p>
                                             )}
                                         </div>
@@ -517,7 +521,7 @@ export default function AdminSongsPage() {
                                             <button
                                                 onClick={() => togglePlay(s.id, s.audio_path)}
                                                 className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white transition shadow-xs"
-                                                title={playingId === s.id ? 'Pause' : 'Play audio'}
+                                                title={playingId === s.id ? t('common.pause', 'Pause') : t('common.play_audio', 'Play audio')}
                                             >
                                                 {playingId === s.id ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
                                             </button>
@@ -531,7 +535,7 @@ export default function AdminSongsPage() {
                                                     disabled={approvingId === s.id}
                                                     className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition active:scale-95 disabled:opacity-60"
                                                 >
-                                                    <Check size={14} /> Approve
+                                                    <Check size={14} /> {t('songs.approve_action', 'Approve')}
                                                 </button>
                                                 <button
                                                     onClick={() => {
@@ -540,7 +544,7 @@ export default function AdminSongsPage() {
                                                     }}
                                                     className="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 border border-rose-200 hover:bg-rose-100 transition active:scale-95"
                                                 >
-                                                    <X size={14} /> Reject
+                                                    <X size={14} /> {t('songs.reject_action', 'Reject')}
                                                 </button>
                                             </>
                                         )}
@@ -550,7 +554,7 @@ export default function AdminSongsPage() {
                                             onClick={() => setToReview(s)}
                                             className="inline-flex items-center gap-1 rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700 transition"
                                         >
-                                            <Eye size={14} /> Review
+                                            <Eye size={14} /> {t('songs.review_action', 'Review')}
                                         </button>
 
                                         {/* Edit */}
@@ -558,7 +562,7 @@ export default function AdminSongsPage() {
                                             <button
                                                 onClick={() => navigate(`/admin/songs/${s.id}/edit`)}
                                                 className="inline-flex items-center justify-center rounded-xl bg-slate-50 p-2 text-slate-600 hover:bg-slate-100 transition"
-                                                title="Edit song"
+                                                title={t('common.edit', 'Edit')}
                                             >
                                                 <Pencil size={15} />
                                             </button>
@@ -569,7 +573,7 @@ export default function AdminSongsPage() {
                                             <button
                                                 onClick={() => setToDelete(s)}
                                                 className="inline-flex items-center justify-center rounded-xl bg-slate-50 p-2 text-rose-600 hover:bg-rose-50 transition"
-                                                title="Delete song"
+                                                title={t('common.delete', 'Delete')}
                                             >
                                                 <Trash2 size={15} />
                                             </button>
@@ -584,22 +588,22 @@ export default function AdminSongsPage() {
             )}
 
             {/* Review / Detail Modal */}
-            <Modal open={Boolean(toReview)} onClose={() => setToReview(null)} title={toReview?.title || 'Song Review'} size="lg">
+            <Modal open={Boolean(toReview)} onClose={() => setToReview(null)} title={toReview?.title || t('songs.song_review_title', 'Song Review')} size="lg">
                 {toReview && (
                     <div className="space-y-5 text-slate-800">
                         {/* Status bar */}
                         <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3 border border-slate-100">
                             <div>
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Current Status</span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('common.status', 'Status')}</span>
                                 <p className="text-sm font-bold capitalize mt-0.5">
-                                    {toReview.status === 'pending' && <span className="text-amber-700">Pending Review</span>}
-                                    {toReview.status === 'approved' && <span className="text-emerald-700">Approved & Published</span>}
-                                    {toReview.status === 'rejected' && <span className="text-rose-700">Rejected</span>}
+                                    {toReview.status === 'pending' && <span className="text-amber-700">{t('songs.tab_pending', 'Pending Approval')}</span>}
+                                    {toReview.status === 'approved' && <span className="text-emerald-700">{t('songs.approved_published_label', 'Approved & Published')}</span>}
+                                    {toReview.status === 'rejected' && <span className="text-rose-700">{t('status.rejected', 'Rejected')}</span>}
                                 </p>
                             </div>
                             {toReview.creator && (
                                 <div className="text-right">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Submitted By</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('songs.submitted_by_label', 'Submitted By')}</span>
                                     <p className="text-xs font-bold text-slate-700 mt-0.5">{toReview.creator.name}</p>
                                 </div>
                             )}
@@ -608,21 +612,21 @@ export default function AdminSongsPage() {
                         {/* Metadata grid */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                             <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                                <span className="text-slate-400 block font-semibold uppercase text-[10px]">Choir</span>
+                                <span className="text-slate-400 block font-semibold uppercase text-[10px]">{t('songs.choir_label', 'Choir')}</span>
                                 <strong className="text-slate-800 truncate block mt-0.5">{toReview.choir?.name || '—'}</strong>
                             </div>
                             <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                                <span className="text-slate-400 block font-semibold uppercase text-[10px]">Artist</span>
+                                <span className="text-slate-400 block font-semibold uppercase text-[10px]">{t('songs.artist_lead', 'Artist / Lead Singer')}</span>
                                 <strong className="text-slate-800 truncate block mt-0.5">{toReview.artist || '—'}</strong>
                             </div>
                             <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                                <span className="text-slate-400 block font-semibold uppercase text-[10px]">Key & Scale</span>
+                                <span className="text-slate-400 block font-semibold uppercase text-[10px]">{t('songs.key_scale_label', 'Key & Scale')}</span>
                                 <strong className="text-slate-800 truncate block mt-0.5">
                                     {toReview.original_key || '—'} ({toReview.scale || 'major'})
                                 </strong>
                             </div>
                             <div className="rounded-xl bg-slate-50 p-3 border border-slate-100">
-                                <span className="text-slate-400 block font-semibold uppercase text-[10px]">Composer</span>
+                                <span className="text-slate-400 block font-semibold uppercase text-[10px]">{t('songs.composer_label', 'Composer')}</span>
                                 <strong className="text-slate-800 truncate block mt-0.5">{toReview.composer || '—'}</strong>
                             </div>
                         </div>
@@ -631,7 +635,7 @@ export default function AdminSongsPage() {
                         {toReview.audio_path && (
                             <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-4">
                                 <p className="text-xs font-bold text-blue-900 mb-2 flex items-center gap-1.5">
-                                    <Volume2 size={16} /> Attached Audio Recording
+                                    <Volume2 size={16} /> {t('songs.attached_audio', 'Attached Audio Recording')}
                                 </p>
                                 <audio
                                     controls
@@ -644,7 +648,7 @@ export default function AdminSongsPage() {
                         {/* Description */}
                         {toReview.description && (
                             <div>
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Description / Context</h4>
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">{t('songs.description_context', 'Description / Context')}</h4>
                                 <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
                                     {toReview.description}
                                 </p>
@@ -654,28 +658,28 @@ export default function AdminSongsPage() {
                         {/* Lyrics */}
                         <div>
                             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1">
-                                <FileText size={13} /> Song Lyrics
+                                <FileText size={13} /> {t('songs.lyrics_field', 'Lyrics & Chords')}
                             </h4>
                             {toReview.lyrics ? (
                                 <div className="max-h-60 overflow-y-auto whitespace-pre-wrap font-mono text-xs text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-100">
                                     {toReview.lyrics}
                                 </div>
                             ) : (
-                                <p className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-xl">No lyrics attached to this song.</p>
+                                <p className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-xl">{t('songs.no_lyrics', 'No lyrics attached to this song.')}</p>
                             )}
                         </div>
 
                         {/* Rejection reason if rejected */}
                         {toReview.status === 'rejected' && toReview.rejection_reason && (
                             <div className="rounded-xl bg-rose-50 p-3 border border-rose-100 text-xs text-rose-800">
-                                <strong>Rejection Reason:</strong> {toReview.rejection_reason}
+                                <strong>{t('songs.rejection_reason_label', 'Rejection Reason')}:</strong> {toReview.rejection_reason}
                             </div>
                         )}
 
                         {/* Modal Action Buttons */}
                         <div className="flex items-center justify-between border-t border-slate-100 pt-4">
                             <Button variant="ghost" onClick={() => setToReview(null)}>
-                                Close
+                                {t('common.close', 'Close')}
                             </Button>
                             <div className="flex items-center gap-2">
                                 {toReview.status === 'pending' && (
@@ -687,14 +691,14 @@ export default function AdminSongsPage() {
                                             }}
                                             className="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700 border border-rose-200 hover:bg-rose-100 transition"
                                         >
-                                            <X size={14} /> Reject
+                                            <X size={14} /> {t('songs.reject_action', 'Reject')}
                                         </button>
                                         <button
                                             onClick={() => handleApprove(toReview)}
                                             disabled={approvingId === toReview.id}
                                             className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition disabled:opacity-60"
                                         >
-                                            <Check size={14} /> Approve &amp; Publish
+                                            <Check size={14} /> {t('songs.approve_publish', 'Approve & Publish')}
                                         </button>
                                     </>
                                 )}
@@ -705,15 +709,15 @@ export default function AdminSongsPage() {
             </Modal>
 
             {/* Rejection Modal */}
-            <Modal open={Boolean(toReject)} onClose={() => setToReject(null)} title="Reject Song Submission" size="md">
+            <Modal open={Boolean(toReject)} onClose={() => setToReject(null)} title={t('songs.reject_modal_title', 'Reject Song Submission')} size="md">
                 {toReject && (
                     <form onSubmit={handleReject} className="space-y-4 text-slate-800">
                         <p className="text-xs text-slate-600">
-                            Rejecting <strong>"{toReject.title}"</strong> will notify the submitter. Please provide a clear explanation or feedback.
+                            {t('songs.rejecting_label', 'Rejecting')} <strong>"{toReject.title}"</strong> {t('songs.reject_notify_msg', 'will notify the submitter. Please provide a clear explanation or feedback.')}
                         </p>
                         <div>
                             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                                Rejection Reason / Admin Feedback <span className="text-rose-500">*</span>
+                                {t('songs.reject_reason_label', 'Reason for Rejection')} <span className="text-rose-500">*</span>
                             </label>
                             <textarea
                                 rows={3}
@@ -721,16 +725,16 @@ export default function AdminSongsPage() {
                                 maxLength={1000}
                                 value={rejectionReason}
                                 onChange={(e) => setRejectionReason(e.target.value)}
-                                placeholder="Explain why this song is rejected (e.g., incorrect lyrics, audio quality, duplicate piece)..."
+                                placeholder={t('songs.reject_reason_placeholder', 'Explain why this song is rejected or what changes are needed before resubmission...')}
                                 className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-800 transition focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
                             />
                         </div>
                         <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
                             <Button type="button" variant="ghost" onClick={() => setToReject(null)} disabled={rejecting}>
-                                Cancel
+                                {t('common.cancel', 'Cancel')}
                             </Button>
                             <Button type="submit" variant="danger" loading={rejecting} disabled={!rejectionReason.trim()}>
-                                Confirm Rejection
+                                {t('songs.confirm_reject', 'Confirm Rejection')}
                             </Button>
                         </div>
                     </form>
@@ -738,16 +742,16 @@ export default function AdminSongsPage() {
             </Modal>
 
             {/* Delete Modal */}
-            <Modal open={Boolean(toDelete)} onClose={() => setToDelete(null)} title="Delete Song">
+            <Modal open={Boolean(toDelete)} onClose={() => setToDelete(null)} title={t('songs.delete_modal_title', 'Delete Song')}>
                 <p className="text-sm text-ink-600">
-                    Are you sure you want to delete <strong>"{toDelete?.title}"</strong>? This will remove the song and its audio file from the library.
+                    {t('songs.delete_confirm', 'Are you sure you want to delete this song? This cannot be undone.')} <strong>"{toDelete?.title}"</strong>
                 </p>
                 <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
                     <Button variant="ghost" onClick={() => setToDelete(null)}>
-                        Cancel
+                        {t('common.cancel', 'Cancel')}
                     </Button>
                     <Button variant="danger" onClick={confirmDelete}>
-                        Delete Song
+                        {t('common.delete', 'Delete')}
                     </Button>
                 </div>
             </Modal>

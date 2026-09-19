@@ -9,6 +9,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\Encoders\WebpEncoder;
+use Intervention\Image\ImageManager;
 
 class MemberChoirHistoryController extends ApiController
 {
@@ -70,13 +73,6 @@ class MemberChoirHistoryController extends ApiController
     public function show(Request $request): JsonResponse
     {
         $choir = $this->authorizedChoir($request);
-        $photos = $choir->galleryItems()
-            ->where('is_history', true)
-            ->where('media_type', 'image')
-            ->latest('event_date')
-            ->latest('id')
-            ->get()
-            ->map(fn (GalleryItem $item) => $this->photoData($item));
 
         $events = $choir->performances()
             ->where('date', '<', now()->toDateString())
@@ -116,8 +112,42 @@ class MemberChoirHistoryController extends ApiController
             ],
             'milestones' => $this->milestones($choir),
             'events' => $events->merge($rehearsals)->sortByDesc('date')->values(),
-            'photos' => $photos,
+            'photos' => $this->photoPage($request, $choir),
         ]);
+    }
+
+    public function indexPhotos(Request $request): JsonResponse
+    {
+        $choir = $this->authorizedChoir($request);
+
+        return $this->ok($this->photoPage($request, $choir));
+    }
+
+    private function photoPage(Request $request, Choir $choir): array
+    {
+        $perPage = max(1, min((int) $request->input('per_page', 50), 100));
+
+        $items = $choir->galleryItems()
+            ->where('is_history', true)
+            ->where('media_type', 'image')
+            ->latest('event_date')
+            ->latest('id')
+            ->paginate($perPage);
+
+        return [
+            'items' => collect($items->items())
+                ->map(fn (GalleryItem $item) => $this->photoData($item))
+                ->values()
+                ->all(),
+            'pagination' => [
+                'current_page' => $items->currentPage(),
+                'last_page' => $items->lastPage(),
+                'per_page' => $items->perPage(),
+                'total' => $items->total(),
+                'from' => $items->firstItem(),
+                'to' => $items->lastItem(),
+            ],
+        ];
     }
 
     public function update(Request $request): JsonResponse
@@ -139,11 +169,6 @@ class MemberChoirHistoryController extends ApiController
     public function storePhoto(Request $request): JsonResponse
     {
         $choir = $this->authorizedChoir($request, true);
-        $count = $choir->galleryItems()->where('is_history', true)->count();
-
-        if ($count >= 7) {
-            return $this->error('You can upload a maximum of 7 historical photos. Delete or replace a photo before adding another.', null, 422);
-        }
 
         $validator = Validator::make($request->all(), [
             'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
@@ -181,7 +206,7 @@ class MemberChoirHistoryController extends ApiController
         $choir = $this->authorizedChoir($request, true);
         abort_unless($galleryItem->choir_id === $choir->id && $galleryItem->is_history, 404);
 
-        Storage::disk('local')->delete($galleryItem->media_path);
+        Storage::disk('local')->delete([$galleryItem->media_path, $this->thumbnailPath($galleryItem)]);
         $galleryItem->delete();
 
         return $this->ok(null, 'Historical photo deleted successfully.');
@@ -205,7 +230,7 @@ class MemberChoirHistoryController extends ApiController
 
         $photo = $request->file('photo');
         $path = Storage::disk('local')->put("choir-history/{$choir->id}", $photo);
-        Storage::disk('local')->delete($galleryItem->media_path);
+        Storage::disk('local')->delete([$galleryItem->media_path, $this->thumbnailPath($galleryItem)]);
         $galleryItem->update([
             'title' => $validator->validated()['title'] ?? $galleryItem->title,
             'description' => $validator->validated()['description'] ?? $galleryItem->description,
@@ -229,6 +254,53 @@ class MemberChoirHistoryController extends ApiController
         ]);
     }
 
+    public function thumbnail(Request $request, GalleryItem $galleryItem)
+    {
+        $choir = $this->authorizedChoir($request);
+        abort_unless($galleryItem->choir_id === $choir->id && $galleryItem->is_history, 404);
+        abort_unless(Storage::disk('local')->exists($galleryItem->media_path), 404);
+
+        $sourcePath = $galleryItem->media_path;
+        $thumbPath = $this->thumbnailPath($galleryItem);
+
+        if (! Storage::disk('local')->exists($thumbPath)) {
+            $this->generateThumbnail($sourcePath, $thumbPath);
+        }
+
+        // Fall back to the original file when a thumbnail cannot be generated.
+        $servedPath = Storage::disk('local')->exists($thumbPath) ? $thumbPath : $sourcePath;
+
+        return response()->file(Storage::disk('local')->path($servedPath), [
+            'Cache-Control' => 'private, max-age=86400',
+        ]);
+    }
+
+    private function thumbnailPath(GalleryItem $item): string
+    {
+        return 'choir-history/'.$item->choir_id.'/thumbs/'.$item->id.'.webp';
+    }
+
+    private function generateThumbnail(string $sourcePath, string $thumbPath): bool
+    {
+        try {
+            $manager = new ImageManager(new Driver);
+            $image = $manager->decodePath(Storage::disk('local')->path($sourcePath));
+            $image->cover(640, 480);
+
+            Storage::disk('local')->put($thumbPath, $image->encode(new WebpEncoder(80))->toString());
+
+            return true;
+        } catch (\Throwable $e) {
+            logger()->warning('Could not generate choir history thumbnail.', [
+                'source_path' => $sourcePath,
+                'thumb_path' => $thumbPath,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
     private function photoData(GalleryItem $item): array
     {
         return [
@@ -236,7 +308,8 @@ class MemberChoirHistoryController extends ApiController
             'title' => $item->title,
             'description' => $item->description,
             'event_date' => $item->event_date ? (string) $item->event_date : null,
-            'url' => "/api/member/choir-history/photos/{$item->id}/file",
+            'url' => "/member/choir-history/photos/{$item->id}/file",
+            'thumb_url' => "/member/choir-history/photos/{$item->id}/thumbnail",
         ];
     }
 

@@ -22,6 +22,8 @@ class CalendarController extends ApiController
      | ─────────────────────────────────────────────────────────────────*/
     public function adminCalendar(Request $request): \Illuminate\Http\JsonResponse
     {
+        abort_unless($request->user()->isGlobalAdmin() || $request->user()->can('calendar.view') || $request->user()->can('calendar.manage'), 403, 'You do not have permission to view the calendar.');
+
         $choirId = $request->query('choir_id');
         $type    = $request->query('type');       // performance | rehearsal
         $month   = $request->query('month');      // YYYY-MM

@@ -37,6 +37,7 @@ import {
 } from 'recharts';
 import { api } from '../../axios';
 import { useChoir } from '../../context/ChoirContext';
+import { useLanguage } from '../../context/LanguageContext';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 
@@ -200,6 +201,7 @@ function CustomTooltip({ active, payload, label }) {
 
 export default function AdminDashboard() {
     const navigate = useNavigate();
+    const { t } = useLanguage();
     const [choirs, setChoirs] = useState([]);
     const [selectedChoirId, setSelectedChoirId] = useState('all'); // 'all' | choirId
     const [dateRange, setDateRange] = useState('all'); // 'all' | '30days' | '6months' | 'year'
@@ -252,17 +254,17 @@ export default function AdminDashboard() {
     const attendancePieData = useMemo(() => {
         const ov = charts.attendance_overview || {};
         return [
-            { name: 'Present', value: ov.present || 0, color: ATTENDANCE_COLORS.present },
-            { name: 'Late', value: ov.late || 0, color: ATTENDANCE_COLORS.late },
-            { name: 'Absent', value: ov.absent || 0, color: ATTENDANCE_COLORS.absent },
-            { name: 'Excused', value: ov.excused || 0, color: ATTENDANCE_COLORS.excused },
+            { name: t('status.present', 'Present'), value: ov.present || 0, color: ATTENDANCE_COLORS.present },
+            { name: t('status.late', 'Late'), value: ov.late || 0, color: ATTENDANCE_COLORS.late },
+            { name: t('status.absent', 'Absent'), value: ov.absent || 0, color: ATTENDANCE_COLORS.absent },
+            { name: t('status.excused', 'Excused'), value: ov.excused || 0, color: ATTENDANCE_COLORS.excused },
         ].filter((item) => item.value > 0);
-    }, [charts.attendance_overview]);
+    }, [charts.attendance_overview, t]);
 
     const isSpecificChoir = selectedChoirId !== 'all';
     const currentChoirName = isSpecificChoir
         ? choirs.find((c) => c.id.toString() === selectedChoirId)?.name || 'Selected Choir'
-        : 'All Choirs';
+        : t('header.all_choirs', 'All Choirs');
 
     return (
         <div className="space-y-8 pb-14">
@@ -274,9 +276,9 @@ export default function AdminDashboard() {
                             <BarChart3 size={24} />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black tracking-tight text-slate-900">Admin Dashboard</h1>
+                            <h1 className="text-2xl font-black tracking-tight text-slate-900">{t('admin.dashboard.title', 'Admin Dashboard')}</h1>
                             <p className="text-sm text-slate-500">
-                                Real-time executive overview across choirs, members, events, and attendance
+                                {t('admin.dashboard.subtitle', 'Real-time executive overview across choirs, members, events, and attendance')}
                             </p>
                         </div>
                     </div>
@@ -291,7 +293,7 @@ export default function AdminDashboard() {
                             onChange={(e) => setSelectedChoirId(e.target.value)}
                             className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 shadow-sm focus:border-blue-500 focus:outline-none"
                         >
-                            <option value="all">🎶 All Choirs Overview ({choirs.length})</option>
+                            <option value="all">🎶 {t('admin.dashboard.all_choirs_overview', 'All Choirs Overview')} ({choirs.length})</option>
                             {choirs.map((c) => (
                                 <option key={c.id} value={c.id.toString()}>
                                     {c.name}
@@ -307,10 +309,10 @@ export default function AdminDashboard() {
                             onChange={(e) => setDateRange(e.target.value)}
                             className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 shadow-sm focus:border-blue-500 focus:outline-none"
                         >
-                            <option value="all">📅 All Time</option>
-                            <option value="30days">Last 30 Days</option>
+                            <option value="all">📅 {t('reports.range_all', 'All Time')}</option>
+                            <option value="30days">{t('reports.range_month', 'Last 30 Days')}</option>
                             <option value="6months">Last 6 Months</option>
-                            <option value="year">This Year</option>
+                            <option value="year">{t('reports.range_year', 'This Year')}</option>
                         </select>
                     </div>
 
@@ -320,7 +322,7 @@ export default function AdminDashboard() {
                         onClick={fetchDashboard}
                         disabled={loading}
                         className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
-                        title="Refresh dashboard"
+                        title={t('common.refresh', 'Refresh')}
                     >
                         <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
                     </button>
@@ -338,7 +340,7 @@ export default function AdminDashboard() {
                         </div>
                     </div>
                     <Button variant="primary" size="sm" onClick={fetchDashboard}>
-                        Retry
+                        {t('common.retry', 'Retry')}
                     </Button>
                 </div>
             )}
@@ -352,30 +354,30 @@ export default function AdminDashboard() {
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                         <ModernStatCard
                             icon={Music2}
-                            label="Total Songs"
+                            label={t('admin.dashboard.total_songs', 'Total Songs')}
                             value={counts.songs ?? 0}
-                            subtext="Library repertoire"
+                            subtext={t('admin.dashboard.approved_songs', 'approved catalog')}
                             color="violet"
                         />
                         <ModernStatCard
                             icon={CalendarClock}
-                            label="Rehearsals"
+                            label={t('admin.dashboard.practice_sessions', 'Practice Sessions')}
                             value={counts.rehearsals ?? 0}
-                            subtext="Coordinated sessions"
+                            subtext={t('admin.dashboard.last_30_days', 'last 30 days')}
                             color="amber"
                         />
                         <ModernStatCard
                             icon={CalendarDays}
-                            label="Performances"
+                            label={t('admin.dashboard.upcoming_worship', 'Upcoming Worship')}
                             value={counts.performances ?? 0}
-                            subtext={`${counts.upcoming_performances ?? counts.upcoming ?? 0} upcoming`}
+                            subtext={`${counts.upcoming_performances ?? counts.upcoming ?? 0} ${t('status.upcoming', 'upcoming')}`}
                             color="sky"
                         />
                         <ModernStatCard
                             icon={CheckCircle2}
-                            label="Attendance Rate"
+                            label={t('admin.dashboard.attendance_rate', 'Attendance Rate')}
                             value={`${counts.attendance_rate ?? 0}%`}
-                            subtext="Overall check-in rate"
+                            subtext={t('admin.dashboard.present_rate', 'Present Rate')}
                             color="rose"
                         />
                     </div>
@@ -387,16 +389,16 @@ export default function AdminDashboard() {
                             <div className="mb-4 flex items-center justify-between">
                                 <div>
                                     <h3 className="text-base font-bold text-slate-900">
-                                        {!isSpecificChoir ? 'Members by Choir' : `${currentChoirName} — Attendance Breakdown`}
+                                        {!isSpecificChoir ? t('choirs.members_list', 'Members by Choir') : `${currentChoirName} — ${t('attendance.management_title', 'Attendance Breakdown')}`}
                                     </h3>
                                     <p className="text-xs text-slate-400">
                                         {!isSpecificChoir
-                                            ? 'Active member distribution across choirs'
-                                            : 'Distribution of check-in records'}
+                                            ? t('admin.dashboard.choir_activity_distribution', 'Active member distribution across choirs')
+                                            : t('admin.dashboard.attendance_overview', 'Distribution of check-in records')}
                                     </p>
                                 </div>
                                 <span className="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
-                                    {!isSpecificChoir ? `${charts.members_by_choir?.length || 0} Choirs` : 'Live Stats'}
+                                    {!isSpecificChoir ? `${charts.members_by_choir?.length || 0} ${t('nav.choirs', 'Choirs')}` : 'Live Stats'}
                                 </span>
                             </div>
 
@@ -555,8 +557,8 @@ export default function AdminDashboard() {
                         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                             <div className="mb-4 flex items-center justify-between">
                                 <div>
-                                    <h3 className="text-base font-bold text-slate-900">Attendance Overview</h3>
-                                    <p className="text-xs text-slate-400">Live check-in proportion</p>
+                                    <h3 className="text-base font-bold text-slate-900">{t('admin.dashboard.attendance_overview', 'Attendance Overview')}</h3>
+                                    <p className="text-xs text-slate-400">{t('admin.dashboard.present_rate', 'Live check-in proportion')}</p>
                                 </div>
                                 <span className="rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
                                     {counts.attendance_rate ?? 0}% Rate
@@ -589,7 +591,7 @@ export default function AdminDashboard() {
                                 ) : (
                                     <div className="text-center text-xs text-slate-400">
                                         <CheckCircle2 size={32} className="mx-auto mb-2 text-slate-300" />
-                                        <p>No attendance records logged yet.</p>
+                                        <p>{t('dashboard.no_records_yet', 'No attendance records logged yet.')}</p>
                                     </div>
                                 )}
                             </div>
@@ -606,23 +608,22 @@ export default function AdminDashboard() {
                                         <CalendarDays size={16} />
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-bold text-slate-900">Upcoming Performances</h3>
-                                        <p className="text-xs text-slate-400">Next scheduled ministry services</p>
+                                        <h3 className="text-base font-bold text-slate-900">{t('admin.dashboard.upcoming_worship_programs', 'Upcoming Performances')}</h3>
+                                        <p className="text-xs text-slate-400">{t('admin.dashboard.past_worship', 'Next scheduled ministry services')}</p>
                                     </div>
                                 </div>
                                 <Link
                                     to="/admin/performances"
                                     className="inline-flex items-center gap-1 text-xs font-bold text-blue-700 hover:text-blue-800"
                                 >
-                                    View All <ChevronRight size={14} />
+                                    {t('admin.dashboard.view_all', 'View All')} <ChevronRight size={14} />
                                 </Link>
                             </div>
 
                             {upcoming.length === 0 ? (
                                 <div className="py-12 text-center text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl">
                                     <CalendarDays size={28} className="mx-auto mb-2 text-slate-300" />
-                                    <p className="font-semibold text-slate-600">No upcoming performances scheduled.</p>
-                                    <p className="mt-0.5">Schedule a performance in the Performances tab.</p>
+                                    <p className="font-semibold text-slate-600">{t('admin.dashboard.no_upcoming_programs', 'No upcoming performances scheduled.')}</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -634,7 +635,7 @@ export default function AdminDashboard() {
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="min-w-0 flex-1">
                                                     <span className="inline-block rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-100 mb-1">
-                                                        {p.choir?.name || 'Choir'}
+                                                        {p.choir?.name || t('common.choir', 'Choir')}
                                                     </span>
                                                     <h4 className="font-bold text-sm text-slate-900 truncate">{p.title}</h4>
                                                 </div>
@@ -667,14 +668,14 @@ export default function AdminDashboard() {
                                         <Activity size={16} />
                                     </div>
                                     <div>
-                                        <h3 className="text-base font-bold text-slate-900">Recent Activity</h3>
-                                        <p className="text-xs text-slate-400">System audit trail</p>
+                                        <h3 className="text-base font-bold text-slate-900">{t('admin.dashboard.recent_system_activities', 'Recent Activity')}</h3>
+                                        <p className="text-xs text-slate-400">{t('nav.activity_logs', 'System audit trail')}</p>
                                     </div>
                                 </div>
                             </div>
 
                             {recentActivity.length === 0 ? (
-                                <p className="py-8 text-center text-xs text-slate-400">No activity recorded yet.</p>
+                                <p className="py-8 text-center text-xs text-slate-400">{t('admin.dashboard.no_recent_activities', 'No activity recorded yet.')}</p>
                             ) : (
                                 <ul className="divide-y divide-slate-100">
                                     {recentActivity.map((a, i) => (

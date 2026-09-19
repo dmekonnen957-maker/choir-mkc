@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { authTranslationsEn } from '../i18n/authTranslationsEn';
+import { authTranslationsAm } from '../i18n/authTranslationsAm';
 
 const STORAGE_KEY = 'app_language';
 
@@ -28,12 +30,25 @@ export function LanguageProvider({ children }) {
     }, [language]);
 
     const t = useMemo(
-        () => (key, params) => {
+        () => (key, fallbackOrParams, maybeParams) => {
+            const hasFallback = typeof fallbackOrParams === 'string';
+            const fallback = hasFallback ? fallbackOrParams : undefined;
+            const params = hasFallback
+                ? (typeof maybeParams === 'object' && maybeParams !== null ? maybeParams : undefined)
+                : (typeof fallbackOrParams === 'object' && fallbackOrParams !== null ? fallbackOrParams : undefined);
+
             const dict = language === 'am' ? translationsAm : translationsEn;
-            let text = dict[key] ?? translationsEn[key] ?? key;
+            let text = dict[key];
+            if (text === undefined) {
+                text = language === 'am'
+                    ? (translationsEn[key] !== undefined ? translationsEn[key] : (fallback !== undefined ? fallback : key))
+                    : (translationsEn[key] !== undefined ? translationsEn[key] : (fallback !== undefined ? fallback : key));
+            }
             if (params) {
                 Object.entries(params).forEach(([pKey, pValue]) => {
-                    text = text.split(`{{${pKey}}}`).join(String(pValue));
+                    text = String(text)
+                        .split(`{{${pKey}}}`).join(String(pValue))
+                        .split(`{${pKey}}`).join(String(pValue));
                 });
             }
             return text;
@@ -545,6 +560,7 @@ const translationsEn = {
     'auth.reviewText': 'An administrator will review your registration and choir assignment. Once approved, you will be able to sign in with {{email}}.',
     'auth.yourEmail': 'your email',
     'auth.backToLogin': 'Back to Login',
+    ...authTranslationsEn,
 };
 
 const translationsAm = {
@@ -1036,6 +1052,7 @@ const translationsAm = {
     'auth.reviewText': 'አስተዳዳሪው ምዝገባዎንና የቡድን ምደባዎን ይገመግማሉ። ከጸደቀ በኋላ በ{{email}} መግባት ይችላሉ።',
     'auth.yourEmail': 'ኢሜይልዎ',
     'auth.backToLogin': 'ወደ መግቢያ ተመለስ',
+    ...authTranslationsAm,
 };
 
 export { translationsEn, translationsAm };

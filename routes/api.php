@@ -126,8 +126,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/members/{member}', [MemberController::class, 'destroyWithoutChoirParam'])->middleware('permission:members.delete');
         Route::apiResource('roles', RoleController::class);
         Route::apiResource('permissions', PermissionController::class);
-        Route::get('/audit-logs', [AuditLogController::class, 'index']);
-        Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show']);
+        Route::get('/audit-logs', [AuditLogController::class, 'index'])->middleware('permission:audit_logs.view');
+        Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])->middleware('permission:audit_logs.view');
         Route::get('/notifications', [NotificationController::class, 'index']);
         Route::post('/notifications', [NotificationController::class, 'store']);
         Route::get('/reports', [ReportController::class, 'index']);
@@ -200,10 +200,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('member/choir-history')->name('member.choir-history.')->group(function () {
         Route::get('/', [MemberChoirHistoryController::class, 'show'])->name('show');
         Route::put('/', [MemberChoirHistoryController::class, 'update'])->name('update');
+        Route::get('/photos', [MemberChoirHistoryController::class, 'indexPhotos'])->name('photos.index');
         Route::post('/photos', [MemberChoirHistoryController::class, 'storePhoto'])->name('photos.store');
         Route::put('/photos/{galleryItem}', [MemberChoirHistoryController::class, 'replacePhoto'])->name('photos.replace');
         Route::delete('/photos/{galleryItem}', [MemberChoirHistoryController::class, 'destroyPhoto'])->name('photos.destroy');
         Route::get('/photos/{galleryItem}/file', [MemberChoirHistoryController::class, 'photo'])->name('photo');
+        Route::get('/photos/{galleryItem}/thumbnail', [MemberChoirHistoryController::class, 'thumbnail'])->name('photos.thumbnail');
     });
 
     // Team Leader area. Admins retain access for support and platform-wide management.

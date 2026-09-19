@@ -10,6 +10,8 @@ class AuditLogController extends ApiController
 {
     public function index(Request $request)
     {
+        abort_unless($request->user()->isGlobalAdmin() || $request->user()->can('audit_logs.view'), 403, 'You do not have permission to view audit logs.');
+
         $query = AuditLog::with(['choir', 'user'])
             ->when($request->filled('action'), fn ($q) => $q->where('action', 'like', '%' . (string) $request->string('action') . '%'))
             ->when($request->filled('user_id'), fn ($q) => $q->where('user_id', $request->integer('user_id')))
@@ -60,6 +62,8 @@ class AuditLogController extends ApiController
 
     public function show(Request $request, AuditLog $auditLog)
     {
+        abort_unless($request->user()->isGlobalAdmin() || $request->user()->can('audit_logs.view'), 403, 'You do not have permission to view audit logs.');
+
         return $this->ok($auditLog->load(['choir', 'user']));
     }
 }

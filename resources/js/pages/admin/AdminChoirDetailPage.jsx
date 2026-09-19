@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../axios';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -23,6 +24,7 @@ export default function AdminChoirDetailPage() {
     const navigate = useNavigate();
     const { id } = useParams();
     const { can } = useAuth();
+    const { t } = useLanguage();
     const [choir, setChoir] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -38,9 +40,9 @@ export default function AdminChoirDetailPage() {
         setError('');
         api.get(`/admin/choirs/${id}`)
             .then((res) => setChoir(res.data.data))
-            .catch(() => setError('Failed to load choir.'))
+            .catch(() => setError(t('choirs.load_error', 'Failed to load choirs.')))
             .finally(() => setLoading(false));
-    }, [id]);
+    }, [id, t]);
 
     useEffect(() => {
         load();
@@ -53,14 +55,14 @@ export default function AdminChoirDetailPage() {
         const next = choir.status === 'active' ? 'inactive' : 'active';
         api.put(`/admin/choirs/${id}`, { ...choir, status: next })
             .then(() => load())
-            .catch((err) => setActionError(err.response?.data?.message || 'Failed to update status.'))
+            .catch((err) => setActionError(err.response?.data?.message || t('choirs.status_update_failed', 'Failed to update status.')))
             .finally(() => setBusy(false));
     };
 
     if (loading) {
         return (
             <div className="flex h-48 items-center justify-center">
-                <LoadingSpinner text="Loading choir..." />
+                <LoadingSpinner text={t('common.loading', 'Loading...')} />
             </div>
         );
     }
@@ -69,9 +71,9 @@ export default function AdminChoirDetailPage() {
         return (
             <div className="space-y-4">
                 <button onClick={() => navigate('/admin/choirs')} className="inline-flex items-center gap-1 text-sm text-ink-500 hover:text-ink-700">
-                    <ArrowLeft size={16} /> Back to choirs
+                    <ArrowLeft size={16} /> {t('choirs.back_to_choirs', 'Back to choirs')}
                 </button>
-                <Alert variant="error">{error || 'Choir not found.'}</Alert>
+                <Alert variant="error">{error || t('choirs.not_found', 'Choir not found.')}</Alert>
             </div>
         );
     }
@@ -83,7 +85,7 @@ export default function AdminChoirDetailPage() {
     return (
         <div className="space-y-6">
             <button onClick={() => navigate('/admin/choirs')} className="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-800">
-                <ArrowLeft size={16} /> Back to choirs
+                <ArrowLeft size={16} /> {t('choirs.back_to_choirs', 'Back to choirs')}
             </button>
 
             {actionError && <Alert variant="error">{actionError}</Alert>}
@@ -125,13 +127,13 @@ export default function AdminChoirDetailPage() {
                                 <p className="mt-2 max-w-xl text-sm text-slate-600 leading-relaxed">{choir.description}</p>
                             )}
                             <p className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-slate-700">
-                                <User size={14} className="text-blue-600" /> {choir.team_leader?.name || 'No team leader assigned'}
+                                <User size={14} className="text-blue-600" /> {choir.team_leader?.name || t('choirs.form_no_leader', 'No leader assigned')}
                             </p>
 
                             {/* Color preview */}
                             {(choir.uniform_primary_color || choir.uniform_secondary_color) && (
                                 <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
-                                    <span className="font-bold text-slate-700">Uniform:</span>
+                                    <span className="font-bold text-slate-700">{t('choirs.form_uniform_title', 'Uniform & Branding')}:</span>
                                     {choir.uniform_primary_color && (
                                         <span className="inline-flex items-center gap-1">
                                             <span className="h-3.5 w-3.5 rounded-full border border-slate-300 shadow-xs" style={{ backgroundColor: choir.uniform_primary_color }} />
@@ -154,17 +156,17 @@ export default function AdminChoirDetailPage() {
 
                     <div className="flex flex-wrap gap-2">
                         <Button variant="outline" onClick={() => setEditModalOpen(true)}>
-                            <Pencil size={15} className="mr-1" /> Edit
+                            <Pencil size={15} className="mr-1" /> {t('common.edit', 'Edit')}
                         </Button>
                         {can('choirs.update') && (
                             <Button variant="outline" onClick={toggleStatus} disabled={busy}>
                                 {busy ? <Loader2 size={15} className="mr-1 animate-spin" /> : <Power size={15} className="mr-1" />}
-                                {choir.status === 'active' ? 'Deactivate' : 'Activate'}
+                                {choir.status === 'active' ? t('choirs.deactivate', 'Deactivate') : t('choirs.activate', 'Activate')}
                             </Button>
                         )}
                         {can('choirs.delete') && (
                             <Button variant="danger" onClick={() => setDeleteModalOpen(true)} disabled={busy}>
-                                <Trash2 size={15} className="mr-1" /> Delete
+                                <Trash2 size={15} className="mr-1" /> {t('common.delete', 'Delete')}
                             </Button>
                         )}
                     </div>
@@ -173,15 +175,15 @@ export default function AdminChoirDetailPage() {
                 <div className="mt-5 grid grid-cols-3 gap-3 border-t border-slate-100 pt-5 text-center">
                     <div>
                         <p className="text-xl font-bold text-slate-900">{choir.member_count ?? 0}</p>
-                        <p className="text-xs text-slate-500 font-medium">Members</p>
+                        <p className="text-xs text-slate-500 font-medium">{t('choir.members_list', 'Choir Members')}</p>
                     </div>
                     <div>
                         <p className="text-xl font-bold text-slate-900">{choir.songs_count ?? 0}</p>
-                        <p className="text-xs text-slate-500 font-medium">Songs</p>
+                        <p className="text-xs text-slate-500 font-medium">{t('song.songs', 'Songs')}</p>
                     </div>
                     <div>
                         <p className="text-xl font-bold text-slate-900">{choir.performances_count ?? 0}</p>
-                        <p className="text-xs text-slate-500 font-medium">Performances</p>
+                        <p className="text-xs text-slate-500 font-medium">{t('performance.performances', 'Performances')}</p>
                     </div>
                 </div>
             </Card>
@@ -189,10 +191,10 @@ export default function AdminChoirDetailPage() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <Card>
                     <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900">
-                        <Users size={18} className="text-blue-600" /> Members ({members.length})
+                        <Users size={18} className="text-blue-600" /> {t('choir.members_list', 'Choir Members')} ({members.length})
                     </h2>
                     {members.length === 0 ? (
-                        <p className="py-6 text-center text-sm text-slate-400">No members assigned yet.</p>
+                        <p className="py-6 text-center text-sm text-slate-400">{t('choir.no_members', 'No members to display.')}</p>
                     ) : (
                         <ul className="divide-y divide-slate-100">
                             {members.map((m) => (
@@ -213,10 +215,10 @@ export default function AdminChoirDetailPage() {
                 <div className="space-y-6">
                     <Card>
                         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900">
-                            <CalendarDays size={18} className="text-emerald-600" /> Upcoming Performances
+                            <CalendarDays size={18} className="text-emerald-600" /> {t('performance.upcoming', 'Upcoming Performances')}
                         </h2>
                         {upcoming.length === 0 ? (
-                            <p className="py-6 text-center text-sm text-slate-400">None scheduled.</p>
+                            <p className="py-6 text-center text-sm text-slate-400">{t('performance.none_scheduled', 'None scheduled.')}</p>
                         ) : (
                             <ul className="space-y-3">
                                 {upcoming.map((p) => (
@@ -234,10 +236,10 @@ export default function AdminChoirDetailPage() {
 
                     <Card>
                         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900">
-                            <Music2 size={18} className="text-violet-600" /> Performance History
+                            <Music2 size={18} className="text-violet-600" /> {t('performance.history', 'Performance History')}
                         </h2>
                         {history.length === 0 ? (
-                            <p className="py-6 text-center text-sm text-slate-400">No past performances.</p>
+                            <p className="py-6 text-center text-sm text-slate-400">{t('performance.no_past', 'No past performances.')}</p>
                         ) : (
                             <ul className="space-y-3">
                                 {history.map((p) => (

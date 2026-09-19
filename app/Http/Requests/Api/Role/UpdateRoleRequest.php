@@ -13,6 +13,19 @@ class UpdateRoleRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('area') && is_string($this->area)) {
+            $area = strtolower(trim($this->area));
+            if ($area === 'team-leader') {
+                $area = 'team_leader';
+            } elseif ($area === 'musicians') {
+                $area = 'musician';
+            }
+            $this->merge(['area' => $area ?: null]);
+        }
+    }
+
     public function rules(): array
     {
         $id = $this->route('role') instanceof Role ? $this->route('role')->id : $this->route('role');
@@ -25,7 +38,7 @@ class UpdateRoleRequest extends FormRequest
                 Rule::unique('roles', 'name')->where('guard_name', 'api')->ignore($id),
             ],
             'description' => ['nullable', 'string', 'max:255'],
-            'area' => ['nullable', 'string', Rule::in(['admin', 'team-leader', 'member', 'musician'])],
+            'area' => ['nullable', 'string', Rule::in(['admin', 'team_leader', 'team-leader', 'member', 'musician', 'musicians'])],
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['string'],
         ];

@@ -38,6 +38,10 @@ class EnsureMemberMiddleware
             ], 403);
         }
 
+        if ($user->isGlobalAdmin()) {
+            return $next($request);
+        }
+
         if (! $user->isApprovedMember()) {
             return response()->json([
                 'success' => false,

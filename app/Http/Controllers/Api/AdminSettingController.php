@@ -16,6 +16,8 @@ class AdminSettingController extends ApiController
      */
     public function index(Request $request): JsonResponse
     {
+        abort_unless($request->user()->isGlobalAdmin() || $request->user()->can('settings.manage'), 403, 'You do not have permission to manage settings.');
+
         $settings = Setting::all();
         $grouped = [];
         $flat = [];
@@ -57,6 +59,8 @@ class AdminSettingController extends ApiController
      */
     public function update(Request $request): JsonResponse
     {
+        abort_unless($request->user()->isGlobalAdmin() || $request->user()->can('settings.manage'), 403, 'You do not have permission to manage settings.');
+
         $validated = $request->validate([
             'settings' => 'required|array',
             'settings.ministry_name' => 'nullable|string|max:255',
@@ -142,6 +146,8 @@ class AdminSettingController extends ApiController
      */
     public function clearCache(Request $request): JsonResponse
     {
+        abort_unless($request->user()->isGlobalAdmin() || $request->user()->can('settings.manage'), 403, 'You do not have permission to manage settings.');
+
         try {
             Artisan::call('cache:clear');
             Artisan::call('config:clear');

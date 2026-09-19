@@ -5,6 +5,7 @@ import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Alert from '../ui/Alert';
+import { useLanguage } from '../../context/LanguageContext';
 
 const EMPTY = {
     name: '',
@@ -136,6 +137,7 @@ function ColorPreviewBadge({ primary, secondary, pattern }) {
 }
 
 export default function ChoirFormModal({ open, onClose, choir = null, onSaved }) {
+    const { t } = useLanguage();
     const isEdit = !!choir?.id;
     const [form, setForm] = useState(EMPTY);
     const [leaders, setLeaders] = useState([]);
@@ -214,7 +216,7 @@ export default function ChoirFormModal({ open, onClose, choir = null, onSaved })
                 if (err.response?.status === 422) {
                     setErrors(err.response.data.errors || {});
                 } else {
-                    setError(err.response?.data?.message || 'Failed to save choir.');
+                    setError(err.response?.data?.message || t('choirs.load_error', 'Failed to load choirs.'));
                 }
             })
             .finally(() => setSubmitting(false));
@@ -224,7 +226,9 @@ export default function ChoirFormModal({ open, onClose, choir = null, onSaved })
         <Modal
             open={open}
             onClose={onClose}
-            title={isEdit ? `Edit Choir: ${choir?.name}` : 'Create New Choir'}
+            title={isEdit
+                ? t('choirs.modal_edit_title', 'Edit Choir: {{name}}').replace('{{name}}', choir?.name)
+                : t('choirs.modal_create_title', 'Create New Choir')}
             size="lg"
         >
             <form onSubmit={submit} className="space-y-5">
@@ -232,7 +236,7 @@ export default function ChoirFormModal({ open, onClose, choir = null, onSaved })
 
                 <div className="space-y-4">
                     <Input
-                        label="Choir Name *"
+                        label={`${t('choirs.form_name', 'Choir Name')} *`}
                         value={form.name}
                         onChange={(e) => update('name', e.target.value)}
                         error={errors.name?.[0]}
@@ -243,17 +247,17 @@ export default function ChoirFormModal({ open, onClose, choir = null, onSaved })
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">
-                                Choir Type
+                                {t('choirs.form_type', 'Choir Type')}
                             </label>
                             <select
                                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
                                 value={form.choir_type}
                                 onChange={(e) => update('choir_type', e.target.value)}
                             >
-                                <option value="">Select choir type</option>
-                                {CHOIR_TYPES.map((t) => (
-                                    <option key={t} value={t}>
-                                        {t}
+                                <option value="">{t('choirs.form_select_type', 'Select choir type...')}</option>
+                                {CHOIR_TYPES.map((type) => (
+                                    <option key={type} value={type}>
+                                        {type}
                                     </option>
                                 ))}
                             </select>
@@ -263,7 +267,7 @@ export default function ChoirFormModal({ open, onClose, choir = null, onSaved })
                         </div>
 
                         <Input
-                            label="Church / Organization"
+                            label={t('choirs.form_church_name', 'Church / Parish Name')}
                             value={form.church_name}
                             onChange={(e) => update('church_name', e.target.value)}
                             error={errors.church_name?.[0]}
@@ -273,7 +277,7 @@ export default function ChoirFormModal({ open, onClose, choir = null, onSaved })
 
                     <div>
                         <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">
-                            Description
+                            {t('choirs.form_description', 'Description & Vision')}
                         </label>
                         <textarea
                             rows={3}
@@ -290,14 +294,14 @@ export default function ChoirFormModal({ open, onClose, choir = null, onSaved })
                     {/* Team Leader Select */}
                     <div>
                         <label className="mb-1 flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-slate-700">
-                            <User size={14} className="text-blue-600" /> Assigned Team Leader
+                            <User size={14} className="text-blue-600" /> {t('choirs.form_leader', 'Assigned Team Leader')}
                         </label>
                         <select
                             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
                             value={form.team_leader_id}
                             onChange={(e) => update('team_leader_id', e.target.value)}
                         >
-                            <option value="">No Team Leader Assigned</option>
+                            <option value="">{t('choirs.form_no_leader', 'No leader assigned')}</option>
                             {leaders.map((l) => (
                                 <option key={l.id} value={l.id}>
                                     {l.name} {l.email ? `(${l.email})` : ''}
@@ -312,15 +316,15 @@ export default function ChoirFormModal({ open, onClose, choir = null, onSaved })
                     <div className="flex flex-wrap items-center gap-6 pt-1">
                         <div>
                             <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">
-                                Status
+                                {t('common.status', 'Status')}
                             </label>
                             <select
                                 className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
                                 value={form.status}
                                 onChange={(e) => update('status', e.target.value)}
                             >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
+                                <option value="active">{t('status.active', 'Active')}</option>
+                                <option value="inactive">{t('status.inactive', 'Inactive')}</option>
                             </select>
                         </div>
 
@@ -331,7 +335,7 @@ export default function ChoirFormModal({ open, onClose, choir = null, onSaved })
                                 checked={form.is_public}
                                 onChange={(e) => update('is_public', e.target.checked)}
                             />
-                            Listed on public registration &amp; website
+                            {t('choirs.form_public_desc', 'Display this choir and its songs on the public church portal')}
                         </label>
                     </div>
                 </div>
@@ -339,18 +343,18 @@ export default function ChoirFormModal({ open, onClose, choir = null, onSaved })
                 {/* Theme & Uniform Section */}
                 <div className="border-t border-slate-100 pt-5 space-y-4">
                     <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
-                        <Palette size={18} className="text-blue-600" /> Uniform &amp; Colors Selection
+                        <Palette size={18} className="text-blue-600" /> {t('choirs.form_uniform_title', 'Uniform & Branding')}
                     </h3>
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <ColorFieldPicker
-                            label="Primary Color"
+                            label={t('choirs.form_uniform_primary', 'Primary Color')}
                             value={form.uniform_primary_color}
                             onChange={(v) => update('uniform_primary_color', v)}
                             error={errors.uniform_primary_color?.[0]}
                         />
                         <ColorFieldPicker
-                            label="Secondary Color"
+                            label={t('choirs.form_uniform_secondary', 'Secondary Color')}
                             value={form.uniform_secondary_color}
                             onChange={(v) => update('uniform_secondary_color', v)}
                             error={errors.uniform_secondary_color?.[0]}
@@ -364,7 +368,7 @@ export default function ChoirFormModal({ open, onClose, choir = null, onSaved })
                     />
 
                     <Input
-                        label="Uniform Pattern"
+                        label={t('choirs.form_uniform_pattern', 'Pattern / Style')}
                         value={form.uniform_pattern}
                         onChange={(e) => update('uniform_pattern', e.target.value)}
                         error={errors.uniform_pattern?.[0]}
@@ -373,7 +377,7 @@ export default function ChoirFormModal({ open, onClose, choir = null, onSaved })
 
                     <div>
                         <label className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-700">
-                            Uniform Description
+                            {t('choirs.form_uniform_desc', 'Uniform Description')}
                         </label>
                         <textarea
                             rows={2}
@@ -390,7 +394,7 @@ export default function ChoirFormModal({ open, onClose, choir = null, onSaved })
 
                 <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
                     <Button type="button" variant="ghost" onClick={onClose}>
-                        Cancel
+                        {t('common.cancel', 'Cancel')}
                     </Button>
                     <Button type="submit" disabled={submitting}>
                         {submitting ? (
@@ -398,7 +402,7 @@ export default function ChoirFormModal({ open, onClose, choir = null, onSaved })
                         ) : (
                             <Save size={16} className="mr-1.5" />
                         )}
-                        {isEdit ? 'Save Changes' : 'Create Choir'}
+                        {isEdit ? t('common.save', 'Save') : t('common.create', 'Create')}
                     </Button>
                 </div>
             </form>

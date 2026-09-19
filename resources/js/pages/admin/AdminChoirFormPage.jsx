@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import Alert from '../../components/ui/Alert';
+import { useLanguage } from '../../context/LanguageContext';
 
 const EMPTY = {
     name: '',
@@ -90,6 +91,7 @@ function ColorPreview({ primary, secondary, pattern }) {
 export default function AdminChoirFormPage({ mode = 'create' }) {
     const navigate = useNavigate();
     const { id } = useParams();
+    const { t } = useLanguage();
     const [form, setForm] = useState(EMPTY);
     const [leaders, setLeaders] = useState([]);
     const [errors, setErrors] = useState({});
@@ -138,7 +140,7 @@ export default function AdminChoirFormPage({ mode = 'create' }) {
                         setLeaders((prev) => [c.team_leader, ...prev]);
                     }
                 })
-                .catch(() => setError('Failed to load choir.'))
+                .catch(() => setError(t('choirs.load_error', 'Failed to load choirs.')))
                 .finally(() => setLoading(false));
         }
     }, [mode, id, leaders]);
@@ -166,7 +168,7 @@ export default function AdminChoirFormPage({ mode = 'create' }) {
                 if (err.response?.status === 422) {
                     setErrors(err.response.data.errors || {});
                 } else {
-                    setError(err.response?.data?.message || 'Something went wrong.');
+                    setError(err.response?.data?.message || t('common.error', 'Error'));
                 }
             })
             .finally(() => setSubmitting(false));
@@ -175,7 +177,7 @@ export default function AdminChoirFormPage({ mode = 'create' }) {
     if (loading) {
         return (
             <div className="flex h-48 items-center justify-center">
-                <LoadingSpinner text="Loading..." />
+                <LoadingSpinner text={t('common.loading', 'Loading...')} />
             </div>
         );
     }
@@ -186,21 +188,21 @@ export default function AdminChoirFormPage({ mode = 'create' }) {
                 onClick={() => navigate(-1)}
                 className="inline-flex items-center gap-1 text-sm font-medium text-ink-500 hover:text-ink-700"
             >
-                <ArrowLeft size={16} /> Back
+                <ArrowLeft size={16} /> {t('choirs.back_to_choirs', 'Back to choirs')}
             </button>
 
             <h1 className="text-2xl font-bold tracking-tight text-ink-900">
-                {mode === 'edit' ? 'Edit Choir' : 'New Choir'}
+                {mode === 'edit' ? t('choirs.modal_edit_title', 'Edit Choir') : t('choirs.modal_create_title', 'Create New Choir')}
             </h1>
 
             {error && <Alert variant="error">{error}</Alert>}
 
             <Card>
                 <form onSubmit={submit} className="space-y-5">
-                    <h2 className="text-base font-semibold text-ink-800">Basic Information</h2>
+                    <h2 className="text-base font-semibold text-ink-800">{t('common.name', 'Name')}</h2>
 
                     <Input
-                        label="Choir Name"
+                        label={t('choirs.form_name', 'Choir Name')}
                         value={form.name}
                         onChange={(e) => update('name', e.target.value)}
                         error={errors.name?.[0]}
@@ -208,15 +210,15 @@ export default function AdminChoirFormPage({ mode = 'create' }) {
                     />
 
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-ink-700">Choir Type</label>
+                        <label className="mb-1 block text-sm font-medium text-ink-700">{t('choirs.form_type', 'Choir Type')}</label>
                         <select
                             className="w-full rounded-xl border border-blue-100 bg-canvas px-3 py-2 text-sm text-ink-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                             value={form.choir_type}
                             onChange={(e) => update('choir_type', e.target.value)}
                         >
-                            <option value="">Select choir type</option>
-                            {CHOIR_TYPES.map((t) => (
-                                <option key={t} value={t}>{t}</option>
+                            <option value="">{t('choirs.form_select_type', 'Select choir type...')}</option>
+                            {CHOIR_TYPES.map((type) => (
+                                <option key={type} value={type}>{type}</option>
                             ))}
                         </select>
                         {errors.choir_type?.[0] && (
@@ -225,20 +227,20 @@ export default function AdminChoirFormPage({ mode = 'create' }) {
                     </div>
 
                     <Input
-                        label="Church / Organization"
+                        label={t('choirs.form_church_name', 'Church / Parish Name')}
                         value={form.church_name}
                         onChange={(e) => update('church_name', e.target.value)}
                         error={errors.church_name?.[0]}
                     />
 
                     <div>
-                        <label className="mb-1 block text-sm font-medium text-ink-700">Description</label>
+                        <label className="mb-1 block text-sm font-medium text-ink-700">{t('choirs.form_description', 'Description & Vision')}</label>
                         <textarea
                             rows={3}
                             className="w-full rounded-xl border border-blue-100 bg-canvas px-3 py-2 text-sm text-ink-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                             value={form.description}
                             onChange={(e) => update('description', e.target.value)}
-                            placeholder="A short description of this choir..."
+                            placeholder={t('common.description', 'Description')}
                         />
                         {errors.description?.[0] && (
                             <p className="mt-1 text-xs text-red-500">{errors.description[0]}</p>
@@ -248,14 +250,14 @@ export default function AdminChoirFormPage({ mode = 'create' }) {
                     {/* Team Leader */}
                     <div>
                         <label className="mb-1 flex items-center gap-1 text-sm font-medium text-ink-700">
-                            <User size={14} /> Team Leader
+                            <User size={14} /> {t('choirs.form_leader', 'Assigned Team Leader')}
                         </label>
                         <select
                             className="w-full rounded-xl border border-blue-100 bg-canvas px-3 py-2 text-sm text-ink-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                             value={form.team_leader_id}
                             onChange={(e) => update('team_leader_id', e.target.value)}
                         >
-                            <option value="">Select a team leader</option>
+                            <option value="">{t('choirs.form_select_leader', 'Select team leader...')}</option>
                             {leaders.map((l) => (
                                 <option key={l.id} value={l.id}>
                                     {l.name} {l.email ? `(${l.email})` : ''}
@@ -269,14 +271,14 @@ export default function AdminChoirFormPage({ mode = 'create' }) {
 
                     <div className="flex items-center gap-6">
                         <div>
-                            <label className="mb-1 block text-sm font-medium text-ink-700">Status</label>
+                            <label className="mb-1 block text-sm font-medium text-ink-700">{t('common.status', 'Status')}</label>
                             <select
                                 className="rounded-xl border border-blue-100 bg-canvas px-3 py-2 text-sm text-ink-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                                 value={form.status}
                                 onChange={(e) => update('status', e.target.value)}
                             >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
+                                <option value="active">{t('common.active', 'Active')}</option>
+                                <option value="inactive">{t('common.inactive', 'Inactive')}</option>
                             </select>
                         </div>
 
@@ -287,25 +289,25 @@ export default function AdminChoirFormPage({ mode = 'create' }) {
                                 checked={form.is_public}
                                 onChange={(e) => update('is_public', e.target.checked)}
                             />
-                            Listed on public registration
+                            {t('choirs.form_public_label', 'Public Visibility')}
                         </label>
                     </div>
 
                     {/* ── Theme Section ── */}
                     <div className="border-t border-blue-50 pt-5">
                         <h2 className="mb-4 flex items-center gap-2 text-base font-semibold text-ink-800">
-                            <Palette size={16} className="text-blue-500" /> Choir Theme &amp; Uniform
+                            <Palette size={16} className="text-blue-500" /> {t('choirs.form_uniform_title', 'Uniform & Branding')}
                         </h2>
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <ColorField
-                                label="Primary Color"
+                                label={t('choirs.form_uniform_primary', 'Primary Color')}
                                 value={form.uniform_primary_color}
                                 onChange={(v) => update('uniform_primary_color', v)}
                                 error={errors.uniform_primary_color?.[0]}
                             />
                             <ColorField
-                                label="Secondary Color"
+                                label={t('choirs.form_uniform_secondary', 'Secondary Color')}
                                 value={form.uniform_secondary_color}
                                 onChange={(v) => update('uniform_secondary_color', v)}
                                 error={errors.uniform_secondary_color?.[0]}
@@ -322,7 +324,7 @@ export default function AdminChoirFormPage({ mode = 'create' }) {
 
                         <div className="mt-4">
                             <Input
-                                label="Uniform Pattern"
+                                label={t('choirs.form_uniform_pattern', 'Pattern / Style')}
                                 value={form.uniform_pattern}
                                 onChange={(e) => update('uniform_pattern', e.target.value)}
                                 error={errors.uniform_pattern?.[0]}
@@ -331,13 +333,13 @@ export default function AdminChoirFormPage({ mode = 'create' }) {
                         </div>
 
                         <div className="mt-4">
-                            <label className="mb-1 block text-sm font-medium text-ink-700">Uniform Description</label>
+                            <label className="mb-1 block text-sm font-medium text-ink-700">{t('choirs.form_uniform_desc', 'Uniform Description')}</label>
                             <textarea
                                 rows={2}
                                 className="w-full rounded-xl border border-blue-100 bg-canvas px-3 py-2 text-sm text-ink-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                                 value={form.uniform_description}
                                 onChange={(e) => update('uniform_description', e.target.value)}
-                                placeholder="Describe the choir uniform in detail…"
+                                placeholder={t('choirs.form_uniform_desc', 'Uniform Description')}
                             />
                             {errors.uniform_description?.[0] && (
                                 <p className="mt-1 text-xs text-red-500">{errors.uniform_description[0]}</p>
@@ -347,7 +349,7 @@ export default function AdminChoirFormPage({ mode = 'create' }) {
 
                     <div className="flex justify-end gap-3 pt-2">
                         <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
-                            Cancel
+                            {t('common.cancel', 'Cancel')}
                         </Button>
                         <Button type="submit" disabled={submitting}>
                             {submitting ? (
@@ -355,7 +357,7 @@ export default function AdminChoirFormPage({ mode = 'create' }) {
                             ) : (
                                 <Save size={16} className="mr-1" />
                             )}
-                            {mode === 'edit' ? 'Save Changes' : 'Create Choir'}
+                            {submitting ? t('common.saving', 'Saving...') : t('common.save', 'Save')}
                         </Button>
                     </div>
                 </form>

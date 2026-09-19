@@ -10,7 +10,22 @@ use Spatie\Permission\Models\Role;
 
 class RoleController extends ApiController
 {
-    private const CORE_ROLES = ['super-admin', 'admin', 'team_leader', 'member'];
+    private const CORE_ROLES = ['super-admin', 'admin', 'team_leader', 'member', 'musician', 'musicians'];
+
+    private function inferAreaFromPermissions(array $permissions): string
+    {
+        foreach ($permissions as $p) {
+            if (str_starts_with($p, 'users.') || str_starts_with($p, 'roles.') || str_starts_with($p, 'permissions.') || str_starts_with($p, 'audit_logs.') || str_starts_with($p, 'reports.') || str_starts_with($p, 'settings.') || $p === 'choirs.create' || $p === 'choirs.delete' || $p === 'choirs.manage') {
+                return 'admin';
+            }
+        }
+        foreach ($permissions as $p) {
+            if ($p === 'attendance.manage' || $p === 'rehearsals.manage' || $p === 'performances.manage' || str_starts_with($p, 'attendance.') || str_starts_with($p, 'rehearsals.')) {
+                return 'team_leader';
+            }
+        }
+        return 'member';
+    }
 
     public function index(Request $request)
     {
@@ -32,10 +47,10 @@ class RoleController extends ApiController
                 'description' => $role->description,
                 'guard_name' => $role->guard_name,
                 'area' => $role->area,
-                'is_core' => in_array($role->name, self::CORE_ROLES),
+                'is_core' => in_array($role->name, self::CORE_ROLES, true),
                 'users_count' => $role->users_count,
                 'permissions_count' => $role->permissions->count(),
-                'permissions' => $role->permissions->pluck('name'),
+                'permissions' => array_values($role->permissions->pluck('name')->toArray()),
                 'created_at' => $role->created_at,
             ];
         });
@@ -48,16 +63,22 @@ class RoleController extends ApiController
         $this->authorize('create', Role::class);
 
         $data = $request->validated();
+        $permissions = $request->input('permissions', []);
+
+        $area = $data['area'] ?? null;
+        if (! $area) {
+            $area = $this->inferAreaFromPermissions($permissions);
+        }
 
         $role = Role::create([
             'name' => $data['name'],
             'guard_name' => 'api',
             'description' => $data['description'] ?? null,
-            'area' => $data['area'] ?? null,
+            'area' => $area,
         ]);
 
-        if ($request->has('permissions')) {
-            $role->syncPermissions($request->permissions ?? []);
+        if (! empty($permissions)) {
+            $role->syncPermissions($permissions);
         }
 
         app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
@@ -67,7 +88,7 @@ class RoleController extends ApiController
             'action' => 'role.created',
             'subject_type' => Role::class,
             'subject_id' => $role->id,
-            'new_values' => ['name' => $role->name, 'permissions' => $request->permissions ?? [], 'area' => $role->area],
+            'new_values' => ['name' => $role->name, 'permissions' => $permissions, 'area' => $role->area],
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
             'created_at' => now(),
@@ -79,8 +100,8 @@ class RoleController extends ApiController
             'description' => $role->description,
             'guard_name' => $role->guard_name,
             'area' => $role->area,
-            'is_core' => in_array($role->name, self::CORE_ROLES),
-            'permissions' => $role->permissions()->pluck('name'),
+            'is_core' => in_array($role->name, self::CORE_ROLES, true),
+            'permissions' => array_values($role->permissions()->pluck('name')->toArray()),
         ], 'Role created successfully', 201);
     }
 
@@ -96,10 +117,10 @@ class RoleController extends ApiController
             'description' => $role->description,
             'guard_name' => $role->guard_name,
             'area' => $role->area,
-            'is_core' => in_array($role->name, self::CORE_ROLES),
+            'is_core' => in_array($role->name, self::CORE_ROLES, true),
             'users_count' => $role->users->count(),
             'permissions_count' => $role->permissions->count(),
-            'permissions' => $role->permissions->pluck('name'),
+            'permissions' => array_values($role->permissions->pluck('name')->toArray()),
             'users' => $role->users->map(function ($u) {
                 return [
                     'id' => $u->id,
@@ -122,24 +143,30 @@ class RoleController extends ApiController
         $this->authorize('update', $role);
 
         $data = $request->validated();
+        $permissions = $request->input('permissions', []);
         $oldValues = [
             'name' => $role->name,
             'permissions' => $role->permissions->pluck('name')->toArray(),
         ];
 
         // Guard core role rename
-        if (in_array($role->name, self::CORE_ROLES) && $role->name !== $data['name']) {
+        if (in_array($role->name, self::CORE_ROLES, true) && $role->name !== $data['name']) {
             return $this->error('Core system role names cannot be renamed.', null, 422);
+        }
+
+        $area = $data['area'] ?? $role->area;
+        if (! $area && ! empty($permissions)) {
+            $area = $this->inferAreaFromPermissions($permissions);
         }
 
         $role->update([
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
-            'area' => $data['area'] ?? null,
+            'area' => $area,
         ]);
 
         if ($request->has('permissions')) {
-            $role->syncPermissions($request->permissions ?? []);
+            $role->syncPermissions($permissions);
         }
 
         app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
@@ -150,7 +177,7 @@ class RoleController extends ApiController
             'subject_type' => Role::class,
             'subject_id' => $role->id,
             'old_values' => $oldValues,
-            'new_values' => ['name' => $role->name, 'permissions' => $request->permissions ?? [], 'area' => $role->area],
+            'new_values' => ['name' => $role->name, 'permissions' => $permissions, 'area' => $role->area],
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
             'created_at' => now(),
@@ -162,8 +189,8 @@ class RoleController extends ApiController
             'description' => $role->description,
             'guard_name' => $role->guard_name,
             'area' => $role->area,
-            'is_core' => in_array($role->name, self::CORE_ROLES),
-            'permissions' => $role->permissions()->pluck('name'),
+            'is_core' => in_array($role->name, self::CORE_ROLES, true),
+            'permissions' => array_values($role->permissions()->pluck('name')->toArray()),
         ], 'Role updated successfully');
     }
 
