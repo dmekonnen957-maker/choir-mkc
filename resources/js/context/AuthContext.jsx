@@ -97,6 +97,15 @@ export function AuthProvider({ children }) {
         if (has('super-admin') || has('admin')) return 'admin';
         if (has('team_leader') || has('team-leader')) return 'team_leader';
         if (has('musician') || has('musicians') || roles.some(r => r.toLowerCase().includes('music'))) return 'musician';
+        
+        // Check for custom roles with area mapping from roles_with_area
+        const rolesWithArea = user?.roles_with_area ?? [];
+        for (const rwa of rolesWithArea) {
+            if (rwa.area && ['admin', 'team-leader', 'member', 'musician'].includes(rwa.area)) {
+                return rwa.area === 'team-leader' ? 'team_leader' : rwa.area;
+            }
+        }
+        
         return rLower || (roles[0] ? roles[0].toLowerCase() : 'member');
     }, [roles, user]);
 
@@ -147,10 +156,26 @@ export function AuthProvider({ children }) {
         return false;
     }, [permissions, roles, user]);
 
+    // Get user's primary area from roles_with_area
+    const area = useMemo(() => {
+        const rolesWithArea = user?.roles_with_area ?? [];
+        for (const rwa of rolesWithArea) {
+            if (rwa.area && ['admin', 'team-leader', 'member', 'musician'].includes(rwa.area)) {
+                return rwa.area === 'team-leader' ? 'team_leader' : rwa.area;
+            }
+        }
+        // Fallback to role-based area
+        if (role === 'admin') return 'admin';
+        if (role === 'team_leader') return 'team_leader';
+        if (role === 'musician') return 'musician';
+        return 'member';
+    }, [user, role]);
+
     const value = {
         user,
         roles,
         role,
+        area,
         permissions,
         choirs,
         primaryChoir,

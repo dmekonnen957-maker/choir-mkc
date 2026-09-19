@@ -123,12 +123,15 @@ export default function HeroCarousel() {
                 {/* Official Church Badge */}
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-white/95 backdrop-blur-md shadow-sm sm:text-sm animate-fade-in">
                     <Music2 size={16} className="text-blue-400" />
-                    <span>{t('hero.ministry')}</span>
+                    <span>{t('hero.churchPhrase', t('hero.ministry'))}</span>
                 </div>
 
-                {/* Bold Centered Main Heading: Official Church & Choir Name */}
+                {/* Bold Centered Main Heading */}
                 <h1 className="mt-6 max-w-4xl text-3xl font-black uppercase tracking-tight text-white drop-shadow-md sm:text-5xl md:text-6xl lg:text-7xl leading-tight">
-                    {t('brand.choirName')}
+                    <span className="block text-xs sm:text-sm md:text-base font-bold tracking-[0.25em] text-blue-400 uppercase mb-2 sm:mb-3">
+                        {t('brand.choirName')}
+                    </span>
+                    {t('hero.heading', 'Worship Through Song')}
                 </h1>
 
                 {/* Subtitle / Church description */}

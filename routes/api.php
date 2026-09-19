@@ -207,7 +207,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Team Leader area. Admins retain access for support and platform-wide management.
-    Route::middleware(['auth:sanctum', 'role:admin|team_leader,api'])->prefix('team-leader')->group(function () {
+    Route::middleware(['auth:sanctum', 'area:team_leader,admin'])->prefix('team-leader')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'teamLeaderDashboard']);
         Route::get('/calendar', [CalendarController::class, 'teamLeaderCalendar']);
         Route::get('/choir', [MemberController::class, 'choir']);

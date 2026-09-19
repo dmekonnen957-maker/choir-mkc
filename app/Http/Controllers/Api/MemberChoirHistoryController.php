@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\Choir;
 use App\Models\GalleryItem;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -40,7 +41,13 @@ class MemberChoirHistoryController extends ApiController
 
         // Global admins or users with choir/gallery permissions can view any choir even if they are not members of one.
         if ($user->isGlobalAdmin() || $user->can('choirs.view.all') || $user->can('gallery.view.all')) {
-            $choir = $this->choirFor($user) ?? Choir::first();
+            // Allow selecting a specific choir via query parameter for admins
+            if ($request->has('choir_id')) {
+                $choir = Choir::find($request->integer('choir_id'));
+                abort_unless($choir, 404, 'Selected choir not found.');
+            } else {
+                $choir = $this->choirFor($user) ?? Choir::first();
+            }
             abort_unless($choir, 404, 'No choir has been created yet.');
 
             if ($manage) {
@@ -60,7 +67,7 @@ class MemberChoirHistoryController extends ApiController
         return $choir;
     }
 
-    public function show(Request $request): \Illuminate\Http\JsonResponse
+    public function show(Request $request): JsonResponse
     {
         $choir = $this->authorizedChoir($request);
         $photos = $choir->galleryItems()
@@ -113,7 +120,7 @@ class MemberChoirHistoryController extends ApiController
         ]);
     }
 
-    public function update(Request $request): \Illuminate\Http\JsonResponse
+    public function update(Request $request): JsonResponse
     {
         $choir = $this->authorizedChoir($request, true);
         $validator = Validator::make($request->all(), [
@@ -129,7 +136,7 @@ class MemberChoirHistoryController extends ApiController
         return $this->ok(['history' => $choir->history], 'Choir history updated successfully.');
     }
 
-    public function storePhoto(Request $request): \Illuminate\Http\JsonResponse
+    public function storePhoto(Request $request): JsonResponse
     {
         $choir = $this->authorizedChoir($request, true);
         $count = $choir->galleryItems()->where('is_history', true)->count();
@@ -169,7 +176,7 @@ class MemberChoirHistoryController extends ApiController
         return $this->ok($this->photoData($item), 'Historical photo uploaded successfully.', 201);
     }
 
-    public function destroyPhoto(Request $request, GalleryItem $galleryItem): \Illuminate\Http\JsonResponse
+    public function destroyPhoto(Request $request, GalleryItem $galleryItem): JsonResponse
     {
         $choir = $this->authorizedChoir($request, true);
         abort_unless($galleryItem->choir_id === $choir->id && $galleryItem->is_history, 404);
@@ -180,7 +187,7 @@ class MemberChoirHistoryController extends ApiController
         return $this->ok(null, 'Historical photo deleted successfully.');
     }
 
-    public function replacePhoto(Request $request, GalleryItem $galleryItem): \Illuminate\Http\JsonResponse
+    public function replacePhoto(Request $request, GalleryItem $galleryItem): JsonResponse
     {
         $choir = $this->authorizedChoir($request, true);
         abort_unless($galleryItem->choir_id === $choir->id && $galleryItem->is_history, 404);

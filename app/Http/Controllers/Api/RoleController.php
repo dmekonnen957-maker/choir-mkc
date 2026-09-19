@@ -31,6 +31,7 @@ class RoleController extends ApiController
                 'name' => $role->name,
                 'description' => $role->description,
                 'guard_name' => $role->guard_name,
+                'area' => $role->area,
                 'is_core' => in_array($role->name, self::CORE_ROLES),
                 'users_count' => $role->users_count,
                 'permissions_count' => $role->permissions->count(),
@@ -52,6 +53,7 @@ class RoleController extends ApiController
             'name' => $data['name'],
             'guard_name' => 'api',
             'description' => $data['description'] ?? null,
+            'area' => $data['area'] ?? null,
         ]);
 
         if ($request->has('permissions')) {
@@ -65,7 +67,7 @@ class RoleController extends ApiController
             'action' => 'role.created',
             'subject_type' => Role::class,
             'subject_id' => $role->id,
-            'new_values' => ['name' => $role->name, 'permissions' => $request->permissions ?? []],
+            'new_values' => ['name' => $role->name, 'permissions' => $request->permissions ?? [], 'area' => $role->area],
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
             'created_at' => now(),
@@ -76,6 +78,7 @@ class RoleController extends ApiController
             'name' => $role->name,
             'description' => $role->description,
             'guard_name' => $role->guard_name,
+            'area' => $role->area,
             'is_core' => in_array($role->name, self::CORE_ROLES),
             'permissions' => $role->permissions()->pluck('name'),
         ], 'Role created successfully', 201);
@@ -92,6 +95,7 @@ class RoleController extends ApiController
             'name' => $role->name,
             'description' => $role->description,
             'guard_name' => $role->guard_name,
+            'area' => $role->area,
             'is_core' => in_array($role->name, self::CORE_ROLES),
             'users_count' => $role->users->count(),
             'permissions_count' => $role->permissions->count(),
@@ -131,6 +135,7 @@ class RoleController extends ApiController
         $role->update([
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
+            'area' => $data['area'] ?? null,
         ]);
 
         if ($request->has('permissions')) {
@@ -145,7 +150,7 @@ class RoleController extends ApiController
             'subject_type' => Role::class,
             'subject_id' => $role->id,
             'old_values' => $oldValues,
-            'new_values' => ['name' => $role->name, 'permissions' => $request->permissions ?? []],
+            'new_values' => ['name' => $role->name, 'permissions' => $request->permissions ?? [], 'area' => $role->area],
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
             'created_at' => now(),
@@ -156,6 +161,7 @@ class RoleController extends ApiController
             'name' => $role->name,
             'description' => $role->description,
             'guard_name' => $role->guard_name,
+            'area' => $role->area,
             'is_core' => in_array($role->name, self::CORE_ROLES),
             'permissions' => $role->permissions()->pluck('name'),
         ], 'Role updated successfully');

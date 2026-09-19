@@ -140,7 +140,7 @@ export default function App() {
             <Route
                 path="/musician"
                 element={
-                    <ProtectedRoute allowedRoles={['musician', 'member', 'admin', 'super-admin']}>
+                    <ProtectedRoute allowedAreas={['musician', 'member', 'team_leader', 'admin']}>
                         <MemberLayout />
                     </ProtectedRoute>
                 }
@@ -163,7 +163,7 @@ export default function App() {
             <Route
                 path="/member/choir-history"
                 element={
-                    <ProtectedRoute>
+                    <ProtectedRoute allowedAreas={['member', 'team_leader', 'admin']}>
                         <MemberLayout />
                     </ProtectedRoute>
                 }
@@ -173,7 +173,7 @@ export default function App() {
             <Route
                 path="/member"
                 element={
-                    <ProtectedRoute allowedRoles={['member']}>
+                    <ProtectedRoute allowedAreas={['member']}>
                         <MemberLayout />
                     </ProtectedRoute>
                 }
@@ -196,7 +196,7 @@ export default function App() {
             <Route
                 path="/admin"
                 element={
-                    <ProtectedRoute allowedRoles={['admin', 'super-admin']}>
+                    <ProtectedRoute allowedAreas={['admin']}>
                         <MemberLayout />
                     </ProtectedRoute>
                 }
@@ -234,7 +234,7 @@ export default function App() {
             <Route
                 path="/team-leader"
                 element={
-                    <ProtectedRoute allowedRoles={['team_leader']}>
+                    <ProtectedRoute allowedAreas={['team_leader', 'admin']}>
                         <MemberLayout />
                     </ProtectedRoute>
                 }

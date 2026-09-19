@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'choir.access' => \App\Http\Middleware\ChoirAccessMiddleware::class,
             'member' => \App\Http\Middleware\EnsureMemberMiddleware::class,
             'admin' => \App\Http\Middleware\EnsureAdminMiddleware::class,
+            'area' => \App\Http\Middleware\EnsureAreaMiddleware::class,
             'attendance.manager' => \App\Http\Middleware\EnsureAttendanceManagerMiddleware::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,

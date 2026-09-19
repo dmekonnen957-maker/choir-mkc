@@ -17,6 +17,8 @@ import { api } from '../../axios';
 import Alert from '../../components/ui/Alert';
 import EmptyState from '../../components/member/EmptyState';
 import { useLanguage } from '../../context/LanguageContext';
+import { useChoir } from '../../context/ChoirContext';
+import { useAuth } from '../../context/AuthContext';
 
 function formatDate(value) {
     if (!value) return 'Date not recorded';
@@ -29,6 +31,27 @@ function formatDate(value) {
 
 export default function MemberChoirHistoryPage() {
     const { t } = useLanguage();
+    const { role } = useAuth();
+    const { currentChoir, isAllChoirs } = useChoir();
+    const isAdmin = role === 'admin' || role === 'super-admin';
+    const isTeamLeader = role === 'team_leader';
+    const canSwitchChoir = isAdmin || isTeamLeader;
+
+    const getChoirParams = useCallback(() => {
+        const params = {};
+        if (canSwitchChoir && currentChoir && !isAllChoirs) {
+            params.choir_id = currentChoir.id;
+        }
+        return params;
+    }, [canSwitchChoir, currentChoir, isAllChoirs]);
+
+    const getChoirFormData = useCallback((form) => {
+        if (canSwitchChoir && currentChoir && !isAllChoirs) {
+            form.append('choir_id', currentChoir.id);
+        }
+        return form;
+    }, [canSwitchChoir, currentChoir, isAllChoirs]);
+
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -42,7 +65,7 @@ export default function MemberChoirHistoryPage() {
         setLoading(true);
         setError('');
         try {
-            const response = await api.get('/member/choir-history');
+            const response = await api.get('/member/choir-history', { params: getChoirParams() });
             const next = response.data?.data ?? response.data;
             setData(next);
             setHistory(next.choir?.history || '');
@@ -51,7 +74,7 @@ export default function MemberChoirHistoryPage() {
         } finally {
             setLoading(false);
         }
-    }, [t]);
+    }, [t, getChoirParams]);
 
     useEffect(() => {
         load();
@@ -61,9 +84,11 @@ export default function MemberChoirHistoryPage() {
         let active = true;
         const objectUrls = [];
 
+        const queryString = Object.keys(getChoirParams()).length ? `?${new URLSearchParams(getChoirParams()).toString()}` : '';
+
         Promise.all((data?.photos || []).map(async (photo) => {
             try {
-                const response = await api.get(photo.url, { responseType: 'blob' });
+                const response = await api.get(`${photo.url}${queryString}`, { responseType: 'blob' });
                 const url = URL.createObjectURL(response.data);
                 objectUrls.push(url);
                 return [photo.id, url];
@@ -78,12 +103,12 @@ export default function MemberChoirHistoryPage() {
             active = false;
             objectUrls.forEach((url) => URL.revokeObjectURL(url));
         };
-    }, [data?.photos]);
+    }, [data?.photos, getChoirParams]);
 
     const saveHistory = async () => {
         setSaving(true);
         try {
-            await api.put('/member/choir-history', { history });
+            await api.put('/member/choir-history', { history, ...getChoirParams() });
             await load();
         } catch (err) {
             setError(err.message || 'Unable to save choir history.');
@@ -96,7 +121,7 @@ export default function MemberChoirHistoryPage() {
         event.preventDefault();
         if (!draftPhoto?.file) return;
         setSaving(true);
-        const form = new FormData();
+        const form = getChoirFormData(new FormData());
         form.append('photo', draftPhoto.file);
         form.append('title', draftPhoto.title);
         form.append('description', draftPhoto.description);
@@ -122,7 +147,7 @@ export default function MemberChoirHistoryPage() {
             const file = input.files?.[0];
             if (!file) return;
             setSaving(true);
-            const form = new FormData();
+            const form = getChoirFormData(new FormData());
             form.append('photo', file);
             form.append('_method', 'PUT');
             try {
@@ -143,7 +168,9 @@ export default function MemberChoirHistoryPage() {
         if (!window.confirm(`Delete ${photo.title || 'this historical photo'}?`)) return;
         setSaving(true);
         try {
-            await api.delete(`/member/choir-history/photos/${photo.id}`);
+            const params = getChoirParams();
+            const queryString = Object.keys(params).length ? `?${new URLSearchParams(params).toString()}` : '';
+            await api.delete(`/member/choir-history/photos/${photo.id}${queryString}`);
             await load();
         } catch (err) {
             setError(err.message || 'Unable to delete historical photo.');

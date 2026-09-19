@@ -59,9 +59,12 @@ class PermissionRoleSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => $guard]);
         }
 
-        $make = function (string $name, array $perms) use ($guard): Role {
+        $make = function (string $name, array $perms, ?string $area = null) use ($guard): Role {
             $role = Role::firstOrCreate(['name' => $name, 'guard_name' => $guard]);
             $role->syncPermissions($perms);
+            if ($area) {
+                $role->update(['area' => $area]);
+            }
 
             return $role;
         };
@@ -73,8 +76,8 @@ class PermissionRoleSeeder extends Seeder
             $legacyManager->save();
         }
 
-        $make('super-admin', $this->permissions);
-        $make('admin', $this->permissions);
+        $make('super-admin', $this->permissions, 'admin');
+        $make('admin', $this->permissions, 'admin');
         $make('team_leader', [
             'choirs.view', 'choirs.update', 'choirs.edit',
             'members.view', 'members.create', 'members.update', 'members.edit', 'members.manage',
@@ -87,12 +90,12 @@ class PermissionRoleSeeder extends Seeder
             'announcements.view', 'announcements.create', 'announcements.update', 'announcements.edit', 'announcements.manage',
             'gallery.view', 'gallery.create', 'gallery.update', 'gallery.edit', 'gallery.manage',
             'notifications.view',
-        ]);
+        ], 'team-leader');
         $make('member', [
             'choirs.view', 'members.view', 'songs.view', 'lyrics.view',
             'rehearsals.view', 'performances.view', 'calendar.view',
             'announcements.view', 'gallery.view', 'notifications.view',
-        ]);
+        ], 'member');
 
         $roleByColumn = [
             'super-admin' => 'super-admin',

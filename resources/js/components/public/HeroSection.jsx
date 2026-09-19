@@ -53,9 +53,12 @@ export default function HeroSection() {
 
             <div className="relative z-10 flex min-h-[100svh] items-center justify-center px-6 py-24 text-center sm:px-10">
                 <div className="max-w-4xl">
-                    <p className="text-xs font-bold uppercase tracking-[0.25em] text-white sm:text-sm">{t('hero.ministry')}</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.25em] text-white sm:text-sm">{t('hero.churchPhrase', t('hero.ministry'))}</p>
                     <h1 className="mt-5 text-4xl font-black uppercase tracking-[0.02em] text-white sm:text-6xl lg:text-7xl">
-                        {t('hero.title')}
+                        <span className="block text-xs sm:text-sm md:text-base font-bold tracking-[0.25em] text-blue-400 uppercase mb-2 sm:mb-3">
+                            {t('brand.choirName')}
+                        </span>
+                        {t('hero.heading', 'Worship Through Song')}
                     </h1>
                     <p className="mx-auto mt-5 max-w-2xl text-sm font-medium leading-7 tracking-[0.03em] text-white sm:text-lg">
                         {t('hero.subtitle')}

@@ -11,10 +11,24 @@ class UserResource extends JsonResource
         $primaryChoir = $this->relationLoaded('choirs') && $this->choirs ? $this->choirs->first() : null;
 
         // Fetch effective roles and permissions from Spatie
-        $roles = $this->getRoleNames()->values()->all();
-        if (empty($roles) && $this->role) {
-            $roles = [$this->role];
+        $roleNames = collect($this->getRoleNames()->values()->all());
+        if (empty($roleNames) && $this->role) {
+            $roleNames = collect([$this->role]);
         }
+
+        // Load role models with areas
+        $roleModels = \Spatie\Permission\Models\Role::where('guard_name', 'api')
+            ->whereIn('name', $roleNames->toArray())
+            ->get()
+            ->keyBy('name');
+
+        $rolesWithArea = $roleNames->map(function ($name) use ($roleModels) {
+            $role = $roleModels->get($name);
+            return [
+                'name' => $name,
+                'area' => $role?->area,
+            ];
+        });
 
         $permissions = $this->getAllPermissions()->pluck('name')->values()->all();
 
@@ -30,8 +44,8 @@ class UserResource extends JsonResource
             'phone' => $this->phone,
             'language' => $this->language ?? 'en',
             'timezone' => $this->timezone ?? 'Africa/Addis_Ababa',
-            'role' => $this->role ?? ($roles[0] ?? 'member'),
-            'user_role' => $this->role ?? ($roles[0] ?? 'member'),
+            'role' => $this->role ?? ($roleNames[0] ?? 'member'),
+            'user_role' => $this->role ?? ($roleNames[0] ?? 'member'),
             'member_code' => null,
             'status' => $this->status ?? 'pending',
             'approved_at' => $this->approved_at,
@@ -46,7 +60,8 @@ class UserResource extends JsonResource
                 'uniform_primary_color' => $primaryChoir->uniform_primary_color,
                 'uniform_secondary_color' => $primaryChoir->uniform_secondary_color,
             ] : null,
-            'roles' => $roles,
+            'roles' => $roleNames,
+            'roles_with_area' => $rolesWithArea,
             'permissions' => $permissions,
             'choirs' => $this->whenLoaded('choirs', function () {
                 return $this->choirs->map(function ($choir) {

@@ -9,7 +9,7 @@ import {
     Calendar,
     CheckCircle2,
     ListMusic,
-        Bell,
+    Bell,
     User,
     LogOut,
     X,
@@ -29,7 +29,6 @@ const BASE_PATHS = {
     member: '/member',
     team_leader: '/team-leader',
     admin: '/admin',
-    'super-admin': '/admin',
     musician: '/musician',
 };
 
@@ -81,6 +80,7 @@ function getAdminNav(can, t) {
         title: t('nav.section.reports', 'Reports'),
         items: [
             { label: t('nav.reports', 'Reports'), to: '/admin/reports', icon: BarChart3 },
+            { label: t('nav.choir_history', 'Choir History'), to: '/admin/choir-history', icon: BookOpen },
         ],
     });
 
@@ -95,8 +95,8 @@ function getAdminNav(can, t) {
 }
 
 // Member / Team Leader navigation
-function getMemberNav(basePath, role, can, t) {
-    const isLeader = role === 'team_leader';
+function getMemberNav(basePath, area, can, t) {
+    const isLeader = area === 'team_leader';
 
     return [
         { label: t('nav.dashboard', 'Dashboard'), to: `${basePath}/dashboard`, icon: LayoutDashboard },
@@ -140,11 +140,11 @@ function getMemberNav(basePath, role, can, t) {
     ];
 }
 
-function getNav(basePath, role, can, t) {
-    if (role === 'admin' || role === 'super-admin') {
+function getNav(basePath, area, can, t) {
+    if (area === 'admin') {
         return getAdminNav(can, t);
     }
-    return getMemberNav(basePath, role, can, t);
+    return getMemberNav(basePath, area, can, t);
 }
 
 function NavItem({ item, onNavigate }) {
@@ -258,13 +258,13 @@ function ChoirIdentityBlock({ choir, isAllChoirs, t }) {
 }
 
 export default function MemberSidebar({ open, onClose }) {
-    const { user, role, logout, can } = useAuth();
+    const { user, area, logout, can } = useAuth();
     const { currentChoir, isAllChoirs } = useChoir();
     const { t } = useLanguage();
 
-    const isAdmin = role === 'admin' || role === 'super-admin';
-    const basePath = BASE_PATHS[role] ?? '/member';
-    const NAV = getNav(basePath, role, can, t);
+    const isAdmin = area === 'admin';
+    const basePath = BASE_PATHS[area] ?? '/member';
+    const NAV = getNav(basePath, area, can, t);
 
     const initials = (user?.name ?? '?')
         .split(' ')

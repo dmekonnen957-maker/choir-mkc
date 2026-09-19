@@ -22,6 +22,7 @@ class StoreRoleRequest extends FormRequest
                 Rule::unique('roles', 'name')->where('guard_name', 'api'),
             ],
             'description' => ['nullable', 'string', 'max:255'],
+            'area' => ['nullable', 'string', Rule::in(['admin', 'team-leader', 'member', 'musician'])],
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['string'],
         ];
