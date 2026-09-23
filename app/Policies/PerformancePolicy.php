@@ -31,10 +31,7 @@ class PerformancePolicy
 
     private function assigned(User $user, Performance $performance): bool
     {
-        return $user->choirs()
-            ->where('choirs.id', $performance->choir_id)
-            ->wherePivot('status', 'active')
-            ->exists();
+        return $user->isAssignedToChoir($performance->choir_id);
     }
 
     public function viewAny(User $user): bool
@@ -44,10 +41,11 @@ class PerformancePolicy
 
     public function view(User $user, Performance $performance): bool
     {
-        if ($this->hasPerm($user, ['performances.view.all', 'performances.manage'])) {
+        if ($this->hasPerm($user, ['performances.view.all'])) {
             return true;
         }
-        return $this->assigned($user, $performance);
+        return $this->assigned($user, $performance)
+            && $this->hasPerm($user, ['performances.view', 'performances.manage']);
     }
 
     public function create(User $user): bool

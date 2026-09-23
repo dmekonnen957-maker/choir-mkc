@@ -241,15 +241,18 @@ export default function App() {
             >
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<TeamLeaderDashboard />} />
-                <Route path="choir" element={<MemberChoir />} />
-                <Route path="profile" element={<MemberProfile />} />
-                <Route path="notifications" element={<MemberNotifications />} />
+                <Route path="choir" element={<MemberChoir apiPath="/team-leader/choir" />} />
+                <Route path="profile" element={<MemberProfile apiPath="/team-leader/profile" />} />
+                <Route path="notifications" element={<MemberNotifications apiPath="/team-leader/notifications" />} />
                 <Route path="songs" element={<MemberSongsPage apiPath="team-leader/songs" />} />
-                <Route path="rehearsals" element={<AdminRehearsalsPage />} />
-                <Route path="performances" element={<MemberPerformancesPage apiPath="/team-leader/performances" />} />
+                <Route path="rehearsals" element={<AdminRehearsalsPage choirsUrl="/choirs?per_page=200" />} />
+                <Route path="performances" element={<AdminPerformancesPage choirsUrl="/choirs?per_page=200" />} />
+                <Route path="users" element={<AdminUsersPage basePath="team-leader" />} />
+                <Route path="users/:id" element={<AdminUsersPage basePath="team-leader" />} />
+                <Route path="members" element={<AdminMembersPage basePath="team-leader" />} />
                 <Route path="calendar" element={<TeamLeaderCalendarPage />} />
                 <Route path="attendance" element={<AdminAttendancePage />} />
-                <Route path="my-performances" element={<MemberPlaceholder title="My Performances" />} />
+                <Route path="my-performances" element={<MemberPerformancesPage apiPath="/team-leader/performances" />} />
                 <Route path="choir-history" element={<MemberChoirHistoryPage />} />
                 <Route path="settings" element={<MemberSettings />} />
             </Route>

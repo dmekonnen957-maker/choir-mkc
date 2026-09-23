@@ -3,7 +3,7 @@ import { ChevronDown, Check } from 'lucide-react';
 import { useLanguage, SUPPORTED_LANGUAGES } from '../../context/LanguageContext';
 
 export default function LanguageSelector() {
-    const { language, setLanguage, isAmharic } = useLanguage();
+    const { language, setLanguage, isAmharic, t } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -47,8 +47,8 @@ export default function LanguageSelector() {
                 }`}
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
-                aria-label={`Current language: ${activeLanguage.label}. Select language.`}
-                title={isAmharic ? 'ቋንቋ ቀይር' : 'Change Language'}
+                aria-label={t('language.current', 'Current language: {label}. Select language.', { label: activeLanguage.label })}
+                title={t('language.change', isAmharic ? 'ቋንቋ ቀይር' : 'Change Language')}
             >
                 <span className="text-base leading-none" role="img" aria-hidden="true">
                     {activeLanguage.flag}
@@ -69,10 +69,10 @@ export default function LanguageSelector() {
                 <div
                     className="absolute right-0 mt-2 w-44 origin-top-right rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl ring-1 ring-slate-900/5 z-50 animate-in fade-in slide-in-from-top-2 duration-150 member-theme-control"
                     role="listbox"
-                    aria-label="Language options"
+                    aria-label={t('language.options', 'Language options')}
                 >
                     <div className="px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1">
-                        {isAmharic ? 'ቋንቋ ይምረጡ' : 'Select Language'}
+                        {t('language.select', isAmharic ? 'ቋንቋ ይምረጡ' : 'Select Language')}
                     </div>
                     {SUPPORTED_LANGUAGES.map((lang) => {
                         const isSelected = language === lang.code;
@@ -99,7 +99,7 @@ export default function LanguageSelector() {
                                     <span>{lang.nativeName}</span>
                                     {lang.code === 'am' && (
                                         <span className="text-[10px] font-normal text-slate-400">
-                                            (Amharic)
+                                            {t('language.amharic', '(አማርኛ)')}
                                         </span>
                                     )}
                                 </span>

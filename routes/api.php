@@ -213,17 +213,33 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'teamLeaderDashboard']);
         Route::get('/calendar', [CalendarController::class, 'teamLeaderCalendar']);
         Route::get('/choir', [MemberController::class, 'choir']);
-        Route::get('/members', [AdminMemberController::class, 'index']);
-        Route::post('/members', [MemberController::class, 'storeWithoutChoirParam']);
-        Route::get('/members/{member}', [MemberController::class, 'showWithoutChoirParam']);
-        Route::match(['PUT', 'PATCH'], '/members/{member}', [MemberController::class, 'updateWithoutChoirParam']);
-        Route::delete('/members/{member}', [MemberController::class, 'destroyWithoutChoirParam']);
+
+        // Team leaders manage the member roster of their assigned/led choir(s).
+        // Every method is guarded by MemberPolicy (members.* unions) and scoped
+        // to the leader's choirs by AdminMemberController::index.
+        Route::get('/members', [AdminMemberController::class, 'index'])->middleware('permission:members.view|members.manage');
+        Route::post('/members', [MemberController::class, 'storeWithoutChoirParam'])->middleware('permission:members.create|members.manage');
+        Route::get('/members/{member}', [MemberController::class, 'showWithoutChoirParam'])->middleware('permission:members.view|members.manage');
+        Route::match(['PUT', 'PATCH'], '/members/{member}', [MemberController::class, 'updateWithoutChoirParam'])->middleware('permission:members.edit|members.update|members.manage');
+        Route::delete('/members/{member}', [MemberController::class, 'destroyWithoutChoirParam'])->middleware('permission:members.delete|members.manage');
         Route::get('/profile', [MemberController::class, 'profile']);
         Route::match(['PUT', 'PATCH'], '/profile', [MemberController::class, 'updateProfile']);
         Route::get('/performances', [MemberController::class, 'performances']);
         Route::get('/songs', [MemberController::class, 'songs']);
         Route::post('/songs', [MemberController::class, 'submitSong']);
         Route::get('/notifications', [NotificationController::class, 'index']);
+
+        // Team leaders manage the users of their assigned/led choir(s). Every
+        // method is guarded by UserPolicy, which scopes to shared choirs and
+        // blocks administrator-role changes for non-global-admins.
+        Route::get('/roles', [RoleController::class, 'assignable'])->middleware('permission:users.view|users.manage');
+        Route::get('/users', [UserController::class, 'index'])->middleware('permission:users.view|users.manage');
+        Route::post('/users', [UserController::class, 'store'])->middleware('permission:users.create|users.manage');
+        Route::get('/users/{user}', [UserController::class, 'show'])->middleware('permission:users.view|users.manage');
+        Route::match(['PUT', 'PATCH'], '/users/{user}', [UserController::class, 'update'])->middleware('permission:users.edit|users.update|users.manage');
+        Route::post('/users/{user}/approve', [UserController::class, 'approve'])->middleware('permission:users.approve|users.manage');
+        Route::post('/users/{user}/reject', [UserController::class, 'reject'])->middleware('permission:users.edit|users.update|users.manage');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->middleware('permission:users.delete|users.manage');
     });
 
     // Members endpoints (accessible to anyone with permission:members.view)

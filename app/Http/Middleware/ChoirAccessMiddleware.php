@@ -11,8 +11,9 @@ class ChoirAccessMiddleware
     /**
      * Ensure the authenticated user is authorized for the targeted choir.
      *
-     * Allows access when the user is actively assigned to the choir, or holds a
-     * platform-wide administrative role / cross-choir permission.
+     * Allows access when the user is actively assigned to the choir or leads
+     * the choir (team leader), or holds a platform-wide administrative role /
+     * cross-choir permission.
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -32,10 +33,7 @@ class ChoirAccessMiddleware
             $hasGlobalAccess = $user->isGlobalAdmin()
                 || $user->can('choirs.view.all');
 
-            $isAssigned = $user->choirs()
-                ->where('choirs.id', $choir->id)
-                ->wherePivot('status', 'active')
-                ->exists();
+            $isAssigned = $user->isAssignedToChoir($choir);
 
             if (! $hasGlobalAccess && ! $isAssigned) {
                 return response()->json([

@@ -25,10 +25,7 @@ class ChoirPolicy
         if ($user->can('choirs.view.all')) {
             return true;
         }
-        return $user->choirs()
-            ->where('choirs.id', $choir->id)
-            ->wherePivot('status', 'active')
-            ->exists();
+        return $user->isAssignedToChoir($choir);
     }
 
     public function create(User $user): bool
@@ -48,9 +45,6 @@ class ChoirPolicy
 
     private function assigned(User $user, Choir $choir): bool
     {
-        return $user->choirs()
-            ->where('choirs.id', $choir->id)
-            ->wherePivot('status', 'active')
-            ->exists();
+        return $user->isAssignedToChoir($choir);
     }
 }

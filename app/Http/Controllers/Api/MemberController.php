@@ -35,10 +35,7 @@ class MemberController extends ApiController
      */
     private function effectiveChoir(User $user): ?Choir
     {
-        return $user->choirs()
-            ->wherePivot('status', 'active')
-            ->first()
-            ?? $user->choirs()->first();
+        return $user->primaryAssignedChoir();
     }
 
     private function linkedMember(User $user, ?Choir $choir): ?Member
@@ -122,6 +119,9 @@ class MemberController extends ApiController
         }
         if (! $choir) {
             return $this->error('A valid choir must be specified for member registration.', null, 422);
+        }
+        if (! $user->isGlobalAdmin() && ! $user->isAssignedToChoir($choir)) {
+            return $this->error('You are not authorized to register members for this choir.', null, 403);
         }
 
         $validated = $request->validated();

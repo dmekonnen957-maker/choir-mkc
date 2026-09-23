@@ -58,6 +58,27 @@ class RoleController extends ApiController
         return $this->ok($roles);
     }
 
+    public function assignable(Request $request)
+    {
+        $user = $request->user();
+
+        if (! $user || (! $user->can('users.view') && ! $user->can('users.manage'))) {
+            return $this->error('You do not have permission to assign roles.', null, 403);
+        }
+
+        return $this->ok(
+            Role::where('guard_name', 'api')
+                ->whereNotIn('name', ['super-admin', 'admin'])
+                ->orderBy('name')
+                ->get(['id', 'name', 'area'])
+                ->map(fn (Role $role) => [
+                    'id' => $role->id,
+                    'name' => $role->name,
+                    'area' => $role->area,
+                ])
+        );
+    }
+
     public function store(StoreRoleRequest $request)
     {
         $this->authorize('create', Role::class);

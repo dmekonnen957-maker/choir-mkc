@@ -6,6 +6,7 @@ import {
     CheckCircle2,
     ListMusic,
     Users,
+    UserCheck,
     Music,
     Building2,
     ChevronRight,
@@ -56,7 +57,7 @@ function formatTime(value) {
 
 export default function TeamLeaderDashboard() {
     const navigate = useNavigate();
-    const { user, primaryChoir } = useAuth();
+    const { user, primaryChoir, can } = useAuth();
     const { theme } = useTheme();
     const { t } = useLanguage();
 
@@ -272,6 +273,24 @@ export default function TeamLeaderDashboard() {
                         <p className="text-[11px] text-slate-400">{t('performances.tab_all', 'Scheduled events')}</p>
                     </div>
                 </Link>
+
+                {(can('users.view') || can('users.manage')) && (
+                    <Link
+                        to="/team-leader/users"
+                        className="group flex flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+                    >
+                        <div
+                            className="flex h-11 w-11 items-center justify-center rounded-xl transition-colors"
+                            style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}
+                        >
+                            <UserCheck size={22} />
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-slate-900">{t('nav.users', 'Manage Users')}</p>
+                            <p className="text-[11px] text-slate-400">{t('users.management_title', 'Accounts of the assigned choir')}</p>
+                        </div>
+                    </Link>
+                )}
             </div>
 
             {/* Key Statistic Cards */}

@@ -92,6 +92,53 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
             || $this->hasAnyRole(['admin', 'super-admin'], 'api');
     }
 
+    /**
+     * Whether the user may access the platform-wide admin area.
+     *
+     * True for global admins, users holding a role with area 'admin', roles
+     * without an explicit area whose permissions imply admin (legacy roles),
+     * and users with directly-granted admin-level permissions. Roles that
+     * declare a non-admin area are trusted as-is, so a team leader granted
+     * e.g. users.view still cannot enter the admin area.
+     */
+    public function isAdminArea(): bool
+    {
+        if ($this->isGlobalAdmin()) {
+            return true;
+        }
+
+        if ($this->roles()->where('area', 'admin')->exists()) {
+            return true;
+        }
+
+        foreach ($this->roles()->whereNull('area')->with('permissions')->get() as $role) {
+            if (self::permissionsIndicateAdminArea($role->permissions->pluck('name')->all())) {
+                return true;
+            }
+        }
+
+        return self::permissionsIndicateAdminArea($this->permissions()->pluck('name')->all());
+    }
+
+    public static function permissionsIndicateAdminArea(array $permissions): bool
+    {
+        foreach ($permissions as $p) {
+            if (str_starts_with($p, 'users.')
+                || str_starts_with($p, 'roles.')
+                || str_starts_with($p, 'permissions.')
+                || str_starts_with($p, 'audit_logs.')
+                || str_starts_with($p, 'reports.')
+                || str_starts_with($p, 'settings.')
+                || $p === 'choirs.create'
+                || $p === 'choirs.delete'
+                || $p === 'choirs.manage') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function getNotificationPreferencesAttribute($value): array
     {
         $defaults = self::DEFAULT_NOTIFICATION_PREFERENCES;
@@ -134,6 +181,52 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     public function ledChoirs(): HasMany
     {
         return $this->hasMany(Choir::class, 'team_leader_id');
+    }
+
+    /**
+     * Check if user is assigned to or leads the given choir.
+     */
+    public function isAssignedToChoir(int|Choir $choir): bool
+    {
+        $choirId = $choir instanceof Choir ? $choir->id : (int) $choir;
+
+        return Choir::where('id', $choirId)
+            ->where('team_leader_id', $this->id)
+            ->exists()
+            || $this->choirs()
+                ->whereKey($choirId)
+                ->wherePivot('status', 'active')
+                ->exists();
+    }
+
+    /**
+     * Get all choir IDs the user is assigned to or leads.
+     *
+     * @return array<int>
+     */
+    public function assignedChoirIds(): array
+    {
+        $memberChoirIds = $this->choirs()
+            ->wherePivot('status', 'active')
+            ->pluck('choirs.id')
+            ->toArray();
+
+        $ledChoirIds = Choir::where('team_leader_id', $this->id)
+            ->pluck('id')
+            ->toArray();
+
+        return array_values(array_unique(array_merge($memberChoirIds, $ledChoirIds)));
+    }
+
+    /**
+     * Get the primary choir for this user (led choir or active member choir).
+     */
+    public function primaryAssignedChoir(): ?Choir
+    {
+        return $this->ledChoirs()->first()
+            ?? $this->choirs()->wherePivot('status', 'active')->first()
+            ?? $this->choirs()->first()
+            ?? Choir::where('team_leader_id', $this->id)->first();
     }
 
     public function createdChoirs(): HasMany

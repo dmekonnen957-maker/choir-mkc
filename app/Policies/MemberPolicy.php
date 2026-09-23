@@ -31,10 +31,7 @@ class MemberPolicy
 
     private function assigned(User $user, Member $member): bool
     {
-        return $user->choirs()
-            ->where('choirs.id', $member->choir_id)
-            ->wherePivot('status', 'active')
-            ->exists();
+        return $user->isAssignedToChoir($member->choir_id);
     }
 
     public function viewAny(User $user): bool
@@ -44,10 +41,11 @@ class MemberPolicy
 
     public function view(User $user, Member $member): bool
     {
-        if ($this->hasPerm($user, ['members.view.all', 'members.manage'])) {
+        if ($this->hasPerm($user, ['members.view.all'])) {
             return true;
         }
-        return $this->assigned($user, $member);
+        return $this->assigned($user, $member)
+            && $this->hasPerm($user, ['members.view', 'members.manage']);
     }
 
     public function create(User $user): bool

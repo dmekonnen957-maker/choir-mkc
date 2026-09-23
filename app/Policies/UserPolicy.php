@@ -15,6 +15,11 @@ class UserPolicy
         return null;
     }
 
+    private function sharesChoir(User $user, UserModel $model): bool
+    {
+        return ! empty(array_intersect($user->assignedChoirIds(), $model->assignedChoirIds()));
+    }
+
     public function viewAny(User $user): bool
     {
         return $user->can('users.view') || $user->can('users.manage');
@@ -22,7 +27,9 @@ class UserPolicy
 
     public function view(User $user, UserModel $model): bool
     {
-        return $user->can('users.view') || $user->can('users.manage');
+        return ($user->can('users.view') || $user->can('users.manage'))
+            && $this->sharesChoir($user, $model)
+            && ! $model->isGlobalAdmin();
     }
 
     public function create(User $user): bool
@@ -32,16 +39,22 @@ class UserPolicy
 
     public function update(User $user, UserModel $model): bool
     {
-        return $user->can('users.edit') || $user->can('users.manage');
+        return ($user->can('users.edit') || $user->can('users.update') || $user->can('users.manage'))
+            && $this->sharesChoir($user, $model)
+            && ! $model->isGlobalAdmin();
     }
 
     public function delete(User $user, UserModel $model): bool
     {
-        return $user->can('users.delete') || $user->can('users.manage');
+        return ($user->can('users.delete') || $user->can('users.manage'))
+            && $this->sharesChoir($user, $model)
+            && ! $model->isGlobalAdmin();
     }
 
     public function approve(User $user, UserModel $model): bool
     {
-        return $user->can('users.approve') || $user->can('users.manage');
+        return ($user->can('users.approve') || $user->can('users.manage'))
+            && $this->sharesChoir($user, $model)
+            && ! $model->isGlobalAdmin();
     }
 }

@@ -105,6 +105,9 @@ function getMemberNav(basePath, area, can, t) {
             items: [
                 { label: t('nav.my_choir', 'My Choir'), to: `${basePath}/choir`, icon: Users },
                 ...(isLeader ? [{ label: t('nav.attendance', 'Attendance'), to: `${basePath}/attendance`, icon: CheckCircle2 }] : []),
+                ...(isLeader && (can('members.view') || can('members.manage'))
+                    ? [{ label: t('nav.members', 'Members'), to: `${basePath}/members`, icon: Users }]
+                    : []),
             ],
         },
         {
@@ -128,6 +131,9 @@ function getMemberNav(basePath, area, can, t) {
                     ? []
                     : [{ label: t('nav.my_attendance', 'My Attendance'), to: `${basePath}/attendance`, icon: CheckCircle2 }]),
                 { label: t('nav.my_performances', 'My Performances'), to: `${basePath}/my-performances`, icon: ListMusic },
+                ...(isLeader && (can('users.view') || can('users.manage'))
+                    ? [{ label: t('nav.users', 'Users'), to: `${basePath}/users`, icon: UserCheck }]
+                    : []),
                 { label: t('nav.choir_history', 'Choir History'), to: `${basePath}/choir-history`, icon: BookOpen },
             ],
         },

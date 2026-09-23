@@ -32,7 +32,7 @@ class RolePolicy
 
     public function update(User $user, Role $role): bool
     {
-        return $user->can('roles.edit') || $user->can('roles.manage');
+        return $user->can('roles.edit') || $user->can('roles.update') || $user->can('roles.manage');
     }
 
     public function delete(User $user, Role $role): bool

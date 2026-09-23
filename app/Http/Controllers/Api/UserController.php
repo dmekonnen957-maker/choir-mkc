@@ -20,6 +20,20 @@ class UserController extends ApiController
 
         $query = User::with(['roles', 'choirs', 'approvedBy'])->latest();
 
+        // Non-global-admins (e.g. team leaders with users.view) may only see
+        // users who belong to a choir they are assigned to or lead.
+        if (! $request->user()->isGlobalAdmin()) {
+            $accessible = $request->user()->assignedChoirIds();
+
+            if (empty($accessible)) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->whereHas('choirs', function ($q) use ($accessible) {
+                    $q->whereIn('choirs.id', $accessible);
+                });
+            }
+        }
+
         // Filter by approval status
         if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
@@ -58,6 +72,21 @@ class UserController extends ApiController
         $data['password'] = bcrypt($data['password']);
         $choirId = $data['choir_id'] ?? null;
         unset($data['choir_id']);
+
+        // Non-global-admins cannot create other admins or assign users to
+        // choirs outside their own assigned/led choirs.
+        $actor = $request->user();
+        if (! $actor->isGlobalAdmin()) {
+            $requestedRoles = array_values(array_filter((array) $request->input('roles', $request->input('role', 'member'))));
+
+            if (in_array('admin', $requestedRoles, true) || in_array('super-admin', $requestedRoles, true)) {
+                return $this->error('You are not allowed to create administrator accounts.', null, 403);
+            }
+
+            if ($choirId && ! in_array((int) $choirId, $actor->assignedChoirIds(), true)) {
+                return $this->error('You are only allowed to assign users to choirs you manage.', null, 403);
+            }
+        }
 
         if (!isset($data['status'])) {
             $data['status'] = User::STATUS_APPROVED;
@@ -109,6 +138,24 @@ class UserController extends ApiController
     public function update(UpdateUserRequest $request, User $user)
     {
         $this->authorize('update', $user);
+
+        // Non-global-admins cannot promote users to admin roles or move users
+        // to choirs outside their own assigned/led choirs.
+        $actor = $request->user();
+        if (! $actor->isGlobalAdmin()) {
+            $requestedRoles = array_values(array_filter(
+                (array) $request->input('roles', $request->input('role', $user->role))
+            ));
+
+            if (in_array('admin', $requestedRoles, true) || in_array('super-admin', $requestedRoles, true)) {
+                return $this->error('You are not allowed to assign administrator roles.', null, 403);
+            }
+
+            $requestedChoir = $request->input('choir_id');
+            if ($requestedChoir && ! in_array((int) $requestedChoir, $actor->assignedChoirIds(), true)) {
+                return $this->error('You are only allowed to assign users to choirs you manage.', null, 403);
+            }
+        }
 
         $data = $request->validated();
 

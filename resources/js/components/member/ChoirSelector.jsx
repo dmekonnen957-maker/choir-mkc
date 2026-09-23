@@ -1,4 +1,5 @@
 import { useChoir } from '../../context/ChoirContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { ChevronDown, Church } from 'lucide-react';
 
 /**
@@ -7,6 +8,7 @@ import { ChevronDown, Church } from 'lucide-react';
  */
 export default function ChoirSelector() {
     const { currentChoir, setCurrentChoir, choirs } = useChoir();
+    const { t } = useLanguage();
 
     const handleChange = (e) => {
         const val = e.target.value;
@@ -23,7 +25,7 @@ export default function ChoirSelector() {
     return (
         <div className="mx-4 mb-4">
             <p className="mb-1.5 px-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                Current Choir
+                {t('header.current_choir', 'Current Choir')}
             </p>
             <div className="relative">
                 <Church
@@ -35,7 +37,7 @@ export default function ChoirSelector() {
                     onChange={handleChange}
                     className="w-full appearance-none rounded-xl border border-slate-700 bg-slate-800/60 py-2.5 pl-8 pr-8 text-sm font-semibold text-slate-100 outline-none transition focus:border-[var(--theme-primary)] focus:ring-1 focus:ring-[var(--theme-primary)]/50"
                 >
-                    <option value="__all__">All Choirs</option>
+                    <option value="__all__">{t('header.all_choirs', 'All Choirs')}</option>
                     {choirs.map((c) => (
                         <option key={c.id} value={String(c.id)}>
                             {c.name}

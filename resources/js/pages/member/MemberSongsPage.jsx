@@ -38,6 +38,7 @@ const SCALES = [
 
 /* ─────────────────────── Mini Audio Player ─────────────────────── */
 function MiniAudioPlayer({ audioUrl, onClose }) {
+    const { t } = useLanguage();
     return (
         <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 flex items-center gap-3 rounded-2xl border border-blue-200 bg-white px-5 py-3 shadow-2xl ring-1 ring-blue-100">
             <Music2 size={18} className="text-blue-600 shrink-0" />
@@ -51,7 +52,7 @@ function MiniAudioPlayer({ audioUrl, onClose }) {
             <button
                 onClick={onClose}
                 className="rounded-xl p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                aria-label="Close player"
+                aria-label={t('songs.close_player', 'Close player')}
             >
                 <X size={16} />
             </button>
@@ -279,6 +280,7 @@ function SongTable({ songs, onPlay, onLyrics, isSubmission = false }) {
 }
 
 function SongLikeButton({ song }) {
+    const { t } = useLanguage();
     const { isAuthenticated, hasRole } = useAuth();
     const canLike = isAuthenticated && hasRole('member');
     const [liked, setLiked] = useState(Boolean(song.is_liked));
@@ -314,7 +316,7 @@ function SongLikeButton({ song }) {
             className={`inline-flex items-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
                 liked ? 'bg-rose-50 text-rose-600' : 'text-slate-500 hover:bg-rose-50 hover:text-rose-600'
             }`}
-            title={canLike ? (liked ? 'Unlike song' : 'Like song') : 'Members can like songs'}
+            title={canLike ? (liked ? t('songs.unlike_song', 'Unlike song') : t('songs.like_song', 'Like song')) : t('songs.members_can_like', 'Members can like songs')}
             aria-label={`${count} likes${canLike ? `, ${liked ? 'unlike' : 'like'} ${song.title}` : ''}`}
         >
             <Heart size={15} className={liked ? 'fill-current' : ''} />
@@ -410,10 +412,10 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, us
                 const firstErr = Object.values(err.errors).flat()[0];
                 setErrors({
                     ...err.errors,
-                    general: firstErr || err.message || 'Please correct the highlighted validation errors.',
+                    general: firstErr || err.message || t('songs.validation_errors', 'Please correct the highlighted validation errors.'),
                 });
             } else {
-                setErrors({ general: err.message || 'Failed to submit song. Please check your data and try again.' });
+                setErrors({ general: err.message || t('songs.submit_failed', 'Failed to submit song. Please check your data and try again.') });
             }
         } finally {
             setSubmitting(false);
@@ -514,7 +516,7 @@ function SubmitSongModal({ open, onClose, onSubmitted, apiPath, defaultChoir, us
                         >
                             {KEYS.map((k) => (
                                 <option key={k} value={k}>
-                                    Key of {k}
+                                    {t('songs.key_of', 'Key of {{key}}', { key: k })}
                                 </option>
                             ))}
                         </select>

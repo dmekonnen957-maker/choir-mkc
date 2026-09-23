@@ -25,6 +25,7 @@ import Modal from '../../components/ui/Modal';
 import Alert from '../../components/ui/Alert';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { useChoir } from '../../context/ChoirContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 /* ─────────────────────── helpers ─────────────────────── */
 
@@ -109,6 +110,7 @@ function StatusBadge({ status }) {
 }
 
 function PerformanceCard({ performance, onEdit, onDelete, onView }) {
+    const { t } = useLanguage();
     const upcoming = isUpcoming(performance.date);
     return (
         <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:shadow-md hover:-translate-y-0.5">
@@ -131,16 +133,16 @@ function PerformanceCard({ performance, onEdit, onDelete, onView }) {
                             <StatusBadge status={performance.status} />
                             {performance.is_public ? (
                                 <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                                    Published
+                                    {t('performances.published', 'Published')}
                                 </span>
                             ) : (
                                 <span className="inline-flex items-center rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-medium text-slate-500">
-                                    Private
+                                    {t('performances.private', 'Private')}
                                 </span>
                             )}
                             {upcoming && (
                                 <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-700">
-                                    <Sparkles size={10} /> Upcoming
+                                    <Sparkles size={10} /> {t('performances.card_upcoming', 'Upcoming')}
                                 </span>
                             )}
                         </div>
@@ -155,14 +157,14 @@ function PerformanceCard({ performance, onEdit, onDelete, onView }) {
                         <button
                             onClick={() => onEdit(performance)}
                             className="rounded-lg p-1.5 text-slate-500 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                            title="Edit performance"
+                            title={t('common.edit', 'Edit')}
                         >
                             <Pencil size={15} />
                         </button>
                         <button
                             onClick={() => onDelete(performance)}
                             className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition-colors"
-                            title="Delete performance"
+                            title={t('common.delete', 'Delete')}
                         >
                             <Trash2 size={15} />
                         </button>
@@ -207,7 +209,7 @@ function PerformanceCard({ performance, onEdit, onDelete, onView }) {
                     onClick={() => onView(performance)}
                     className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 py-2 text-xs font-bold text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 transition-colors"
                 >
-                    View Details <ChevronRight size={14} />
+                    {t('performances.view_details', 'View Details')} <ChevronRight size={14} />
                 </button>
             </div>
         </div>
@@ -217,6 +219,7 @@ function PerformanceCard({ performance, onEdit, onDelete, onView }) {
 /* ─────────────────────── Performance Form Modal ─────────────────────── */
 
 function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, defaultChoirId }) {
+    const { t } = useLanguage();
     const isEdit = !!initial?.id;
     const [form, setForm] = useState(EMPTY_FORM);
     const [choirId, setChoirId] = useState('');
@@ -261,7 +264,7 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!choirId) {
-            setErrors({ choir_id: 'Please select a choir.' });
+            setErrors({ choir_id: t('performances.select_choir_error', 'Please select a choir.') });
             return;
         }
         setSaving(true);
@@ -269,16 +272,16 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
         try {
             if (isEdit) {
                 await api.put(`/choirs/${choirId}/performances/${initial.id}`, form);
-                onSaved('Performance updated successfully.');
+                onSaved(t('performances.updated_success', 'Performance updated successfully.'));
             } else {
                 await api.post(`/choirs/${choirId}/performances`, form);
-                onSaved('Performance created successfully.');
+                onSaved(t('performances.created_success', 'Performance created successfully.'));
             }
         } catch (err) {
             if (err?.errors) {
                 setErrors(err.errors);
             } else {
-                setErrors({ general: err?.message || 'Failed to save performance. Please check all fields.' });
+                setErrors({ general: err?.message || t('performances.save_error', 'Failed to save performance. Please check all fields.') });
             }
         } finally {
             setSaving(false);
@@ -289,7 +292,7 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
         <Modal
             open={open}
             onClose={onClose}
-            title={isEdit ? 'Edit Performance' : 'New Performance'}
+            title={isEdit ? t('performances.modal_edit_title', 'Edit Worship') : t('performances.modal_create_title', 'Add Worship Program')}
             size="lg"
         >
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -299,7 +302,7 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                            Choir / Ministry Team <span className="text-rose-500">*</span>
+                            {t('performances.form_choir_team', 'Choir / Ministry Team')} <span className="text-rose-500">*</span>
                         </label>
                         <select
                             value={choirId}
@@ -307,7 +310,7 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
                             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none"
                             disabled={isEdit}
                         >
-                            <option value="">Select choir…</option>
+                            <option value="">{t('performances.select_choir', 'Select choir…')}</option>
                             {choirs.map((c) => (
                                 <option key={c.id} value={c.id}>
                                     {c.name}
@@ -321,7 +324,7 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
 
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                            Program / Event Type <span className="text-rose-500">*</span>
+                            {t('performances.form_type', 'Program Type')} <span className="text-rose-500">*</span>
                         </label>
                         <select
                             value={form.type}
@@ -345,7 +348,7 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
                 {/* Title */}
                 <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                        Performance Title <span className="text-rose-500">*</span>
+                        {t('performances.form_title', 'Program Title')} <span className="text-rose-500">*</span>
                     </label>
                     <input
                         type="text"
@@ -364,7 +367,7 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                            Date <span className="text-rose-500">*</span>
+                            {t('performances.form_date', 'Worship Date')} <span className="text-rose-500">*</span>
                         </label>
                         <input
                             type="date"
@@ -379,7 +382,7 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
                     </div>
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                            Start Time
+                            {t('performances.form_start_time', 'Start Time')}
                         </label>
                         <input
                             type="time"
@@ -390,7 +393,7 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
                     </div>
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                            End Time
+                            {t('performances.form_end_time', 'End Time')}
                         </label>
                         <input
                             type="time"
@@ -405,7 +408,7 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                            Location / Venue
+                            {t('performances.form_venue', 'Venue / Church Location')}
                         </label>
                         <input
                             type="text"
@@ -418,7 +421,7 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
 
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                            Poster Image URL / Path (Optional)
+                            {t('performances.form_poster_url', 'Poster Image URL / Path (Optional)')}
                         </label>
                         <input
                             type="text"
@@ -434,18 +437,18 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                            Status
+                            {t('common.status', 'Status')}
                         </label>
                         <select
                             value={form.status}
                             onChange={(e) => set('status', e.target.value)}
                             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-none"
                         >
-                            <option value="scheduled">Scheduled</option>
-                            <option value="confirmed">Confirmed</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                            <option value="postponed">Postponed</option>
+                            <option value="scheduled">{t('status.scheduled', 'Upcoming')}</option>
+                            <option value="confirmed">{t('performances.status_confirmed', 'Confirmed')}</option>
+                            <option value="completed">{t('status.completed', 'Completed')}</option>
+                            <option value="cancelled">{t('status.cancelled', 'Cancelled')}</option>
+                            <option value="postponed">{t('performances.status_postponed', 'Postponed')}</option>
                         </select>
                     </div>
 
@@ -458,8 +461,8 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
                                 className="h-5 w-5 rounded-lg border-slate-300 text-blue-600 focus:ring-blue-500"
                             />
                             <div>
-                                <span className="text-sm font-bold text-slate-800">Publish Event on Public Portal</span>
-                                <p className="text-[11px] text-slate-500">Makes this event visible to visitors on the website.</p>
+                                <span className="text-sm font-bold text-slate-800">{t('performances.form_public', 'Display publicly on church website')}</span>
+                                <p className="text-[11px] text-slate-500">{t('performances.form_public_hint', 'Makes this event visible to visitors on the website.')}</p>
                             </div>
                         </label>
                     </div>
@@ -468,23 +471,23 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
                 {/* Description */}
                 <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                        Description
+                        {t('performances.form_description', 'Program Overview & Theme')}
                     </label>
                     <textarea
                         rows={3}
                         value={form.description}
                         onChange={(e) => set('description', e.target.value)}
-                        placeholder="Brief description of the performance…"
+                        placeholder={t('performances.form_description_placeholder', 'Brief description of the performance…')}
                         className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none resize-none"
                     />
                 </div>
 
                 <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
                     <Button variant="outline" size="sm" type="button" onClick={onClose}>
-                        Cancel
+                        {t('common.cancel', 'Cancel')}
                     </Button>
                     <Button variant="primary" size="sm" type="submit" loading={saving}>
-                        {isEdit ? 'Save Changes' : 'Create Performance'}
+                        {isEdit ? t('common.save', 'Save') : t('common.create', 'Create')}
                     </Button>
                 </div>
             </form>
@@ -495,6 +498,7 @@ function PerformanceFormModal({ open, onClose, onSaved, initial, choirs, default
 /* ─────────────────────── Detail Drawer ─────────────────────── */
 
 function PerformanceDetail({ performance, onBack, onEdit, onDelete }) {
+    const { t } = useLanguage();
     if (!performance) return null;
     const upcoming = isUpcoming(performance.date);
 
@@ -505,7 +509,7 @@ function PerformanceDetail({ performance, onBack, onEdit, onDelete }) {
                 onClick={onBack}
                 className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors"
             >
-                <ArrowLeft size={16} /> Back to Performances
+                <ArrowLeft size={16} /> {t('performances.back_to_performances', 'Back to Performances')}
             </button>
 
             {/* Hero card */}
@@ -527,16 +531,16 @@ function PerformanceDetail({ performance, onBack, onEdit, onDelete }) {
                                 <StatusBadge status={performance.status} />
                                 {performance.is_public ? (
                                     <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
-                                        Published on Public Site
+                                        {t('performances.published_on_site', 'Published on Public Site')}
                                     </span>
                                 ) : (
                                     <span className="inline-flex items-center rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-500">
-                                        Private
+                                        {t('performances.private', 'Private')}
                                     </span>
                                 )}
                                 {upcoming && (
                                     <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-blue-700">
-                                        <Sparkles size={11} /> Upcoming
+                                        <Sparkles size={11} /> {t('performances.card_upcoming', 'Upcoming')}
                                     </span>
                                 )}
                             </div>
@@ -544,10 +548,10 @@ function PerformanceDetail({ performance, onBack, onEdit, onDelete }) {
                         </div>
                         <div className="flex items-center gap-2">
                             <Button variant="outline" size="sm" onClick={() => onEdit(performance)}>
-                                <Pencil size={14} /> Edit
+                                <Pencil size={14} /> {t('common.edit', 'Edit')}
                             </Button>
                             <Button variant="danger" size="sm" onClick={() => onDelete(performance)}>
-                                <Trash2 size={14} /> Delete
+                                <Trash2 size={14} /> {t('common.delete', 'Delete')}
                             </Button>
                         </div>
                     </div>
@@ -556,7 +560,7 @@ function PerformanceDetail({ performance, onBack, onEdit, onDelete }) {
                     <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <div className="rounded-xl border border-slate-100 bg-slate-50 p-3.5">
                             <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
-                                Date
+                                {t('common.date', 'Date')}
                             </p>
                             <p className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
                                 <Calendar size={14} className="text-blue-400" />
@@ -565,7 +569,7 @@ function PerformanceDetail({ performance, onBack, onEdit, onDelete }) {
                         </div>
                         <div className="rounded-xl border border-slate-100 bg-slate-50 p-3.5">
                             <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
-                                Start Time
+                                {t('performances.form_start_time', 'Start Time')}
                             </p>
                             <p className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
                                 <Clock size={14} className="text-blue-400" />
@@ -574,7 +578,7 @@ function PerformanceDetail({ performance, onBack, onEdit, onDelete }) {
                         </div>
                         <div className="rounded-xl border border-slate-100 bg-slate-50 p-3.5">
                             <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
-                                Location
+                                {t('performances.detail_location', 'Location')}
                             </p>
                             <p className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
                                 <MapPin size={14} className="text-blue-400" />
@@ -583,7 +587,7 @@ function PerformanceDetail({ performance, onBack, onEdit, onDelete }) {
                         </div>
                         <div className="rounded-xl border border-slate-100 bg-slate-50 p-3.5">
                             <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
-                                Choir
+                                {t('common.choir', 'Choir')}
                             </p>
                             <p className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
                                 <Music2 size={14} className="text-blue-400" />
@@ -598,7 +602,7 @@ function PerformanceDetail({ performance, onBack, onEdit, onDelete }) {
                             <Users size={14} className="text-blue-400 shrink-0" />
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                                    Team Leader
+                                    {t('performances.team_leader', 'Team Leader')}
                                 </p>
                                 <p className="text-sm font-bold text-slate-800">
                                     {performance.choir.team_leader.name}
@@ -611,7 +615,7 @@ function PerformanceDetail({ performance, onBack, onEdit, onDelete }) {
                     {performance.description && (
                         <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
                             <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">
-                                Description
+                                {t('performances.form_description', 'Program Overview & Theme')}
                             </p>
                             <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
                                 {performance.description}
@@ -626,7 +630,8 @@ function PerformanceDetail({ performance, onBack, onEdit, onDelete }) {
 
 /* ─────────────────────── Main Page ─────────────────────── */
 
-export default function AdminPerformancesPage() {
+export default function AdminPerformancesPage({ choirsUrl = '/public/choirs?per_page=100' }) {
+    const { t } = useLanguage();
     const { currentChoir, choirs: contextChoirs } = useChoir();
     const [choirs, setChoirs] = useState([]);
     const [selectedChoirId, setSelectedChoirId] = useState('');
@@ -657,7 +662,7 @@ export default function AdminPerformancesPage() {
                 setSelectedChoirId(currentChoir?.id?.toString() || contextChoirs[0].id.toString());
             }
         } else {
-            api.get('/public/choirs?per_page=100')
+            api.get(choirsUrl)
                 .then((res) => {
                     const items = res.data?.data?.items || res.data?.data || [];
                     setChoirs(items);
@@ -665,9 +670,9 @@ export default function AdminPerformancesPage() {
                         setSelectedChoirId(currentChoir?.id?.toString() || items[0].id.toString());
                     }
                 })
-                .catch(() => setError('Failed to load choirs.'));
+                .catch(() => setError(t('performances.load_choirs_error', 'Failed to load choirs.')));
         }
-    }, [contextChoirs, currentChoir, selectedChoirId]);
+    }, [contextChoirs, currentChoir, selectedChoirId, choirsUrl]);
 
     // Sync when global choir selector changes
     useEffect(() => {
@@ -686,7 +691,7 @@ export default function AdminPerformancesPage() {
             const items = res.data?.data?.items || res.data?.data || [];
             setPerformances(Array.isArray(items) ? items : []);
         } catch (err) {
-            setError(err?.message || 'Failed to load performances.');
+            setError(err?.message || t('performances.load_error', 'Failed to load performances.'));
         } finally {
             setLoading(false);
         }
@@ -706,17 +711,17 @@ export default function AdminPerformancesPage() {
             await api.delete(`/choirs/${choirId}/performances/${perf.id}`);
             setDeleteModal({ open: false, performance: null });
             setDetailPerf(null);
-            showToast('success', `"${perf.title}" deleted successfully.`);
+            showToast('success', `"${perf.title}" ${t('performances.deleted_success', 'deleted successfully.')}`);
             fetchPerformances();
         } catch (err) {
-            showToast('error', err.response?.data?.message || 'Failed to delete performance.');
+            showToast('error', err.response?.data?.message || t('performances.delete_error', 'Failed to delete performance.'));
         } finally {
             setDeleting(false);
         }
     };
 
     // Derived lists
-    const choirName = choirs.find((c) => c.id.toString() === selectedChoirId)?.name || 'Choir';
+    const choirName = choirs.find((c) => c.id.toString() === selectedChoirId)?.name || t('common.choir', 'Choir');
 
     const filtered = performances.filter((p) => {
         const matchSearch =
@@ -751,7 +756,7 @@ export default function AdminPerformancesPage() {
                     onClose={() => setFormModal({ open: false, performance: null })}
                     onSaved={() => {
                         setFormModal({ open: false, performance: null });
-                        showToast('success', 'Performance saved successfully.');
+                        showToast('success', t('performances.saved_success', 'Performance saved successfully.'));
                         fetchPerformances();
                         setDetailPerf(null);
                     }}
@@ -761,7 +766,7 @@ export default function AdminPerformancesPage() {
                 <Modal
                     open={deleteModal.open}
                     onClose={() => setDeleteModal({ open: false, performance: null })}
-                    title="Delete Performance"
+                    title={t('performances.delete_modal_title', 'Delete Performance')}
                     size="md"
                 >
                     <div className="space-y-4">
@@ -770,9 +775,9 @@ export default function AdminPerformancesPage() {
                                 <AlertTriangle size={20} />
                             </div>
                             <p className="text-sm text-slate-600">
-                                Are you sure you want to delete{' '}
-                                <strong>"{deleteModal.performance?.title}"</strong>? This action
-                                cannot be undone and will remove all associated attendance records.
+                                {t('performances.delete_confirm', 'Are you sure you want to delete this worship program?')}{' '}
+                                <strong>"{deleteModal.performance?.title}"</strong>?{' '}
+                                {t('performances.delete_warning', 'This action cannot be undone and will remove all associated attendance records.')}
                             </p>
                         </div>
                         <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
@@ -781,7 +786,7 @@ export default function AdminPerformancesPage() {
                                 size="sm"
                                 onClick={() => setDeleteModal({ open: false, performance: null })}
                             >
-                                Cancel
+                                {t('common.cancel', 'Cancel')}
                             </Button>
                             <Button
                                 variant="danger"
@@ -789,7 +794,7 @@ export default function AdminPerformancesPage() {
                                 onClick={handleDelete}
                                 loading={deleting}
                             >
-                                Delete Performance
+                                {t('common.delete', 'Delete')}
                             </Button>
                         </div>
                     </div>
@@ -810,10 +815,10 @@ export default function AdminPerformancesPage() {
                         </div>
                         <div>
                             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                                Performances
+                                {t('performances.management_title', 'Worship & Performances')}
                             </h1>
                             <p className="text-sm text-slate-500">
-                                Manage choir events, concerts, and worship performances
+                                {t('performances.management_subtitle', 'Coordinate Sunday services, concerts, worship presentations, and special choir programs.')}
                             </p>
                         </div>
                     </div>
@@ -823,7 +828,7 @@ export default function AdminPerformancesPage() {
                     size="md"
                     onClick={() => setFormModal({ open: true, performance: null })}
                 >
-                    <Plus size={16} /> New Performance
+                    <Plus size={16} /> {t('performances.add_new', 'Add Worship / Program')}
                 </Button>
             </div>
 
@@ -842,7 +847,7 @@ export default function AdminPerformancesPage() {
             <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center">
                 <div className="flex-1">
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                        Choir / Ministry Team
+                        {t('performances.form_choir_team', 'Choir / Ministry Team')}
                     </label>
                     <select
                         value={selectedChoirId}
@@ -862,7 +867,7 @@ export default function AdminPerformancesPage() {
 
                 <div className="flex-1">
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                        Search
+                        {t('common.search', 'Search')}
                     </label>
                     <div className="relative">
                         <Search
@@ -871,7 +876,7 @@ export default function AdminPerformancesPage() {
                         />
                         <input
                             type="text"
-                            placeholder="Search by title or location…"
+                            placeholder={t('performances.search_placeholder', 'Search worship by title, venue, choir...')}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-2.5 text-sm font-medium text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none"
@@ -883,7 +888,7 @@ export default function AdminPerformancesPage() {
                     <button
                         onClick={fetchPerformances}
                         disabled={loading}
-                        title="Refresh"
+                        title={t('common.refresh', 'Refresh')}
                         className="rounded-xl border border-slate-200 bg-slate-100 p-2.5 text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors"
                     >
                         <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
@@ -894,9 +899,9 @@ export default function AdminPerformancesPage() {
             {/* Tabs */}
             <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 border border-slate-200/80 w-fit">
                 {[
-                    { key: 'upcoming', label: `Upcoming (${upcomingCount})`, icon: Sparkles },
-                    { key: 'past', label: `Past (${pastCount})`, icon: CalendarClock },
-                    { key: 'all', label: `All (${performances.length})`, icon: Calendar },
+                    { key: 'upcoming', label: `${t('performances.tab_upcoming', 'Upcoming Worship')} (${upcomingCount})`, icon: Sparkles },
+                    { key: 'past', label: `${t('performances.tab_past', 'Past Worship')} (${pastCount})`, icon: CalendarClock },
+                    { key: 'all', label: `${t('performances.tab_all', 'All Worship')} (${performances.length})`, icon: Calendar },
                 ].map(({ key, label, icon: Icon }) => (
                     <button
                         key={key}
@@ -918,23 +923,23 @@ export default function AdminPerformancesPage() {
                 <div className="flex h-48 flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white">
                     <LoadingSpinner size={32} className="text-indigo-600" />
                     <p className="mt-3 text-sm font-semibold text-slate-500">
-                        Loading performances…
+                        {t('common.loading', 'Loading...')}
                     </p>
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center">
                     <CalendarDays size={40} className="text-slate-300" />
                     <h3 className="mt-3 text-base font-bold text-slate-700">
-                        No performances found
+                        {t('performances.empty_title', 'No worship programs found')}
                     </h3>
                     <p className="mt-1 text-xs text-slate-400 max-w-xs">
                         {search
-                            ? 'Try a different search term.'
+                            ? t('common.no_search_results', 'Try a different search term.')
                             : tab === 'upcoming'
-                            ? `No upcoming performances scheduled for ${choirName}.`
+                            ? `${t('performances.no_upcoming', 'No upcoming performances scheduled for')} ${choirName}.`
                             : tab === 'past'
-                            ? `No past performances recorded for ${choirName}.`
-                            : `No performances found for ${choirName}.`}
+                            ? `${t('performances.no_past', 'No past performances recorded for')} ${choirName}.`
+                            : `${t('performances.empty_desc', 'Create a new worship program or event to prepare your choir.')}`}
                     </p>
                     {!search && (
                         <Button
@@ -943,7 +948,7 @@ export default function AdminPerformancesPage() {
                             className="mt-5"
                             onClick={() => setFormModal({ open: true, performance: null })}
                         >
-                            <Plus size={14} /> Create Performance
+                            <Plus size={14} /> {t('performances.add_new', 'Add Worship / Program')}
                         </Button>
                     )}
                 </div>
@@ -967,7 +972,7 @@ export default function AdminPerformancesPage() {
                 onClose={() => setFormModal({ open: false, performance: null })}
                 onSaved={(msg) => {
                     setFormModal({ open: false, performance: null });
-                    showToast('success', msg || 'Performance saved successfully.');
+                    showToast('success', msg || t('performances.saved_success', 'Performance saved successfully.'));
                     fetchPerformances();
                 }}
                 initial={formModal.performance}
@@ -979,7 +984,7 @@ export default function AdminPerformancesPage() {
             <Modal
                 open={deleteModal.open}
                 onClose={() => setDeleteModal({ open: false, performance: null })}
-                title="Delete Performance"
+                title={t('performances.delete_modal_title', 'Delete Performance')}
                 size="md"
             >
                 <div className="space-y-4">
@@ -988,9 +993,9 @@ export default function AdminPerformancesPage() {
                             <AlertTriangle size={20} />
                         </div>
                         <p className="text-sm text-slate-600">
-                            Are you sure you want to delete{' '}
-                            <strong>"{deleteModal.performance?.title}"</strong>? This action cannot
-                            be undone and will remove all associated attendance records.
+                            {t('performances.delete_confirm', 'Are you sure you want to delete this worship program?')}{' '}
+                            <strong>"{deleteModal.performance?.title}"</strong>?{' '}
+                            {t('performances.delete_warning', 'This action cannot be undone and will remove all associated attendance records.')}
                         </p>
                     </div>
                     <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
@@ -999,7 +1004,7 @@ export default function AdminPerformancesPage() {
                             size="sm"
                             onClick={() => setDeleteModal({ open: false, performance: null })}
                         >
-                            Cancel
+                            {t('common.cancel', 'Cancel')}
                         </Button>
                         <Button
                             variant="danger"
@@ -1007,7 +1012,7 @@ export default function AdminPerformancesPage() {
                             onClick={handleDelete}
                             loading={deleting}
                         >
-                            Delete Performance
+                            {t('common.delete', 'Delete')}
                         </Button>
                     </div>
                 </div>

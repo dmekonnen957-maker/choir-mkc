@@ -30,30 +30,30 @@ import LoadingSpinner from '../../components/ui/LoadingSpinner';
 
 const NOTIFICATION_LABELS = {
     performances: {
-        title: 'Performance announcements',
-        desc: 'Receive alerts when new concerts and church performances are scheduled.',
+        titleKey: 'settings.notif_performances_title',
+        descKey: 'settings.notif_performances_desc',
     },
     rehearsals: {
-        title: 'Rehearsal reminders',
-        desc: 'Get notified about upcoming rehearsals and schedule changes.',
+        titleKey: 'settings.notif_rehearsals_title',
+        descKey: 'settings.notif_rehearsals_desc',
     },
     choir_updates: {
-        title: 'Choir updates & news',
-        desc: 'Stay informed on important choir news, announcements, and notices.',
+        titleKey: 'settings.notif_choir_updates_title',
+        descKey: 'settings.notif_choir_updates_desc',
     },
 };
 
 const LANGUAGES = [
-    { code: 'en', label: '🇬🇧 English' },
-    { code: 'am', label: '🇪🇹 አማርኛ (Amharic)' },
+    { code: 'en', label: '🇬🇧 English', labelKey: 'settings.lang_en' },
+    { code: 'am', label: '🇪🇹 አማርኛ (Amharic)', labelKey: 'settings.lang_am' },
 ];
 
 const TIMEZONES = [
-    { value: 'Africa/Addis_Ababa', label: 'East Africa Time (Addis Ababa, UTC+3)' },
-    { value: 'UTC', label: 'Coordinated Universal Time (UTC+0)' },
-    { value: 'Europe/London', label: 'London (GMT / BST)' },
-    { value: 'America/New_York', label: 'Eastern Time (US & Canada, UTC-5)' },
-    { value: 'America/Los_Angeles', label: 'Pacific Time (US & Canada, UTC-8)' },
+    { value: 'Africa/Addis_Ababa', label: 'East Africa Time (Addis Ababa, UTC+3)', labelKey: 'settings.tz_addis' },
+    { value: 'UTC', label: 'Coordinated Universal Time (UTC+0)', labelKey: 'settings.tz_utc' },
+    { value: 'Europe/London', label: 'London (GMT / BST)', labelKey: 'settings.tz_london' },
+    { value: 'America/New_York', label: 'Eastern Time (US & Canada, UTC-5)', labelKey: 'settings.tz_new_york' },
+    { value: 'America/Los_Angeles', label: 'Pacific Time (US & Canada, UTC-8)', labelKey: 'settings.tz_la' },
 ];
 
 function asset(path) {
@@ -163,9 +163,9 @@ export default function MemberSettings() {
         if (form.phone && !/^(09|07)\d{8}$/.test(form.phone)) {
             setErrors((prev) => ({
                 ...prev,
-                phone: ['Phone number must be exactly 10 Ethiopian digits starting with 09 or 07 (e.g., 0911223344 or 0711223344).'],
+                phone: [t('settings.phone_invalid_field', 'Phone number must be exactly 10 Ethiopian digits starting with 09 or 07 (e.g., 0911223344 or 0711223344).')],
             }));
-            setAlert({ variant: 'error', message: 'Please provide a valid 10-digit Ethiopian phone number (09XXXXXXXX or 07XXXXXXXX).' });
+            setAlert({ variant: 'error', message: t('settings.phone_invalid', 'Please provide a valid 10-digit Ethiopian phone number (09XXXXXXXX or 07XXXXXXXX).') });
             return;
         }
 
@@ -196,10 +196,10 @@ export default function MemberSettings() {
             setPhoto(null);
             setRemovePhoto(false);
             fetchData();
-            setAlert({ variant: 'success', message: 'Profile and account details saved successfully.' });
+            setAlert({ variant: 'success', message: t('settings.profile_saved', 'Profile and account details saved successfully.') });
         } catch (err) {
             if (err.errors) setErrors(err.errors);
-            setAlert({ variant: 'error', message: err.message || 'Failed to update profile.' });
+            setAlert({ variant: 'error', message: err.message || t('settings.update_failed', 'Failed to update profile.') });
         } finally {
             setSavingProfile(false);
         }
@@ -213,10 +213,10 @@ export default function MemberSettings() {
             await api.put('/member/settings/notifications', {
                 notification_preferences: prefs,
             });
-            setAlert({ variant: 'success', message: 'Notification preferences updated.' });
+            setAlert({ variant: 'success', message: t('settings.prefs_saved', 'Notification preferences updated.') });
         } catch (err) {
             if (err.errors) setErrors(err.errors);
-            setAlert({ variant: 'error', message: err.message || 'Failed to update preferences.' });
+            setAlert({ variant: 'error', message: err.message || t('settings.prefs_failed', 'Failed to update preferences.') });
         } finally {
             setSavingPrefs(false);
         }
@@ -233,10 +233,10 @@ export default function MemberSettings() {
                 password: '',
                 password_confirmation: '',
             });
-            setAlert({ variant: 'success', message: 'Password changed successfully.' });
+            setAlert({ variant: 'success', message: t('settings.password_changed', 'Password changed successfully.') });
         } catch (err) {
             if (err.errors) setErrors(err.errors);
-            setAlert({ variant: 'error', message: err.message || 'Failed to update password.' });
+            setAlert({ variant: 'error', message: err.message || t('settings.password_failed', 'Failed to update password.') });
         } finally {
             setSavingPassword(false);
         }
@@ -249,10 +249,10 @@ export default function MemberSettings() {
             const res = await api.post('/member/settings/reset-password');
             setAlert({
                 variant: 'success',
-                message: res.data?.message || `A password reset link has been sent to ${form.email}.`,
+                message: res.data?.message || t('settings.reset_sent', 'A password reset link has been sent to {email}.', { email: form.email }),
             });
         } catch (err) {
-            setAlert({ variant: 'error', message: err.message || 'Unable to dispatch reset email.' });
+            setAlert({ variant: 'error', message: err.message || t('settings.reset_dispatch_failed', 'Unable to dispatch reset email.') });
         } finally {
             setSendingReset(false);
         }
@@ -267,10 +267,10 @@ export default function MemberSettings() {
             await refreshUser();
             setAlert({
                 variant: 'success',
-                message: res.data?.message || 'Email verified successfully!',
+                message: res.data?.message || t('settings.email_verified_success', 'Email verified successfully!'),
             });
         } catch (err) {
-            setAlert({ variant: 'error', message: err.message || 'Email verification failed.' });
+            setAlert({ variant: 'error', message: err.message || t('settings.email_verify_failed', 'Email verification failed.') });
         } finally {
             setVerifyingEmail(false);
         }
@@ -282,7 +282,7 @@ export default function MemberSettings() {
             await api.post('/member/settings/deactivate');
             await logout();
         } catch (err) {
-            setAlert({ variant: 'error', message: err.message || 'Unable to deactivate account.' });
+            setAlert({ variant: 'error', message: err.message || t('settings.deactivate_failed', 'Unable to deactivate account.') });
             setShowDeactivateModal(false);
         } finally {
             setDeactivating(false);
@@ -391,7 +391,7 @@ export default function MemberSettings() {
                 {/* Left Column: Account Overview Profile Badge */}
                 <div className="space-y-6">
                     <div className="rounded-2xl border border-blue-100 bg-canvas p-6 shadow-sm">
-                        <h2 className="text-base font-semibold text-ink-900">Account Overview</h2>
+                        <h2 className="text-base font-semibold text-ink-900">{t('settings.account_overview', 'Account Overview')}</h2>
                         <div className="mt-4 flex items-center gap-4">
                             <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-xl font-bold text-blue-700 border border-blue-200">
                                 {currentPhotoUrl ? (
@@ -415,7 +415,7 @@ export default function MemberSettings() {
                                 )}
                                 <p className="truncate text-xs text-ink-500">{form.email || data?.user?.email}</p>
                                 <span className="mt-1.5 inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 capitalize">
-                                    {data?.account?.membership_status || 'Active Member'}
+                                    {data?.account?.membership_status || t('settings.membership_default', 'Active Member')}
                                 </span>
                             </div>
                         </div>
@@ -424,10 +424,10 @@ export default function MemberSettings() {
                             <div className="flex items-center justify-between text-ink-600">
                                 <span className="flex items-center gap-2 text-ink-500">
                                     <Church size={15} className="text-blue-500" />
-                                    Choir
+                                    {t('common.choir', 'Choir')}
                                 </span>
                                 <span className="max-w-[150px] truncate font-medium text-ink-800">
-                                    {data?.choir?.name || 'No choir assigned'}
+                                    {data?.choir?.name || t('settings.no_choir', 'No choir assigned')}
                                 </span>
                             </div>
 
@@ -435,7 +435,7 @@ export default function MemberSettings() {
                                 <div className="flex items-center justify-between text-ink-600">
                                     <span className="flex items-center gap-2 text-ink-500">
                                         <ShieldCheck size={15} className="text-blue-500" />
-                                        Role / Job Title
+                                        {t('settings.role_job_title', 'Role / Job Title')}
                                     </span>
                                     <span className="max-w-[150px] truncate font-medium text-ink-800">
                                         {form.role_title}
@@ -447,7 +447,7 @@ export default function MemberSettings() {
                                 <div className="flex items-center justify-between text-ink-600">
                                     <span className="flex items-center gap-2 text-ink-500">
                                         <Music size={15} className="text-blue-500" />
-                                        Voice Section
+                                        {t('settings.voice_section', 'Voice Section')}
                                     </span>
                                     <span className="font-medium text-ink-800">
                                         {data.account.voice_section}
@@ -459,7 +459,7 @@ export default function MemberSettings() {
                                 <div className="flex items-center justify-between text-ink-600">
                                     <span className="flex items-center gap-2 text-ink-500">
                                         <KeyRound size={15} className="text-blue-500" />
-                                        Member Code
+                                        {t('settings.member_code', 'Member Code')}
                                     </span>
                                     <span className="font-mono text-xs font-semibold text-ink-800">
                                         {data.account.member_code}
@@ -468,21 +468,21 @@ export default function MemberSettings() {
                             )}
 
                             <div className="flex items-center justify-between text-ink-600">
-                                <span className="text-ink-500">Email Status</span>
+                                <span className="text-ink-500">{t('settings.email_status', 'Email Status')}</span>
                                 {isEmailVerified ? (
                                     <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
-                                        <CheckCircle2 size={13} /> Verified
+                                        <CheckCircle2 size={13} /> {t('settings.email_verified', 'Verified')}
                                     </span>
                                 ) : (
                                     <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600">
-                                        <AlertCircle size={13} /> Unverified
+                                        <AlertCircle size={13} /> {t('settings.email_unverified', 'Unverified')}
                                     </span>
                                 )}
                             </div>
 
                             {data?.account?.member_since && (
                                 <div className="flex items-center justify-between text-ink-600">
-                                    <span className="text-ink-500">Member Since</span>
+                                    <span className="text-ink-500">{t('settings.member_since', 'Member Since')}</span>
                                     <span className="text-xs text-ink-700">
                                         {new Date(data.account.member_since).toLocaleDateString(undefined, {
                                             year: 'numeric',
@@ -507,9 +507,9 @@ export default function MemberSettings() {
                             <div className="flex items-center gap-2 border-b border-blue-100 pb-4">
                                 <UserIcon className="h-5 w-5 text-blue-600" />
                                 <div>
-                                    <h2 className="text-lg font-semibold text-ink-900">Personal Information</h2>
+                                    <h2 className="text-lg font-semibold text-ink-900">{t('settings.personal_info_title', 'Personal Information')}</h2>
                                     <p className="text-xs text-ink-500">
-                                        Update your personal details, profile avatar, and choir bio.
+                                        {t('settings.personal_info_desc', 'Update your personal details, profile avatar, and choir bio.')}
                                     </p>
                                 </div>
                             </div>
@@ -518,14 +518,14 @@ export default function MemberSettings() {
                                 {/* Avatar Upload */}
                                 <div>
                                     <label className="block text-sm font-medium text-ink-700">
-                                        Profile Photo / Avatar
+                                        {t('settings.profile_photo_label', 'Profile Photo / Avatar')}
                                     </label>
                                     <div className="mt-2 flex items-center gap-4">
                                         <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-xl font-bold text-blue-700 border border-blue-200">
                                             {currentPhotoUrl ? (
                                                 <img
                                                     src={currentPhotoUrl}
-                                                    alt="Avatar preview"
+                                                    alt={t('settings.avatar_alt', 'Avatar preview')}
                                                     className="h-full w-full object-cover"
                                                 />
                                             ) : (
@@ -535,7 +535,7 @@ export default function MemberSettings() {
                                         <div className="flex flex-wrap items-center gap-2">
                                             <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-canvas px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 transition-colors">
                                                 <Camera size={14} />
-                                                <span>Upload New Photo</span>
+                                                <span>{t('settings.upload_photo', 'Upload New Photo')}</span>
                                                 <input
                                                     type="file"
                                                     accept="image/*"
@@ -559,7 +559,7 @@ export default function MemberSettings() {
                                                     className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-canvas px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
                                                 >
                                                     <XIcon size={14} />
-                                                    Remove Photo
+                                                    {t('profile.remove_photo', 'Remove Photo')}
                                                 </button>
                                             )}
                                             {removePhoto && (
@@ -568,7 +568,7 @@ export default function MemberSettings() {
                                                     onClick={() => setRemovePhoto(false)}
                                                     className="text-xs text-blue-600 underline hover:text-blue-700"
                                                 >
-                                                    Undo remove
+                                                    {t('settings.undo_remove', 'Undo remove')}
                                                 </button>
                                             )}
                                         </div>
@@ -576,12 +576,12 @@ export default function MemberSettings() {
                                     {errors.photo?.[0] && (
                                         <p className="mt-1 text-xs text-red-600">{errors.photo[0]}</p>
                                     )}
-                                    <p className="mt-1.5 text-xs text-ink-400">JPG, PNG, GIF or WebP up to 2MB.</p>
+                                    <p className="mt-1.5 text-xs text-ink-400">{t('settings.photo_hint', 'JPG, PNG, GIF or WebP up to 2MB.')}</p>
                                 </div>
 
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <Input
-                                        label="Full Name"
+                                        label={t('common.full_name', 'Full Name')}
                                         value={form.name}
                                         onChange={update('name')}
                                         error={errors.name?.[0]}
@@ -590,36 +590,36 @@ export default function MemberSettings() {
                                     />
 
                                     <Input
-                                        label="Username"
+                                        label={t('settings.username_label', 'Username')}
                                         value={form.username}
                                         onChange={update('username')}
                                         error={errors.username?.[0]}
                                         prefix="@"
-                                        placeholder="username"
+                                        placeholder={t('settings.username_placeholder', 'username')}
                                         maxLength={50}
-                                        hint="Letters, numbers, dashes, and underscores."
+                                        hint={t('settings.username_hint', 'Letters, numbers, dashes, and underscores.')}
                                     />
                                 </div>
 
                                 <Input
-                                    label="Job Title / Choir Role"
+                                    label={t('settings.job_title_label', 'Job Title / Choir Role')}
                                     value={form.role_title}
                                     onChange={update('role_title')}
                                     error={errors.role_title?.[0]}
                                     maxLength={100}
-                                    placeholder="e.g. Lead Vocalist, Tenor Section Leader, Sound Engineer"
+                                    placeholder={t('settings.job_title_placeholder', 'e.g. Lead Vocalist, Tenor Section Leader, Sound Engineer')}
                                 />
 
                                 <div>
                                     <label className="block text-sm font-medium text-ink-700 mb-1">
-                                        Bio & About Me
+                                        {t('settings.bio_label', 'Bio & About Me')}
                                     </label>
                                     <textarea
                                         rows={3}
                                         value={form.bio}
                                         onChange={update('bio')}
                                         maxLength={1000}
-                                        placeholder="Share a brief introduction about your choir journey and background..."
+                                        placeholder={t('settings.bio_placeholder', 'Share a brief introduction about your choir journey and background...')}
                                         className="w-full rounded-lg border border-ink-200 bg-canvas px-3.5 py-2.5 text-sm text-ink-800 placeholder:text-ink-400 transition-colors focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
                                     />
                                     {errors.bio?.[0] && (
@@ -629,7 +629,7 @@ export default function MemberSettings() {
 
                                 <div className="flex justify-end pt-2">
                                     <Button type="submit" loading={savingProfile}>
-                                        Save Personal Info
+                                        {t('settings.save_personal_info', 'Save Personal Info')}
                                     </Button>
                                 </div>
                             </div>
@@ -645,9 +645,9 @@ export default function MemberSettings() {
                             <div className="flex items-center gap-2 border-b border-blue-100 pb-4">
                                 <Mail className="h-5 w-5 text-blue-600" />
                                 <div>
-                                    <h2 className="text-lg font-semibold text-ink-900">Contact Details</h2>
+                                    <h2 className="text-lg font-semibold text-ink-900">{t('settings.tab_contact', 'Contact Details')}</h2>
                                     <p className="text-xs text-ink-500">
-                                        Manage your verified email address and primary telephone number.
+                                        {t('settings.contact_desc', 'Manage your verified email address and primary telephone number.')}
                                     </p>
                                 </div>
                             </div>
@@ -655,14 +655,14 @@ export default function MemberSettings() {
                             <div className="mt-6 space-y-5">
                                 <div>
                                     <div className="flex items-center justify-between mb-1">
-                                        <label className="text-sm font-medium text-ink-700">Primary Email Address *</label>
+                                        <label className="text-sm font-medium text-ink-700">{t('settings.primary_email', 'Primary Email Address *')}</label>
                                         {isEmailVerified ? (
                                             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-                                                <CheckCircle2 size={13} /> Verified
+                                                <CheckCircle2 size={13} /> {t('settings.email_verified', 'Verified')}
                                             </span>
                                         ) : (
                                             <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
-                                                <AlertCircle size={13} /> Unverified
+                                                <AlertCircle size={13} /> {t('settings.email_unverified', 'Unverified')}
                                             </span>
                                         )}
                                     </div>
@@ -678,7 +678,7 @@ export default function MemberSettings() {
                                         <div className="mt-2 flex items-center justify-between rounded-xl bg-amber-50/70 p-3 border border-amber-200/60">
                                             <div className="flex items-center gap-2 text-xs text-amber-800">
                                                 <AlertCircle size={15} className="shrink-0 text-amber-600" />
-                                                <span>Your email is not verified yet. Verify it now to secure your account.</span>
+                                                <span>{t('settings.email_not_verified_notice', 'Your email is not verified yet. Verify it now to secure your account.')}</span>
                                             </div>
                                             <Button
                                                 type="button"
@@ -687,26 +687,26 @@ export default function MemberSettings() {
                                                 onClick={handleVerifyEmail}
                                                 loading={verifyingEmail}
                                             >
-                                                Verify Email
+                                                {t('settings.verify_email', 'Verify Email')}
                                             </Button>
                                         </div>
                                     )}
                                 </div>
 
                                 <Input
-                                    label="Phone Number (Ethiopian format: 09XXXXXXXX or 07XXXXXXXX)"
+                                    label={t('settings.phone_label', 'Phone Number (Ethiopian format: 09XXXXXXXX or 07XXXXXXXX)')}
                                     type="tel"
                                     value={form.phone}
                                     onChange={update('phone')}
                                     error={errors.phone?.[0]}
                                     placeholder="0911223344"
                                     maxLength={10}
-                                    hint="Must be exactly 10 Ethiopian digits (e.g. 0911223344 or 0711223344)."
+                                    hint={t('settings.phone_hint', 'Must be exactly 10 Ethiopian digits (e.g. 0911223344 or 0711223344).')}
                                 />
 
                                 <div className="flex justify-end pt-2">
                                     <Button type="submit" loading={savingProfile}>
-                                        Save Contact Details
+                                        {t('settings.save_contact', 'Save Contact Details')}
                                     </Button>
                                 </div>
                             </div>
@@ -721,18 +721,18 @@ export default function MemberSettings() {
                                 <div className="flex items-center gap-2 border-b border-blue-100 pb-4">
                                     <KeyRound className="h-5 w-5 text-blue-600" />
                                     <div>
-                                        <h2 className="text-lg font-semibold text-ink-900">Password Reset Link</h2>
+                                        <h2 className="text-lg font-semibold text-ink-900">{t('settings.password_reset_title', 'Password Reset Link')}</h2>
                                         <p className="text-xs text-ink-500">
-                                            Trigger a password reset link to your registered email address.
+                                            {t('settings.password_reset_desc', 'Trigger a password reset link to your registered email address.')}
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl bg-blue-50/60 p-4 border border-blue-100">
                                     <div className="space-y-1 text-sm text-ink-700">
-                                        <p className="font-medium text-ink-900">Forgot your current password?</p>
+                                        <p className="font-medium text-ink-900">{t('settings.forgot_password_title', 'Forgot your current password?')}</p>
                                         <p className="text-xs text-ink-500">
-                                            We will send a secure password reset link to <strong className="text-ink-800">{form.email}</strong>.
+                                            {t('settings.reset_will_send', 'We will send a secure password reset link to {email}.', { email: form.email })}
                                         </p>
                                     </div>
                                     <Button
@@ -743,7 +743,7 @@ export default function MemberSettings() {
                                         className="shrink-0"
                                     >
                                         <Send size={15} />
-                                        <span>Send Reset Link</span>
+                                        <span>{t('settings.send_reset_link', 'Send Reset Link')}</span>
                                     </Button>
                                 </div>
                             </div>
@@ -756,16 +756,16 @@ export default function MemberSettings() {
                                 <div className="flex items-center gap-2 border-b border-blue-100 pb-4">
                                     <Lock className="h-5 w-5 text-blue-600" />
                                     <div>
-                                        <h2 className="text-lg font-semibold text-ink-900">Change Password</h2>
+                                        <h2 className="text-lg font-semibold text-ink-900">{t('profile.change_password', 'Change Password')}</h2>
                                         <p className="text-xs text-ink-500">
-                                            Enter your current password to choose a new password.
+                                            {t('settings.change_password_desc', 'Enter your current password to choose a new password.')}
                                         </p>
                                     </div>
                                 </div>
 
                                 <div className="mt-5 space-y-4">
                                     <PasswordInput
-                                        label="Current Password"
+                                        label={t('profile.current_password', 'Current Password')}
                                         value={passwords.current_password}
                                         onChange={updatePassword('current_password')}
                                         error={errors.current_password?.[0]}
@@ -773,16 +773,16 @@ export default function MemberSettings() {
                                     />
 
                                     <PasswordInput
-                                        label="New Password"
+                                        label={t('profile.new_password', 'New Password')}
                                         value={passwords.password}
                                         onChange={updatePassword('password')}
                                         error={errors.password?.[0]}
-                                        hint="Must be at least 8 characters."
+                                        hint={t('settings.password_min_hint', 'Must be at least 8 characters.')}
                                         required
                                     />
 
                                     <PasswordInput
-                                        label="Confirm New Password"
+                                        label={t('profile.confirm_new_password', 'Confirm New Password')}
                                         value={passwords.password_confirmation}
                                         onChange={updatePassword('password_confirmation')}
                                         error={errors.password_confirmation?.[0]}
@@ -791,7 +791,7 @@ export default function MemberSettings() {
 
                                     <div className="flex justify-end pt-2">
                                         <Button type="submit" loading={savingPassword}>
-                                            Update Password
+                                            {t('settings.update_password', 'Update Password')}
                                         </Button>
                                     </div>
                                 </div>
@@ -801,24 +801,24 @@ export default function MemberSettings() {
                             <div className="rounded-2xl border border-blue-100 bg-canvas p-6 shadow-sm">
                                 <div className="flex items-center gap-2 border-b border-blue-100 pb-4">
                                     <ShieldCheck className="h-5 w-5 text-blue-600" />
-                                    <h2 className="text-lg font-semibold text-ink-900">Session & Security Status</h2>
+                                    <h2 className="text-lg font-semibold text-ink-900">{t('settings.session_status_title', 'Session & Security Status')}</h2>
                                 </div>
 
                                 <div className="mt-4 space-y-3 text-sm text-ink-700">
                                     <div className="flex items-center justify-between py-2 border-b border-blue-50">
                                         <div>
-                                            <p className="font-medium text-ink-900">Current Active Session</p>
-                                            <p className="text-xs text-ink-400">Authenticated via Secure Sanctum API Token</p>
+                                            <p className="font-medium text-ink-900">{t('settings.active_session', 'Current Active Session')}</p>
+                                            <p className="text-xs text-ink-400">{t('settings.session_auth_desc', 'Authenticated via Secure Sanctum API Token')}</p>
                                         </div>
                                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-                                            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Active Now
+                                            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> {t('settings.active_now', 'Active Now')}
                                         </span>
                                     </div>
 
                                     <div className="flex items-center justify-between py-2">
                                         <div>
-                                            <p className="font-medium text-ink-900">Role-Based Access Control</p>
-                                            <p className="text-xs text-ink-400">Protected by Choir MKC Guard Policy</p>
+                                            <p className="font-medium text-ink-900">{t('settings.rbac_title', 'Role-Based Access Control')}</p>
+                                            <p className="text-xs text-ink-400">{t('settings.rbac_desc', 'Protected by Choir MKC Guard Policy')}</p>
                                         </div>
                                         <span className="text-xs font-medium text-ink-600 capitalize">
                                             {data?.role || 'Member'}
@@ -861,7 +861,7 @@ export default function MemberSettings() {
                                         >
                                             {LANGUAGES.map((lang) => (
                                                 <option key={lang.code} value={lang.code}>
-                                                    {lang.label}
+                                                    {lang.labelKey ? t(lang.labelKey, lang.label) : lang.label}
                                                 </option>
                                             ))}
                                         </select>
@@ -878,7 +878,7 @@ export default function MemberSettings() {
                                         >
                                             {TIMEZONES.map((tz) => (
                                                 <option key={tz.value} value={tz.value}>
-                                                    {tz.label}
+                                                    {tz.labelKey ? t(tz.labelKey, tz.label) : tz.label}
                                                 </option>
                                             ))}
                                         </select>
@@ -900,8 +900,8 @@ export default function MemberSettings() {
                                 <div className="flex items-center gap-2 border-b border-blue-100 pb-4">
                                     <Bell className="h-5 w-5 text-blue-600" />
                                     <div>
-                                        <h2 className="text-lg font-semibold text-ink-900">Notification Preferences</h2>
-                                        <p className="text-xs text-ink-500">Choose which updates and reminders you receive.</p>
+                                        <h2 className="text-lg font-semibold text-ink-900">{t('settings.notification_preferences_title', 'Notification Preferences')}</h2>
+                                        <p className="text-xs text-ink-500">{t('settings.notification_preferences_desc', 'Choose which updates and reminders you receive.')}</p>
                                     </div>
                                 </div>
 
@@ -918,15 +918,15 @@ export default function MemberSettings() {
                                                 className="mt-1 h-4 w-4 rounded border-ink-300 text-blue-600 focus:ring-blue-500"
                                             />
                                             <div className="select-none">
-                                                <p className="text-sm font-semibold text-ink-800">{item.title}</p>
-                                                <p className="text-xs text-ink-500 mt-0.5">{item.desc}</p>
+                                                <p className="text-sm font-semibold text-ink-800">{t(item.titleKey, item.title)}</p>
+                                                <p className="text-xs text-ink-500 mt-0.5">{t(item.descKey, item.desc)}</p>
                                             </div>
                                         </label>
                                     ))}
 
                                     <div className="flex justify-end pt-2">
                                         <Button type="submit" loading={savingPrefs}>
-                                            Save Notification Preferences
+                                            {t('settings.save_notification_prefs', 'Save Notification Preferences')}
                                         </Button>
                                     </div>
                                 </div>
@@ -941,9 +941,9 @@ export default function MemberSettings() {
                                 <div className="flex items-center gap-2 border-b border-red-100 pb-4">
                                     <AlertTriangle className="h-5 w-5 text-red-600" />
                                     <div>
-                                        <h2 className="text-lg font-semibold text-red-900">Danger Zone</h2>
+                                        <h2 className="text-lg font-semibold text-red-900">{t('settings.danger_zone', 'Danger Zone')}</h2>
                                         <p className="text-xs text-red-600">
-                                            Permanent and irreversible actions regarding your choir account.
+                                            {t('settings.danger_zone_desc', 'Permanent and irreversible actions regarding your choir account.')}
                                         </p>
                                     </div>
                                 </div>
@@ -952,9 +952,9 @@ export default function MemberSettings() {
                                     {/* Password Reset Trigger inside Account Actions */}
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-red-100 bg-canvas p-4">
                                         <div>
-                                            <p className="text-sm font-semibold text-ink-900">Request Password Reset</p>
+                                            <p className="text-sm font-semibold text-ink-900">{t('settings.request_reset', 'Request Password Reset')}</p>
                                             <p className="text-xs text-ink-500">
-                                                Send a password reset link to your registered email address.
+                                                {t('settings.request_reset_desc', 'Send a password reset link to your registered email address.')}
                                             </p>
                                         </div>
                                         <Button
@@ -963,16 +963,16 @@ export default function MemberSettings() {
                                             onClick={handleTriggerPasswordReset}
                                             loading={sendingReset}
                                         >
-                                            Reset Password
+                                            {t('settings.reset_password_btn', 'Reset Password')}
                                         </Button>
                                     </div>
 
                                     {/* Deactivation / Deletion */}
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50/50 p-4">
                                         <div>
-                                            <p className="text-sm font-semibold text-red-900">Deactivate Account</p>
+                                            <p className="text-sm font-semibold text-red-900">{t('settings.deactivate_account_title', 'Deactivate Account')}</p>
                                             <p className="text-xs text-red-700">
-                                                Deactivating will revoke your active session and temporarily disable access to your choir portal.
+                                                {t('settings.deactivate_desc', 'Deactivating will revoke your active session and temporarily disable access to your choir portal.')}
                                             </p>
                                         </div>
                                         <Button
@@ -981,7 +981,7 @@ export default function MemberSettings() {
                                             onClick={() => setShowDeactivateModal(true)}
                                         >
                                             <Trash2 size={15} />
-                                            <span>Deactivate Account</span>
+                                            <span>{t('settings.deactivate_account_title', 'Deactivate Account')}</span>
                                         </Button>
                                     </div>
                                 </div>
@@ -999,9 +999,9 @@ export default function MemberSettings() {
                             <AlertTriangle size={24} />
                         </div>
 
-                        <h3 className="mt-4 text-lg font-bold text-ink-900">Deactivate your account?</h3>
+                        <h3 className="mt-4 text-lg font-bold text-ink-900">{t('settings.deactivate_confirm_title', 'Deactivate your account?')}</h3>
                         <p className="mt-2 text-sm text-ink-600">
-                            Are you sure you want to deactivate your account? You will be signed out immediately. To reactivate your account in the future, you will need to contact an administrator.
+                            {t('settings.deactivate_confirm_desc', 'Are you sure you want to deactivate your account? You will be signed out immediately. To reactivate your account in the future, you will need to contact an administrator.')}
                         </p>
 
                         <div className="mt-6 flex items-center justify-end gap-3">
@@ -1011,7 +1011,7 @@ export default function MemberSettings() {
                                 onClick={() => setShowDeactivateModal(false)}
                                 disabled={deactivating}
                             >
-                                Cancel
+                                {t('common.cancel', 'Cancel')}
                             </Button>
                             <Button
                                 type="button"
@@ -1019,7 +1019,7 @@ export default function MemberSettings() {
                                 onClick={handleDeactivateAccount}
                                 loading={deactivating}
                             >
-                                Yes, Deactivate
+                                {t('settings.deactivate_yes', 'Yes, Deactivate')}
                             </Button>
                         </div>
                     </div>

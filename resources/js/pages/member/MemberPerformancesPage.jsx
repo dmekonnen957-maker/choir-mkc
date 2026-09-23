@@ -248,7 +248,7 @@ export default function MemberPerformancesPage({ apiPath = '/member/performances
                                         </div>
                                         <div className="flex items-center gap-2 font-semibold">
                                             <Music2 size={16} className="text-blue-200" />
-                                            {nextPerformance.choir?.name || data?.choir?.name || 'Choir'}
+                                            {nextPerformance.choir?.name || data?.choir?.name || t('common.choir', 'Choir')}
                                         </div>
                                     </div>
                                     <button

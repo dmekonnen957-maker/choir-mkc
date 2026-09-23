@@ -70,7 +70,7 @@ function calculateAge(dob) {
     return isNaN(age) ? null : age;
 }
 
-export default function AdminMembersPage() {
+export default function AdminMembersPage({ basePath = 'admin' }) {
     const { user } = useAuth();
     const { currentChoir, setCurrentChoir, isAllChoirs, choirs: contextChoirs } = useChoir();
 
@@ -200,7 +200,7 @@ export default function AdminMembersPage() {
                 search: search.trim() || undefined,
             };
 
-            const res = await api.get('/admin/members', { params });
+            const res = await api.get(`/${basePath}/members`, { params });
             const data = res.data?.data || {};
             setMembers(data.items || []);
             if (data.pagination) {

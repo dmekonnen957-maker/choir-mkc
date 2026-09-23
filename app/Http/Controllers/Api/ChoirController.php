@@ -18,7 +18,8 @@ class ChoirController extends ApiController
             || $request->user()->can('choirs.view.all')) {
             $q = Choir::query();
         } else {
-            $q = $request->user()->choirs();
+            // Assigned (pivot) choirs + choirs led by this team leader.
+            $q = Choir::whereIn('id', $request->user()->assignedChoirIds());
         }
 
         if ($request->filled('search')) {

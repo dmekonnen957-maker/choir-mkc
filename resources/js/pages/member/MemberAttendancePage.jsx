@@ -167,7 +167,7 @@ export default function MemberAttendancePage() {
                                 {t('attendance.title', 'My Attendance')}
                             </h1>
                             <p className="text-sm text-slate-500">
-                                {data?.choir?.name || 'Choir Ministry'} • {data?.member?.full_name || user?.name}
+                                {data?.choir?.name || t('attendance.choir_ministry', 'Choir Ministry')} • {data?.member?.full_name || user?.name}
                             </p>
                         </div>
                     </div>

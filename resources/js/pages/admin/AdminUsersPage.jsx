@@ -54,8 +54,40 @@ function formatDate(val) {
     });
 }
 
-export default function AdminUsersPage() {
+// Render the assignable-role options. Non-admin areas (team leader) never see
+// administrator roles and fall back to assignable member/leader roles when the
+// roles endpoint is unavailable.
+function renderRoleOptions(roles, allowAdminRoles) {
+    return roles.length > 0 ? (
+        roles.map((r) => (
+            <option key={r.id || r.name} value={r.name}>
+                {r.name.toUpperCase()} {r.description ? `— ${r.description}` : ''}
+            </option>
+        ))
+    ) : (
+        <>
+            <option value="member">MEMBER</option>
+            <option value="team_leader">TEAM_LEADER</option>
+            {allowAdminRoles && (
+                <>
+                    <option value="admin">ADMIN</option>
+                    <option value="super-admin">SUPER-ADMIN</option>
+                </>
+            )}
+            {!allowAdminRoles && (
+                <>
+                    <option value="musician">MUSICIAN</option>
+                    <option value="musicians">MUSICIANS</option>
+                </>
+            )}
+        </>
+    );
+}
+
+export default function AdminUsersPage({ basePath = 'admin', choirsUrl }) {
     const { t } = useLanguage();
+    const isAdminArea = basePath === 'admin';
+    const choirListUrl = choirsUrl ?? (isAdminArea ? '/public/choirs?per_page=100' : '/choirs?per_page=100');
     const [users, setUsers] = useState([]);
     const [choirs, setChoirs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -99,7 +131,7 @@ export default function AdminUsersPage() {
         if (!deleteTarget) return;
         setDeleting(true);
         try {
-            await api.delete(`/admin/users/${deleteTarget.id}`);
+            await api.delete(`/${basePath}/users/${deleteTarget.id}`);
             setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
             setToast({ variant: 'success', message: `User "${deleteTarget.name}" has been deleted.` });
             setDeleteTarget(null);
@@ -123,17 +155,23 @@ export default function AdminUsersPage() {
     // Fetch Choirs and Roles for filtering and assigning
     const [rolesList, setRolesList] = useState([]);
 
+    // Non-admin areas (team leader) never see administrator roles.
+    const assignableRoles =
+        isAdminArea || rolesList.length === 0
+            ? rolesList
+            : rolesList.filter((r) => !['admin', 'super-admin'].includes(r.name));
+
     const fetchRoles = useCallback(() => {
-        api.get('/admin/roles')
+        api.get(`/${basePath}/roles`)
             .then((res) => {
                 const items = res.data?.data || [];
                 setRolesList(Array.isArray(items) ? items : []);
             })
             .catch(() => {});
-    }, []);
+    }, [basePath]);
 
     useEffect(() => {
-        api.get('/public/choirs?per_page=100')
+        api.get(choirListUrl)
             .then((res) => {
                 const items = res.data?.data?.items || res.data?.data || [];
                 setChoirs(items);
@@ -141,7 +179,7 @@ export default function AdminUsersPage() {
             .catch(() => {});
 
         fetchRoles();
-    }, [fetchRoles]);
+    }, [choirListUrl, fetchRoles]);
 
     // Fetch users list
     const fetchUsers = useCallback(async () => {
@@ -155,7 +193,7 @@ export default function AdminUsersPage() {
                 search: search.trim() || undefined,
             };
 
-            const res = await api.get('/admin/users', { params });
+            const res = await api.get(`/${basePath}/users`, { params });
             const data = res.data?.data || {};
             setUsers(data.items || []);
             if (data.pagination) {
@@ -166,7 +204,7 @@ export default function AdminUsersPage() {
         } finally {
             setLoading(false);
         }
-    }, [page, statusFilter, roleFilter, choirFilter, search]);
+    }, [page, statusFilter, roleFilter, choirFilter, search, basePath]);
 
     useEffect(() => {
         fetchUsers();
@@ -187,7 +225,7 @@ export default function AdminUsersPage() {
     const handleApprove = async (user) => {
         setSaving(true);
         try {
-            const res = await api.post(`/admin/users/${user.id}/approve`);
+            const res = await api.post(`/${basePath}/users/${user.id}/approve`);
             setToast({ variant: 'success', message: `User "${user.name}" has been approved.` });
             if (selectedUser?.id === user.id) {
                 setSelectedUser(res.data?.data);
@@ -213,7 +251,7 @@ export default function AdminUsersPage() {
         if (!selectedUser) return;
         setSaving(true);
         try {
-            const res = await api.post(`/admin/users/${selectedUser.id}/reject`, {
+            const res = await api.post(`/${basePath}/users/${selectedUser.id}/reject`, {
                 rejection_reason: rejectionReason,
             });
             setToast({ variant: 'warning', message: `User "${selectedUser.name}" registration was rejected.` });
@@ -235,7 +273,7 @@ export default function AdminUsersPage() {
         if (!selectedUser) return;
         setSaving(true);
         try {
-            const res = await api.put(`/admin/users/${selectedUser.id}`, {
+            const res = await api.put(`/${basePath}/users/${selectedUser.id}`, {
                 name: selectedUser.name,
                 email: selectedUser.email,
                 role: editRole,
@@ -321,7 +359,7 @@ export default function AdminUsersPage() {
             return;
         }
         try {
-            const res = await api.post('/admin/users', createForm);
+            const res = await api.post(`/${basePath}/users`, createForm);
             setToast({ variant: 'success', message: `User "${res.data.data.name}" created successfully.` });
             closeCreateModal();
             fetchUsers();
@@ -428,7 +466,7 @@ export default function AdminUsersPage() {
                         <option value="all">{t('role.all_roles', 'All Roles')}</option>
                         <option value="member">{t('role.member', 'Member')}</option>
                         <option value="team_leader">{t('role.team_leader', 'Team Leader')}</option>
-                        <option value="admin">{t('role.admin', 'Admin')}</option>
+                        {isAdminArea && <option value="admin">{t('role.admin', 'Admin')}</option>}
                     </select>
                 </div>
 
@@ -691,20 +729,7 @@ export default function AdminUsersPage() {
                                         onChange={(e) => setEditRole(e.target.value)}
                                         className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm font-medium text-ink-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                     >
-                                        {rolesList.length > 0 ? (
-                                            rolesList.map((r) => (
-                                                <option key={r.id || r.name} value={r.name}>
-                                                    {r.name.toUpperCase()} {r.description ? `— ${r.description}` : ''}
-                                                </option>
-                                            ))
-                                        ) : (
-                                            <>
-                                                <option value="member">MEMBER</option>
-                                                <option value="team_leader">TEAM_LEADER</option>
-                                                <option value="admin">ADMIN</option>
-                                                <option value="super-admin">SUPER-ADMIN</option>
-                                            </>
-                                        )}
+                                        {renderRoleOptions(assignableRoles, isAdminArea)}
                                     </select>
                                     <p className="mt-1 text-xs text-ink-400">
                                         Changes to role are validated server-side.
@@ -914,20 +939,7 @@ export default function AdminUsersPage() {
                                     onChange={handleCreateChange('role')}
                                     className="w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm font-medium text-ink-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                                 >
-                                    {rolesList.length > 0 ? (
-                                        rolesList.map((r) => (
-                                            <option key={r.id || r.name} value={r.name}>
-                                                {r.name.toUpperCase()} {r.description ? `— ${r.description}` : ''}
-                                            </option>
-                                        ))
-                                    ) : (
-                                        <>
-                                            <option value="member">MEMBER</option>
-                                            <option value="team_leader">TEAM_LEADER</option>
-                                            <option value="admin">ADMIN</option>
-                                            <option value="super-admin">SUPER-ADMIN</option>
-                                        </>
-                                    )}
+                                    {renderRoleOptions(assignableRoles, isAdminArea)}
                                 </select>
                             </div>
                             <div>

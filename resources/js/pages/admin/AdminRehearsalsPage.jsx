@@ -649,7 +649,7 @@ function RehearsalDetailModal({ rehearsal, open, onClose, onEdit, onDelete, onTa
 
 /* ─────────────────────── MAIN PAGE COMPONENT ─────────────────────── */
 
-export default function AdminRehearsalsPage() {
+export default function AdminRehearsalsPage({ choirsUrl = '/public/choirs?per_page=100' }) {
     const navigate = useNavigate();
     const { user, role, primaryChoir, can } = useAuth();
     const isAdmin = role === 'admin' || role === 'super-admin';
@@ -683,7 +683,7 @@ export default function AdminRehearsalsPage() {
     useEffect(() => {
         const fetchChoirList = async () => {
             try {
-                const res = await api.get('/public/choirs?per_page=100');
+                const res = await api.get(choirsUrl);
                 const items = res.data?.data?.items || res.data?.data || [];
                 setChoirs(items);
 
