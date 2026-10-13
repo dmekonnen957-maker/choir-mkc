@@ -30,7 +30,7 @@ class PermissionRoleSeeder extends Seeder
         // Rehearsals
         'rehearsals.view', 'rehearsals.view.all', 'rehearsals.create', 'rehearsals.edit', 'rehearsals.update', 'rehearsals.delete', 'rehearsals.manage',
         // Attendance
-        'attendance.view', 'attendance.create', 'attendance.edit', 'attendance.update', 'attendance.delete', 'attendance.manage',
+        'attendance.view', 'attendance.view.all', 'attendance.create', 'attendance.edit', 'attendance.update', 'attendance.delete', 'attendance.manage',
         // Performances
         'performances.view', 'performances.view.all', 'performances.create', 'performances.edit', 'performances.update', 'performances.delete', 'performances.manage',
         // Calendar
@@ -40,13 +40,15 @@ class PermissionRoleSeeder extends Seeder
         // Gallery
         'gallery.view', 'gallery.view.all', 'gallery.create', 'gallery.edit', 'gallery.update', 'gallery.delete', 'gallery.manage',
         // Audit Logs
-        'audit_logs.view',
+        'audit_logs.view', 'audit_logs.manage',
         // Notifications
         'notifications.view', 'notifications.create', 'notifications.manage',
         // Settings
-        'settings.manage',
+        'settings.view', 'settings.edit', 'settings.update', 'settings.manage',
         // Reports
-        'reports.view', 'reports.export',
+        'reports.view', 'reports.export', 'reports.manage',
+        // Choir History
+        'choir_history.view', 'choir_history.manage',
     ];
 
     public function run(): void

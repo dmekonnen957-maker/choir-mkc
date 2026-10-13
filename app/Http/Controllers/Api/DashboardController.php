@@ -60,6 +60,12 @@ class DashboardController extends ApiController
 
     public function overview(Request $request): \Illuminate\Http\JsonResponse
     {
+        $user = $request->user();
+
+        if (! $user || ! $user->isAdminArea()) {
+            return $this->error('You do not have permission to access this area.', null, 403);
+        }
+
         $choirs = Choir::query()
             ->withCount([
                 'members' => fn ($q) => $q->where('status', 'active'),

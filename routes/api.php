@@ -110,41 +110,75 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('admin')->prefix('admin')->scopeBindings()->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'overview']);
         Route::get('/dashboard/{choir}', [DashboardController::class, 'choirOverview']);
-        Route::post('/users/{user}/approve', [UserController::class, 'approve']);
-        Route::post('/users/{user}/reject', [UserController::class, 'reject']);
-        Route::apiResource('users', UserController::class)->except(['destroy']);
-        Route::delete('users/{user}', [UserController::class, 'destroy'])
-            ->middleware('permission:users.delete');
-        Route::apiResource('choirs', ChoirController::class)->names('admin.choirs')->except(['destroy']);
-        Route::delete('choirs/{choir}', [ChoirController::class, 'destroy'])
-            ->name('admin.choirs.destroy')
-            ->middleware('permission:choirs.delete');
-        Route::get('/members', [AdminMemberController::class, 'index'])->middleware('permission:members.view');
-        Route::post('/members', [MemberController::class, 'storeWithoutChoirParam'])->middleware('permission:members.create');
-        Route::get('/members/{member}', [MemberController::class, 'showWithoutChoirParam'])->middleware('permission:members.view');
-        Route::match(['PUT', 'PATCH'], '/members/{member}', [MemberController::class, 'updateWithoutChoirParam'])->middleware('permission:members.update');
-        Route::delete('/members/{member}', [MemberController::class, 'destroyWithoutChoirParam'])->middleware('permission:members.delete');
-        Route::apiResource('roles', RoleController::class);
-        Route::apiResource('permissions', PermissionController::class);
+
+        // ── Users ────────────────────────────────────────────────────────────────
+        Route::get('users', [UserController::class, 'index'])->middleware('permission:users.view|users.manage');
+        Route::post('users', [UserController::class, 'store'])->middleware('permission:users.create|users.manage');
+        Route::get('users/{user}', [UserController::class, 'show'])->middleware('permission:users.view|users.manage');
+        Route::match(['PUT', 'PATCH'], 'users/{user}', [UserController::class, 'update'])->middleware('permission:users.edit|users.update|users.manage');
+        Route::delete('users/{user}', [UserController::class, 'destroy'])->middleware('permission:users.delete|users.manage');
+        Route::post('/users/{user}/approve', [UserController::class, 'approve'])->middleware('permission:users.approve|users.manage');
+        Route::post('/users/{user}/reject', [UserController::class, 'reject'])->middleware('permission:users.edit|users.update|users.manage');
+
+        // ── Choirs ───────────────────────────────────────────────────────────────
+        Route::get('choirs', [ChoirController::class, 'index'])->name('admin.choirs.index')->middleware('permission:choirs.view|choirs.manage');
+        Route::post('choirs', [ChoirController::class, 'store'])->name('admin.choirs.store')->middleware('permission:choirs.create|choirs.manage');
+        Route::get('choirs/{choir}', [ChoirController::class, 'show'])->name('admin.choirs.show')->middleware('permission:choirs.view|choirs.manage');
+        Route::match(['PUT', 'PATCH'], 'choirs/{choir}', [ChoirController::class, 'update'])->name('admin.choirs.update')->middleware('permission:choirs.edit|choirs.update|choirs.manage');
+        Route::delete('choirs/{choir}', [ChoirController::class, 'destroy'])->name('admin.choirs.destroy')->middleware('permission:choirs.delete|choirs.manage');
+
+        // ── Members ──────────────────────────────────────────────────────────────
+        Route::get('/members', [AdminMemberController::class, 'index'])->middleware('permission:members.view|members.manage');
+        Route::post('/members', [MemberController::class, 'storeWithoutChoirParam'])->middleware('permission:members.create|members.manage');
+        Route::get('/members/{member}', [MemberController::class, 'showWithoutChoirParam'])->middleware('permission:members.view|members.manage');
+        Route::match(['PUT', 'PATCH'], '/members/{member}', [MemberController::class, 'updateWithoutChoirParam'])->middleware('permission:members.update|members.edit|members.manage');
+        Route::delete('/members/{member}', [MemberController::class, 'destroyWithoutChoirParam'])->middleware('permission:members.delete|members.manage');
+
+        // ── Roles & Permissions ──────────────────────────────────────────────────
+        Route::get('roles', [RoleController::class, 'index'])->middleware('permission:roles.view|roles.manage');
+        Route::post('roles', [RoleController::class, 'store'])->middleware('permission:roles.create|roles.manage');
+        Route::get('roles/{role}', [RoleController::class, 'show'])->middleware('permission:roles.view|roles.manage');
+        Route::match(['PUT', 'PATCH'], 'roles/{role}', [RoleController::class, 'update'])->middleware('permission:roles.edit|roles.update|roles.manage');
+        Route::delete('roles/{role}', [RoleController::class, 'destroy'])->middleware('permission:roles.delete|roles.manage');
+        Route::get('permissions', [PermissionController::class, 'index'])->middleware('permission:permissions.view|permissions.manage');
+        Route::post('permissions', [PermissionController::class, 'store'])->middleware('permission:permissions.create|permissions.manage');
+        Route::get('permissions/{permission}', [PermissionController::class, 'show'])->middleware('permission:permissions.view|permissions.manage');
+        Route::match(['PUT', 'PATCH'], 'permissions/{permission}', [PermissionController::class, 'update'])->middleware('permission:permissions.edit|permissions.update|permissions.manage');
+        Route::delete('permissions/{permission}', [PermissionController::class, 'destroy'])->middleware('permission:permissions.delete|permissions.manage');
+
+        // ── Audit Logs ───────────────────────────────────────────────────────────
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->middleware('permission:audit_logs.view');
         Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])->middleware('permission:audit_logs.view');
+
         Route::get('/notifications', [NotificationController::class, 'index']);
         Route::post('/notifications', [NotificationController::class, 'store']);
-        Route::get('/reports', [ReportController::class, 'index']);
-        Route::get('/reports/{report}', [ReportController::class, 'show']);
-        Route::get('/reports-export', [ReportController::class, 'export']);
-        Route::apiResource('songs', SongController::class);
-        Route::get('songs/{song}/participants', [SongController::class, 'participants']);
-        Route::post('songs/{song}/participants', [SongController::class, 'attachParticipant']);
-        Route::delete('songs/{song}/participants/{member}', [SongController::class, 'detachParticipant']);
-        Route::get('songs-stats', [SongController::class, 'stats']);
-        Route::post('songs/{song}/approve', [SongController::class, 'approve']);
-        Route::post('songs/{song}/reject', [SongController::class, 'reject']);
-        Route::get('songs/{song}/audio', [SongController::class, 'audio'])->name('admin.songs.audio');
-        Route::get('/calendar', [CalendarController::class, 'adminCalendar']);
-        Route::get('/settings', [AdminSettingController::class, 'index']);
-        Route::put('/settings', [AdminSettingController::class, 'update']);
-        Route::post('/settings/cache-clear', [AdminSettingController::class, 'clearCache']);
+
+        // ── Reports ──────────────────────────────────────────────────────────────
+        Route::get('/reports', [ReportController::class, 'index'])->middleware('permission:reports.view|reports.manage');
+        Route::get('/reports/{report}', [ReportController::class, 'show'])->middleware('permission:reports.view|reports.manage');
+        Route::get('/reports-export', [ReportController::class, 'export'])->middleware('permission:reports.view|reports.manage');
+
+        // ── Songs ────────────────────────────────────────────────────────────────
+        Route::get('songs', [SongController::class, 'index'])->middleware('permission:songs.view|songs.manage');
+        Route::post('songs', [SongController::class, 'store'])->middleware('permission:songs.create|songs.manage');
+        Route::get('songs/{song}', [SongController::class, 'show'])->middleware('permission:songs.view|songs.manage');
+        Route::match(['PUT', 'PATCH'], 'songs/{song}', [SongController::class, 'update'])->middleware('permission:songs.edit|songs.update|songs.manage');
+        Route::delete('songs/{song}', [SongController::class, 'destroy'])->middleware('permission:songs.delete|songs.manage');
+        Route::get('songs/{song}/participants', [SongController::class, 'participants'])->middleware('permission:songs.view|songs.manage');
+        Route::post('songs/{song}/participants', [SongController::class, 'attachParticipant'])->middleware('permission:songs.edit|songs.update|songs.manage');
+        Route::delete('songs/{song}/participants/{member}', [SongController::class, 'detachParticipant'])->middleware('permission:songs.edit|songs.update|songs.manage');
+        Route::get('songs-stats', [SongController::class, 'stats'])->middleware('permission:songs.view|songs.manage');
+        Route::post('songs/{song}/approve', [SongController::class, 'approve'])->middleware('permission:songs.edit|songs.update|songs.manage');
+        Route::post('songs/{song}/reject', [SongController::class, 'reject'])->middleware('permission:songs.edit|songs.update|songs.manage');
+        Route::get('songs/{song}/audio', [SongController::class, 'audio'])->name('admin.songs.audio')->middleware('permission:songs.view|songs.manage');
+
+        // ── Calendar ─────────────────────────────────────────────────────────────
+        Route::get('/calendar', [CalendarController::class, 'adminCalendar'])->middleware('permission:calendar.view|calendar.manage');
+
+        // ── Settings ─────────────────────────────────────────────────────────────
+        Route::get('/settings', [AdminSettingController::class, 'index'])->middleware('permission:settings.view|settings.manage');
+        Route::put('/settings', [AdminSettingController::class, 'update'])->middleware('permission:settings.edit|settings.update|settings.manage');
+        Route::post('/settings/cache-clear', [AdminSettingController::class, 'clearCache'])->middleware('permission:settings.edit|settings.update|settings.manage');
     });
 
     // Attendance Management routes (accessible to admins, team leaders with choir authorization)

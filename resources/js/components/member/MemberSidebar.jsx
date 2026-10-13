@@ -38,28 +38,38 @@ function getAdminNav(can, t) {
         { label: t('nav.dashboard', 'Dashboard'), to: '/admin/dashboard', icon: LayoutDashboard },
     ];
 
-    const orgItems = [{ label: t('nav.choirs', 'Choirs'), to: '/admin/choirs', icon: Church }];
-    if (can('members.view')) {
+    // Organization section — choirs always visible for admin-area users; members requires permission
+    const orgItems = [];
+    if (can('choirs.view') || can('choirs.manage')) {
+        orgItems.push({ label: t('nav.choirs', 'Choirs'), to: '/admin/choirs', icon: Church });
+    }
+    if (can('members.view') || can('members.manage')) {
         orgItems.push({ label: t('nav.members', 'Members'), to: '/admin/members', icon: Users });
     }
-    items.push({ title: t('nav.section.organization', 'Organization'), items: orgItems });
+    if (orgItems.length > 0) {
+        items.push({ title: t('nav.section.organization', 'Organization'), items: orgItems });
+    }
 
-    items.push({
-        title: t('nav.section.content', 'Content'),
-        items: [
-            ...(can('songs.view') ? [{ label: t('nav.songs', 'Songs'), to: '/admin/songs', icon: Music }] : []),
-        ],
-    });
+    // Content section
+    const contentItems = [];
+    if (can('songs.view') || can('songs.manage')) {
+        contentItems.push({ label: t('nav.songs', 'Songs'), to: '/admin/songs', icon: Music });
+    }
+    if (contentItems.length > 0) {
+        items.push({ title: t('nav.section.content', 'Content'), items: contentItems });
+    }
 
-    items.push({
-        title: t('nav.section.schedule', 'Schedule'),
-        items: [
-            { label: t('nav.performances', 'Performances'), to: '/admin/performances', icon: CalendarDays },
-            { label: t('nav.rehearsals', 'Rehearsals'), to: '/admin/rehearsals', icon: CalendarClock },
-            { label: t('nav.calendar', 'Calendar'), to: '/admin/calendar', icon: Calendar },
-        ],
-    });
+    // Schedule section
+    const scheduleItems = [
+        { label: t('nav.performances', 'Performances'), to: '/admin/performances', icon: CalendarDays },
+        { label: t('nav.rehearsals', 'Rehearsals'), to: '/admin/rehearsals', icon: CalendarClock },
+    ];
+    if (can('calendar.view') || can('calendar.manage')) {
+        scheduleItems.push({ label: t('nav.calendar', 'Calendar'), to: '/admin/calendar', icon: Calendar });
+    }
+    items.push({ title: t('nav.section.schedule', 'Schedule'), items: scheduleItems });
 
+    // Attendance section — accessible to any admin-area user (controller enforces finer gating)
     items.push({
         title: t('nav.attendance', 'Attendance'),
         items: [
@@ -67,29 +77,37 @@ function getAdminNav(can, t) {
         ],
     });
 
+    // User Management section
     const userMgmt = [];
-    if (can('users.view')) {
+    if (can('users.view') || can('users.manage')) {
         userMgmt.push({ label: t('nav.users', 'Users'), to: '/admin/users', icon: UserCheck });
     }
-    if (can('roles.view') || can('permissions.view')) {
+    if (can('roles.view') || can('roles.manage') || can('permissions.view') || can('permissions.manage')) {
         userMgmt.push({ label: t('nav.roles_permissions', 'Roles & Permissions'), to: '/admin/roles', icon: Shield });
     }
-    items.push({ title: t('nav.section.user_management', 'User Management'), items: userMgmt });
+    if (userMgmt.length > 0) {
+        items.push({ title: t('nav.section.user_management', 'User Management'), items: userMgmt });
+    }
 
-    items.push({
-        title: t('nav.section.reports', 'Reports'),
-        items: [
-            { label: t('nav.reports', 'Reports'), to: '/admin/reports', icon: BarChart3 },
-            { label: t('nav.choir_history', 'Choir History'), to: '/admin/choir-history', icon: BookOpen },
-        ],
-    });
+    // Reports section
+    const reportItems = [];
+    if (can('reports.view') || can('reports.manage')) {
+        reportItems.push({ label: t('nav.reports', 'Reports'), to: '/admin/reports', icon: BarChart3 });
+    }
+    reportItems.push({ label: t('nav.choir_history', 'Choir History'), to: '/admin/choir-history', icon: BookOpen });
+    items.push({ title: t('nav.section.reports', 'Reports'), items: reportItems });
 
-    items.push({
-        title: t('nav.section.system', 'System'),
-        items: [
-            { label: t('nav.activity_logs', 'Activity Logs'), to: '/admin/activity-logs', icon: ScrollText },
-        ],
-    });
+    // System section
+    const systemItems = [];
+    if (can('audit_logs.view')) {
+        systemItems.push({ label: t('nav.activity_logs', 'Activity Logs'), to: '/admin/activity-logs', icon: ScrollText });
+    }
+    if (can('settings.view') || can('settings.manage')) {
+        systemItems.push({ label: t('nav.settings', 'Settings'), to: '/admin/settings', icon: Shield });
+    }
+    if (systemItems.length > 0) {
+        items.push({ title: t('nav.section.system', 'System'), items: systemItems });
+    }
 
     return items;
 }

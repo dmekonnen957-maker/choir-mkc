@@ -507,21 +507,14 @@ export default function AdminUsersPage({ basePath = 'admin', choirsUrl }) {
                         <table className="w-full text-left text-sm text-ink-700">
                             <thead className="border-b border-blue-100 bg-blue-50/50 text-xs font-semibold uppercase tracking-wider text-ink-500">
                                 <tr>
-                                    <th className="px-5 py-3.5">{t('users.col_user', 'User')}</th>
-                                    <th className="px-5 py-3.5">{t('common.phone', 'Phone')}</th>
-                                    <th className="px-5 py-3.5">{t('users.col_choir', 'Choir')}</th>
-                                    <th className="px-5 py-3.5">{t('users.col_role', 'Assigned Role')}</th>
-                                    <th className="px-5 py-3.5">{t('users.col_status', 'Account Status')}</th>
-                                    <th className="px-5 py-3.5">{t('users.col_registered', 'Registered On')}</th>
+                                    <th className="px-5 py-3.5">{t('users.col_user', 'Name')}</th>
+                                    <th className="px-5 py-3.5">{t('users.col_role', 'Role')}</th>
                                     <th className="px-5 py-3.5 text-right">{t('common.actions', 'Actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-blue-50">
                                 {users.map((u) => {
                                     const roleBadge = ROLE_BADGES[u.role] || ROLE_BADGES.member;
-                                    const statusBadge = STATUS_BADGES[u.status] || STATUS_BADGES.pending;
-                                    const StatusIcon = statusBadge.icon;
-                                    const choirName = u.choir?.name || u.choirs?.[0]?.name || 'Unassigned';
 
                                     const initials = (u.name || '?')
                                         .split(' ')
@@ -533,7 +526,7 @@ export default function AdminUsersPage({ basePath = 'admin', choirsUrl }) {
 
                                     return (
                                         <tr key={u.id} className="transition-colors hover:bg-blue-50/40">
-                                            {/* Name & Email */}
+                                            {/* Name */}
                                             <td className="px-5 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shadow-sm">
@@ -541,22 +534,8 @@ export default function AdminUsersPage({ basePath = 'admin', choirsUrl }) {
                                                     </span>
                                                     <div className="min-w-0">
                                                         <p className="font-semibold text-ink-900 truncate">{u.name}</p>
-                                                        <p className="text-xs text-ink-400 truncate">{u.email}</p>
                                                     </div>
                                                 </div>
-                                            </td>
-
-                                            {/* Phone */}
-                                            <td className="px-5 py-4 text-xs font-medium text-ink-600 whitespace-nowrap">
-                                                {u.phone || '—'}
-                                            </td>
-
-                                            {/* Choir */}
-                                            <td className="px-5 py-4 whitespace-nowrap">
-                                                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-900">
-                                                    <Church size={14} className="text-blue-500" />
-                                                    {choirName}
-                                                </span>
                                             </td>
 
                                             {/* Role */}
@@ -566,21 +545,6 @@ export default function AdminUsersPage({ basePath = 'admin', choirsUrl }) {
                                                 >
                                                     {roleBadge.label}
                                                 </span>
-                                            </td>
-
-                                            {/* Status */}
-                                            <td className="px-5 py-4 whitespace-nowrap">
-                                                <span
-                                                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold ${statusBadge.bg}`}
-                                                >
-                                                    <StatusIcon size={13} />
-                                                    {statusBadge.label}
-                                                </span>
-                                            </td>
-
-                                            {/* Registered Date */}
-                                            <td className="px-5 py-4 text-xs text-ink-500 whitespace-nowrap">
-                                                {formatDate(u.created_at)}
                                             </td>
 
                                             {/* Actions */}
@@ -614,10 +578,11 @@ export default function AdminUsersPage({ basePath = 'admin', choirsUrl }) {
                                                     <button
                                                         type="button"
                                                         onClick={() => handleReview(u)}
-                                                        className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-white px-2.5 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-50"
+                                                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50 hover:border-blue-300"
+                                                        title="Click to view more user details"
                                                     >
-                                                        <Edit3 size={13} />
-                                                        {t('users.review_title', 'Review')}
+                                                        <Eye size={14} />
+                                                        <span>More</span>
                                                     </button>
 
                                                     {can('users.delete') && u.id !== currentUser?.id && (
@@ -679,7 +644,7 @@ export default function AdminUsersPage({ basePath = 'admin', choirsUrl }) {
                     <div className="space-y-6">
                         {/* User Overview Summary Card */}
                         <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4">
-                            <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="grid gap-4 sm:grid-cols-3">
                                 <div>
                                     <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">{t('common.full_name', 'Full Name')}</p>
                                     <p className="mt-0.5 text-sm font-bold text-ink-900">{selectedUser.name}</p>
@@ -691,6 +656,27 @@ export default function AdminUsersPage({ basePath = 'admin', choirsUrl }) {
                                 <div>
                                     <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">{t('common.phone', 'Phone')}</p>
                                     <p className="mt-0.5 text-sm font-medium text-ink-800">{selectedUser.phone || '—'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">{t('common.choir', 'Choir')}</p>
+                                    <p className="mt-0.5 text-sm font-medium text-ink-800">
+                                        {selectedUser.choir?.name || selectedUser.choirs?.[0]?.name || 'Unassigned'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">{t('users.col_status', 'Account Status')}</p>
+                                    <div className="mt-1">
+                                        {(() => {
+                                            const sb = STATUS_BADGES[selectedUser.status] || STATUS_BADGES.pending;
+                                            const SIcon = sb.icon;
+                                            return (
+                                                <span className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-0.5 text-xs font-semibold ${sb.bg}`}>
+                                                    <SIcon size={13} />
+                                                    {sb.label}
+                                                </span>
+                                            );
+                                        })()}
+                                    </div>
                                 </div>
                                 <div>
                                     <p className="text-xs font-semibold uppercase tracking-wider text-ink-400">{t('users.col_registered', 'Registered On')}</p>

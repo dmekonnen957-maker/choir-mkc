@@ -45,8 +45,11 @@ class ChoirAccessMiddleware
         }
 
         // Write protection: only leaders/admins may mutate choir data, even when assigned.
+        // Custom roles are honored via their area or the choirs.manage permission,
+        // so a granted role is never blocked by core role-name checks.
         $isWrite = in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'], true);
-        $canModify = $user->hasAnyRole(['super-admin', 'admin', 'team_leader'])
+        $canModify = $user->isGlobalAdmin()
+            || $user->roles()->whereIn('area', ['admin', 'team_leader'])->exists()
             || $user->can('choirs.manage');
 
         if ($isWrite && ! $canModify) {

@@ -156,6 +156,7 @@ export default function App() {
                 <Route path="calendar" element={<MemberCalendarPage />} />
                 <Route path="attendance" element={<MemberAttendancePage />} />
                 <Route path="my-performances" element={<MemberPerformancesPage />} />
+                <Route path="choir-history" element={<MemberChoirHistoryPage />} />
                 <Route path="settings" element={<MemberSettings />} />
             </Route>
 
@@ -163,7 +164,7 @@ export default function App() {
             <Route
                 path="/member/choir-history"
                 element={
-                    <ProtectedRoute allowedAreas={['member', 'team_leader', 'admin']}>
+                    <ProtectedRoute allowedAreas={['member', 'musician', 'team_leader', 'admin']}>
                         <MemberLayout />
                     </ProtectedRoute>
                 }
@@ -189,6 +190,7 @@ export default function App() {
                 <Route path="calendar" element={<MemberCalendarPage />} />
                 <Route path="attendance" element={<MemberAttendancePage />} />
                 <Route path="my-performances" element={<MemberPerformancesPage />} />
+                <Route path="choir-history" element={<MemberChoirHistoryPage />} />
                 <Route path="settings" element={<MemberSettings />} />
             </Route>
 
@@ -203,31 +205,108 @@ export default function App() {
             >
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="choirs" element={<AdminChoirsPage />} />
-                <Route path="choirs/create" element={<AdminChoirFormPage mode="create" />} />
-                <Route path="choirs/:id" element={<AdminChoirDetailPage />} />
-                <Route path="choirs/:id/edit" element={<AdminChoirFormPage mode="edit" />} />
-                <Route path="members" element={<AdminMembersPage />} />
-                <Route path="users" element={<AdminUsersPage />} />
-                <Route path="users/:id" element={<AdminUsersPage />} />
-                <Route path="roles" element={<AdminRolesPage />} />
-                <Route path="roles/:id" element={<AdminRolesPage />} />
+                {/* Choirs: require choirs.view or choirs.manage */}
+                <Route path="choirs" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['choirs.view', 'choirs.manage']}>
+                        <AdminChoirsPage />
+                    </ProtectedRoute>
+                } />
+                <Route path="choirs/create" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['choirs.create', 'choirs.manage']}>
+                        <AdminChoirFormPage mode="create" />
+                    </ProtectedRoute>
+                } />
+                <Route path="choirs/:id" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['choirs.view', 'choirs.manage']}>
+                        <AdminChoirDetailPage />
+                    </ProtectedRoute>
+                } />
+                <Route path="choirs/:id/edit" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['choirs.edit', 'choirs.update', 'choirs.manage']}>
+                        <AdminChoirFormPage mode="edit" />
+                    </ProtectedRoute>
+                } />
+                {/* Members: require members.view or members.manage */}
+                <Route path="members" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['members.view', 'members.manage']}>
+                        <AdminMembersPage />
+                    </ProtectedRoute>
+                } />
+                {/* Users: require users.view or users.manage */}
+                <Route path="users" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['users.view', 'users.manage']}>
+                        <AdminUsersPage />
+                    </ProtectedRoute>
+                } />
+                <Route path="users/:id" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['users.view', 'users.manage']}>
+                        <AdminUsersPage />
+                    </ProtectedRoute>
+                } />
+                {/* Roles & Permissions: require roles.view or roles.manage */}
+                <Route path="roles" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['roles.view', 'roles.manage', 'permissions.view', 'permissions.manage']}>
+                        <AdminRolesPage />
+                    </ProtectedRoute>
+                } />
+                <Route path="roles/:id" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['roles.view', 'roles.manage', 'permissions.view', 'permissions.manage']}>
+                        <AdminRolesPage />
+                    </ProtectedRoute>
+                } />
                 <Route path="choir" element={<MemberChoir apiPath="/team-leader/choir" />} />
                 <Route path="profile" element={<MemberProfile apiPath="/team-leader/profile" />} />
                 <Route path="notifications" element={<MemberNotifications apiPath="/team-leader/notifications" />} />
-                <Route path="songs" element={<AdminSongsPage />} />
-                <Route path="songs/new" element={<AdminSongFormPage mode="create" />} />
-                <Route path="songs/:id/edit" element={<AdminSongFormPage mode="edit" />} />
-                <Route path="songs/:id" element={<AdminSongDetailPage />} />
+                {/* Songs: require songs.view or songs.manage */}
+                <Route path="songs" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['songs.view', 'songs.manage']}>
+                        <AdminSongsPage />
+                    </ProtectedRoute>
+                } />
+                <Route path="songs/new" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['songs.create', 'songs.manage']}>
+                        <AdminSongFormPage mode="create" />
+                    </ProtectedRoute>
+                } />
+                <Route path="songs/:id/edit" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['songs.edit', 'songs.update', 'songs.manage']}>
+                        <AdminSongFormPage mode="edit" />
+                    </ProtectedRoute>
+                } />
+                <Route path="songs/:id" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['songs.view', 'songs.manage']}>
+                        <AdminSongDetailPage />
+                    </ProtectedRoute>
+                } />
                 <Route path="rehearsals" element={<AdminRehearsalsPage />} />
                 <Route path="performances" element={<AdminPerformancesPage />} />
-                <Route path="calendar" element={<AdminCalendarPage />} />
+                {/* Calendar: require calendar.view or calendar.manage */}
+                <Route path="calendar" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['calendar.view', 'calendar.manage']}>
+                        <AdminCalendarPage />
+                    </ProtectedRoute>
+                } />
                 <Route path="attendance" element={<AdminAttendancePage />} />
                 <Route path="my-performances" element={<MemberPlaceholder title="My Performances" />} />
-                <Route path="settings" element={<AdminSettingsPage />} />
-                <Route path="reports" element={<AdminReportsPage />} />
+                {/* Settings: require settings.view or settings.manage */}
+                <Route path="settings" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['settings.view', 'settings.manage']}>
+                        <AdminSettingsPage />
+                    </ProtectedRoute>
+                } />
+                {/* Reports: require reports.view or reports.manage */}
+                <Route path="reports" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['reports.view', 'reports.manage']}>
+                        <AdminReportsPage />
+                    </ProtectedRoute>
+                } />
                 <Route path="choir-history" element={<MemberChoirHistoryPage />} />
-                <Route path="activity-logs" element={<AdminActivityLogsPage />} />
+                {/* Activity Logs: require audit_logs.view */}
+                <Route path="activity-logs" element={
+                    <ProtectedRoute allowedAreas={['admin']} allowedPermissions={['audit_logs.view']}>
+                        <AdminActivityLogsPage />
+                    </ProtectedRoute>
+                } />
             </Route>
 
             {/* Team Leader Area */}

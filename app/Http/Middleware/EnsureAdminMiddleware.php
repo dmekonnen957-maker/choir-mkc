@@ -28,40 +28,10 @@ class EnsureAdminMiddleware
             ], 403);
         }
 
-        if ($user->isGlobalAdmin()) {
+        // Platform-wide admin area: global admins, roles with area 'admin',
+        // legacy roles/direct grants whose permissions imply admin.
+        if ($user->isAdminArea()) {
             return $next($request);
-        }
-
-        // Check if user has any role configured with area 'admin'
-        $hasAdminArea = $user->roles()->where('area', 'admin')->exists();
-        if ($hasAdminArea) {
-            return $next($request);
-        }
-
-        // Check if user has any admin-level management permissions
-        $adminPermissions = [
-            'users.view', 'users.view.all', 'users.manage',
-            'roles.view', 'roles.manage',
-            'permissions.view', 'permissions.manage',
-            'choirs.view', 'choirs.view.all', 'choirs.manage', 'choirs.create', 'choirs.delete',
-            'members.view', 'members.view.all', 'members.manage',
-            'songs.view', 'songs.view.all', 'songs.manage', 'songs.create', 'songs.edit', 'songs.update', 'songs.delete',
-            'rehearsals.view', 'rehearsals.view.all', 'rehearsals.manage',
-            'performances.view', 'performances.view.all', 'performances.manage',
-            'attendance.view', 'attendance.manage',
-            'audit_logs.view',
-            'reports.view', 'reports.export',
-            'settings.manage',
-        ];
-
-        foreach ($adminPermissions as $perm) {
-            try {
-                if ($user->hasPermissionTo($perm, 'api') || $user->can($perm)) {
-                    return $next($request);
-                }
-            } catch (\Throwable) {
-                // Ignore guard mismatches
-            }
         }
 
         return response()->json([

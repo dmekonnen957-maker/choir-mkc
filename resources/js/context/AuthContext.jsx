@@ -171,7 +171,7 @@ export function AuthProvider({ children }) {
             'attendance.edit': ['attendance.update', 'attendance.manage'],
             'attendance.create': ['attendance.manage'],
             'attendance.delete': ['attendance.manage'],
-            'attendance.view': ['attendance.manage'],
+            'attendance.view': ['attendance.view.all', 'attendance.manage'],
             'announcements.update': ['announcements.edit', 'announcements.manage'],
             'announcements.edit': ['announcements.update', 'announcements.manage'],
             'announcements.create': ['announcements.manage'],
@@ -187,6 +187,13 @@ export function AuthProvider({ children }) {
             'calendar.create': ['calendar.manage'],
             'calendar.delete': ['calendar.manage'],
             'calendar.view': ['calendar.manage'],
+            'settings.update': ['settings.edit', 'settings.manage'],
+            'settings.edit': ['settings.update', 'settings.manage'],
+            'settings.view': ['settings.manage'],
+            'reports.view': ['reports.manage'],
+            'reports.update': ['reports.edit', 'reports.manage'],
+            'reports.edit': ['reports.update', 'reports.manage'],
+            'audit_logs.view': ['audit_logs.manage'],
         };
 
         const list = aliases[permission];

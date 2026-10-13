@@ -47,6 +47,23 @@ export default function AdminRolesPage() {
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState(null);
     const [deleteConfirm, setDeleteConfirm] = useState(null);
+    const [deletePermConfirm, setDeletePermConfirm] = useState(null);
+
+    const handleDeletePermission = async () => {
+        if (!deletePermConfirm) return;
+        setSaving(true);
+        try {
+            await api.delete(`/admin/permissions/${deletePermConfirm.id}`);
+            showToast('success', `Permission "${deletePermConfirm.name}" deleted successfully.`);
+            setDeletePermConfirm(null);
+            fetchPermissions();
+            fetchRoles();
+        } catch (err) {
+            showToast('error', err.response?.data?.message || err.message || 'Failed to delete permission');
+        } finally {
+            setSaving(false);
+        }
+    };
 
     // Form state
     const [formName, setFormName] = useState('');
@@ -493,22 +510,40 @@ export default function AdminRolesPage() {
                     {/* Permissions Grid */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {filteredPermissionsList.map((perm) => (
-                            <div key={perm.id || perm.name} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-blue-200 transition-colors">
-                                <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0 flex-1">
-                                        <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-700 border border-blue-100 mb-1.5">
-                                            {perm.group || 'System'}
-                                        </span>
-                                        <p className="font-mono text-xs font-bold text-slate-900 break-all">{perm.name}</p>
+                            <div key={perm.id || perm.name} className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:border-blue-200 transition-colors">
+                                <div>
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0 flex-1">
+                                            <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-700 border border-blue-100 mb-1.5">
+                                                {perm.group || 'System'}
+                                            </span>
+                                            <h4 className="font-bold text-sm text-slate-900 leading-snug">{perm.label || perm.name}</h4>
+                                            <p className="font-mono text-[11px] text-slate-400 break-all mt-0.5">{perm.name}</p>
+                                        </div>
+                                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                                            <Key size={14} />
+                                        </div>
                                     </div>
-                                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
-                                        <Key size={14} />
-                                    </div>
+                                    {perm.description && (
+                                        <p className="mt-2 text-xs text-slate-500 leading-relaxed">
+                                            {perm.description}
+                                        </p>
+                                    )}
                                 </div>
 
-                                <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px] text-slate-500">
-                                    <span>Assigned Roles:</span>
-                                    <span className="font-bold text-slate-800">{perm.roles_count ?? (perm.roles?.length || 0)}</span>
+                                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs text-slate-500">
+                                    <span className="text-[11px]">
+                                        Assigned Roles: <strong className="text-slate-800">{perm.roles_count ?? (perm.roles?.length || 0)}</strong>
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setDeletePermConfirm(perm)}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
+                                        title="Delete permission"
+                                    >
+                                        <Trash2 size={13} />
+                                        <span>Delete</span>
+                                    </button>
                                 </div>
                             </div>
                         ))}
@@ -585,11 +620,15 @@ export default function AdminRolesPage() {
                                     Assigned Permissions ({selectedRole?.permissions?.length ?? 0})
                                 </p>
                                 <div className="flex flex-wrap gap-1.5 max-h-56 overflow-y-auto pr-1">
-                                    {(selectedRole?.permissions || []).map((p) => (
-                                        <span key={p} className="rounded-lg px-2.5 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                                            {p}
-                                        </span>
-                                    ))}
+                                    {(selectedRole?.permissions || []).map((permName) => {
+                                        const permObj = allPermissions.find(p => p.name === permName);
+                                        return (
+                                            <span key={permName} className="rounded-lg px-2.5 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100 flex flex-col">
+                                                <span className="font-semibold">{permObj?.label || permName}</span>
+                                                <span className="font-mono text-[9px] text-blue-400">{permName}</span>
+                                            </span>
+                                        );
+                                    })}
                                     {(!selectedRole?.permissions || selectedRole.permissions.length === 0) && (
                                         <p className="text-xs text-slate-400 italic">No permissions assigned to this role.</p>
                                     )}
@@ -730,9 +769,21 @@ export default function AdminRolesPage() {
                                                                 type="checkbox"
                                                                 checked={formPermissions.includes(p.name)}
                                                                 onChange={() => togglePermission(p.name)}
-                                                                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                                className="h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                                                             />
-                                                            <span className="font-mono text-[11px] truncate">{p.name}</span>
+                                                            <span className="min-w-0 flex-1">
+                                                                <span className="block font-semibold text-[12px] leading-tight">
+                                                                    {p.label || p.name}
+                                                                </span>
+                                                                <span className="block font-mono text-[9px] text-slate-400 mt-0.5">
+                                                                    {p.name}
+                                                                </span>
+                                                                {p.description && (
+                                                                    <span className="block text-[9px] text-slate-500 mt-0.5 leading-tight">
+                                                                        {p.description}
+                                                                    </span>
+                                                                )}
+                                                            </span>
                                                         </label>
                                                     ))}
                                                 </div>
@@ -781,6 +832,38 @@ export default function AdminRolesPage() {
                             </Button>
                             <Button variant="danger" size="sm" loading={saving} onClick={handleDelete}>
                                 Delete Role
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* DELETE PERMISSION CONFIRMATION MODAL */}
+            {deletePermConfirm && (
+                <Modal open onClose={() => setDeletePermConfirm(null)} title="Delete Permission" size="md">
+                    <div className="space-y-4">
+                        <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+                                <AlertTriangle size={20} />
+                            </div>
+                            <div>
+                                <p className="text-sm text-slate-700">
+                                    Are you sure you want to delete the permission{' '}
+                                    <strong className="font-bold text-slate-900">"{deletePermConfirm.label || deletePermConfirm.name}"</strong>?
+                                </p>
+                                <p className="font-mono text-xs text-slate-500 mt-1">({deletePermConfirm.name})</p>
+                                <p className="mt-1 text-xs text-rose-600 font-medium">
+                                    This permission will be permanently removed from all roles.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2.5 border-t border-slate-100 pt-3">
+                            <Button variant="outline" size="sm" onClick={() => setDeletePermConfirm(null)} disabled={saving}>
+                                Cancel
+                            </Button>
+                            <Button variant="danger" size="sm" loading={saving} onClick={handleDeletePermission}>
+                                Delete Permission
                             </Button>
                         </div>
                     </div>

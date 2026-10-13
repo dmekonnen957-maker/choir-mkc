@@ -28,7 +28,10 @@ class MemberChoirHistoryController extends ApiController
         return $user->isGlobalAdmin()
             || $user->can('choirs.view.all')
             || $user->can('gallery.view.all')
-            || $user->choirs()->where('choirs.id', $choir->id)->wherePivot('status', 'active')->exists();
+            || $user->can('choir_history.view')
+            || $user->can('choirs.view')
+            || $user->hasAnyRole(['member', 'musician', 'musicians', 'team_leader', 'admin', 'super-admin'])
+            || $user->choirs()->where('choirs.id', $choir->id)->exists();
     }
 
     private function canManage(User $user): bool
